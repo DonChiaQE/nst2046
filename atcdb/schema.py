@@ -2,7 +2,7 @@
 import sqlite3
 from pathlib import Path
 
-TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules"]
+TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs"]
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS sources (
@@ -87,6 +87,26 @@ CREATE TABLE IF NOT EXISTS annotations (
 );
 CREATE INDEX IF NOT EXISTS ix_annotations_transcript ON annotations (transcript_id);
 CREATE INDEX IF NOT EXISTS ix_annotations_category ON annotations (category);
+
+-- Instruction/readback pairs derived from adjacent controller->pilot turns (see atcdb/readback.py)
+CREATE TABLE IF NOT EXISTS readback_pairs (
+    id                 INTEGER PRIMARY KEY,
+    recording_id       INTEGER NOT NULL REFERENCES recordings(id),
+    instruction_tid    INTEGER NOT NULL REFERENCES transmissions(id),
+    readback_tid       INTEGER NOT NULL REFERENCES transmissions(id),
+    gold_model         TEXT NOT NULL DEFAULT 'human',
+    gap_s              REAL,
+    same_aircraft      INTEGER NOT NULL,
+    instruction_text   TEXT NOT NULL,
+    readback_text      TEXT NOT NULL,
+    clarification_cue  TEXT,
+    items_json         TEXT NOT NULL,
+    n_items            INTEGER NOT NULL,
+    n_missing          INTEGER NOT NULL,
+    rule_verdict       TEXT NOT NULL CHECK (rule_verdict IN ('consistent', 'inconsistent', 'no_items')),
+    UNIQUE (instruction_tid, readback_tid, gold_model)
+);
+CREATE INDEX IF NOT EXISTS ix_readback_pairs_verdict ON readback_pairs (rule_verdict, same_aircraft);
 """
 
 

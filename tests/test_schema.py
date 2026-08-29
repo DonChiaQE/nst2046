@@ -10,7 +10,7 @@ def table_names(conn):
 def test_init_db_creates_all_tables(tmp_path):
     conn = init_db(tmp_path / "t.sqlite")
     assert set(TABLES) <= table_names(conn)
-    assert {"sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules"} == set(TABLES)
+    assert {"sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs"} == set(TABLES)
 
 
 def test_init_db_is_idempotent_and_keeps_data(tmp_path):
