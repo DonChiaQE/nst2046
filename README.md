@@ -1,1 +1,31 @@
 # nst2046
+
+ATC (air traffic control) speech → transcripts → database, for analysing potentially ambiguous / non-standard phraseology.
+
+## Setup
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# 1. datasets (~1.6 GB) and the original corpora with speaker roles / metadata
+hf download jacktol/atc-dataset --repo-type dataset --local-dir data/jacktol-atc
+hf download Jzuluaga/atco2_corpus_1h --repo-type dataset --include "data/*.parquet" --local-dir data/orig-atco2-1h
+hf download Jzuluaga/uwb_atcc --repo-type dataset --include "data/*.parquet" --local-dir data/orig-uwb-atcc
+mkdir -p data/orig-atco2-1h-src && curl -L -o data/orig-atco2-1h-src/atco2.tgz https://www.replaywell.com/atco2/download/ATCO2-ASRdataset-v1_beta.tgz
+tar -xzf data/orig-atco2-1h-src/atco2.tgz -C data/orig-atco2-1h-src
+
+# 2. build the database (data/atc.sqlite)
+python scripts/expand_hf_atc.py     # Parquet -> per-clip WAVs + transcripts.csv
+python scripts/enrich_hf_atc.py     # + speaker roles, airport/facility/frequency, NER tags
+python scripts/load_hf_atc.py       # -> data/atc.sqlite
+
+# 3. ASR baseline (optional, ~3.5 h on an M-series CPU for the test split)
+hf download jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper --local-dir data/models/whisper-medium.en-atc-ct2
+python scripts/run_asr.py --split test
+python scripts/score_wer.py --report docs/results/wer-baseline.md
+
+pytest   # 29 tests
+```
+
+See `docs/` for the sourcing research and the database design spec.

@@ -1,0 +1,9 @@
+ctranslate2==4.8.1
+faster-whisper==1.2.1
+huggingface_hub==1.28.0
+jiwer==4.0.0
+numpy==2.5.2
+pandas==3.0.5
+pyarrow==25.0.1
+pytest==9.1.1
+soundfile==0.14.0
