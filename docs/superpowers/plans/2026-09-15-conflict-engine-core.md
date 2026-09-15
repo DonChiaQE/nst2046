@@ -1985,3 +1985,30 @@ git commit -m "feat: parse_events and show_replay CLIs for the conflict engine"
 - **Phase 2**: `atcdb/api.py` (FastAPI, `create_app`), `atcdb/static/`, clips/capabilities endpoints — spec Section 3.
 - **Phase 3**: `atcdb/parse_llm.py` (register as `PARSERS["llm"]`, load the `claude-api` skill first), `scripts/make_event_sheet.py`, conflict injection under source `synthetic-conflicts`, `scripts/eval_parsers.py`, `eval_conflicts.py`, `eval_llm_judge.py` — spec Section 4.
 - **Phase 4**: live push-to-talk endpoint, incident case studies.
+
+## Phase-1 review carry-overs (for the phase-2/3 plans)
+
+Recorded from the final whole-branch review (2026-09-15) after phase 1 landed. None block phase 1; each should be
+decided when the next plan is written.
+
+- **Cache key vs engine state.** `window`-mode parses depend on engine state (active runways / callsigns), but the
+  `events` key is `(transcript, parser, model, version, context)`. `clear_events` + `parse_events.py --refresh` are
+  the invalidation path for now; consider folding an engine version into the cache key. Tuning `STALE_S` or a release
+  rule without `--refresh` leaves cached window events stale.
+- **Unknown-callsign conflicts** are capped at `warning` (engine). A parser-side alternative — in `window` mode with
+  exactly one active callsign, default an unresolved controller callsign to it — is a phase-3 context-ablation
+  candidate; it was rejected for phase 1 because a wrong attribution would supersede another aircraft's reservation.
+- **Engine tuning material:** `_expire` clears `runway`/`kind` but not `pending`/`holding_short`; `Handoff.to` is
+  unvalidated (a typo silently releases nothing); a `HoldShort` after a `CROSS` does not cancel the crossing (spec
+  semantics — amend the spec); the spec's conflict record names a "triggering transmission_id" but a pure engine can
+  only give `seq` (amend the spec: `Conflict.seq` + `Step.tx`).
+- **Parser:** `FILLER` contains the Prague-specific `ruzyne`; instructions whose runway cannot be resolved are dropped
+  silently (~2%) — a counter on `Step`/`Timeline` would help the eval; the pilot-callsign heuristic misses clipped
+  callsigns ("swiss four si").
+- **Replay/API surface for phase 2:** `list_recordings` returns `sqlite3.Row` (return dicts); `build_timeline` on an
+  unknown recording returns an empty `Timeline` (the API needs a 404 signal); `get_events` commits inside what will be
+  a `GET` — decide the connection strategy (per-request connection or a write lock); pin `transcript_model` in the
+  API (gold has two models: `human` and `atco2-xml`).
+- **Phase 3 registration:** register the Claude parser lazily (importing `anthropic` at `atcdb.replay` import time
+  would break `/api/capabilities` without the package); widen `PARSER_MODELS` to parser → list of models for the
+  Haiku/Sonnet axis; add `--model` to both CLIs; pin a test for `load_recording`'s `transcript_model` filter.
