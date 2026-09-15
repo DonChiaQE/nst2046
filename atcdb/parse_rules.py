@@ -77,6 +77,62 @@ def controller_callsign(blanked: str, first_start: int, last_end: int) -> str:
     return " ".join(after)
 
 
+_VALUE_LEAD = set("runway level heading squawk flight altitude speed wind contact descend climb maintain reduce".split())
+# Words that can sit right before a callsign's id tokens without being part of its name ("reducing one sixty csa ...").
+_NOT_NAME = FILLER | _VALUE_LEAD | set(
+    "land takeoff up short cross left right centre center hundred thousand ten twenty thirty forty fifty sixty seventy "
+    "eighty ninety vacated vacating around established ready going holding lining landing climbing descending reducing "
+    "passing leaving maintaining request copied".split())
+PILOT_VACATED_RE = re.compile(r"\bvacat(?:ed|ing)\b")
+PILOT_GO_AROUND_RE = re.compile(r"\bgoing around\b")
+
+
+def take_suffix(words: list[str]) -> list[str]:
+    """Callsign at the end of `words`: trailing filler dropped, then the trailing run of id tokens plus up to 2 name
+    words before it. [] if there is no id run or it is a value ("runway one three")."""
+    j = len(words)
+    while j > 0 and words[j - 1] in FILLER:
+        j -= 1
+    i = j
+    while i > 0 and is_id(words[i - 1]):
+        i -= 1
+    if i == j:
+        return []
+    if i > 0 and words[i - 1] in _VALUE_LEAD:
+        return []
+    k = i
+    while k > 0 and i - k < 2 and not is_id(words[k - 1]) and words[k - 1] not in _NOT_NAME:
+        k -= 1
+    return words[k:j]
+
+
+def pilot_callsign(text: str) -> str:
+    return " ".join(take_suffix(text.split()))
+
+
+def _ids(callsign: str) -> list[str]:
+    return [w for w in callsign.split() if is_id(w)]
+
+
+def _names(callsign: str) -> list[str]:
+    return [w for w in callsign.split() if not is_id(w)]
+
+
+def _is_subsequence(short: list[str], long: list[str]) -> bool:
+    it = iter(long)
+    return all(any(x == y for y in it) for x in short)
+
+
+def snap_callsign(raw: str, candidates: tuple[str, ...]) -> str:
+    """Map an abbreviated pilot callsign onto the one active aircraft it can only be; otherwise return it unchanged."""
+    ids = _ids(raw)
+    if len(ids) < 1:
+        return raw
+    hits = [c for c in candidates
+            if _is_subsequence(ids, _ids(c)) and (not _names(raw) or not _names(c) or _names(raw) == _names(c))]
+    return hits[0] if len(hits) == 1 else raw
+
+
 def _runway_for(text: str, m: re.Match, kind: str, ctx: Context) -> str | None:
     if kind in ("CROSS", "HOLD_SHORT"):
         return normalize_runway(m.group(1))
@@ -120,7 +176,16 @@ def _controller_events(tx: Transmission, ctx: Context) -> list[Event]:
 
 
 def _pilot_events(tx: Transmission, ctx: Context) -> list[Event]:
-    return []   # Task 8
+    text = tx.text
+    callsign = pilot_callsign(text)
+    if ctx.mode == "window" and callsign:
+        callsign = snap_callsign(callsign, ctx.active_callsigns)
+    events: list[Event] = [ReadbackObserved(callsign=callsign, text=text, t=tx.start_s)]
+    if PILOT_VACATED_RE.search(text):
+        events.append(RunwayVacated(callsign=callsign, t=tx.start_s, text=text))
+    if PILOT_GO_AROUND_RE.search(text):
+        events.append(GoAround(callsign=callsign, t=tx.start_s, text=text))
+    return events
 
 
 def parse(tx: Transmission, ctx: Context) -> list[Event]:

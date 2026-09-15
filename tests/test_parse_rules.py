@@ -1,6 +1,6 @@
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, LineUpAndWait, NoOp,
-                          RunwayInstruction)
-from atcdb.parse_rules import VERSION, blank_values, parse, take_prefix
+                          ReadbackObserved, RunwayInstruction, RunwayVacated)
+from atcdb.parse_rules import VERSION, blank_values, parse, pilot_callsign, snap_callsign, take_prefix, take_suffix
 from atcdb.parsing import Context, Transmission
 
 CTL = Context(mode="role", role="controller")
@@ -105,3 +105,60 @@ def test_take_prefix_and_blank_values():
     blanked = blank_values(text)
     assert len(blanked) == len(text)
     assert blanked.split() == ["csa", "seven", "eight", "eight", "cleared", "for", "takeoff"]
+
+
+def test_pilot_transmission_is_a_readback_with_trailing_callsign():
+    text = "cleared to land csa nine seven five"
+    assert parse(_tx(text, role="pilot", t=4.0), PLT) == [ReadbackObserved(callsign="csa nine seven five", text=text, t=4.0)]
+
+
+def test_pilot_callsign_survives_trailing_filler_and_bye():
+    assert pilot_callsign("cleared to land one three csa three eight whiskey and will expedite to") == "csa three eight whiskey"
+    assert pilot_callsign("one two one nine bye bye lufthansa five mike echo") == "lufthansa five mike echo"
+    assert pilot_callsign("cleared for takeoff runway three one air france one zero eight three good bye") == "air france one zero eight three"
+    assert pilot_callsign("reducing one sixty csa eight eight whiskey") == "csa eight eight whiskey"
+    assert pilot_callsign("descending flight level one hundred swiss one two four") == "swiss one two four"
+    assert pilot_callsign("hotel bravo sierra delta foxtrot") == "hotel bravo sierra delta foxtrot"
+
+
+def test_pilot_values_are_not_mistaken_for_callsigns():
+    assert pilot_callsign("we are cleared for takeoff runway one three") == ""
+    assert pilot_callsign("climbing flight level one zero zero") == ""
+    assert pilot_callsign("roger") == ""
+
+
+def test_pilot_reports_vacated_and_going_around():
+    ev = parse(_tx("runway vacated csa one two three", role="pilot"), PLT)
+    assert _kinds(ev) == [("ReadbackObserved", "csa one two three", None), ("RunwayVacated", "csa one two three", None)]
+    ev = parse(_tx("going around csa one two three", role="pilot"), PLT)
+    assert _kinds(ev) == [("ReadbackObserved", "csa one two three", None), ("GoAround", "csa one two three", None)]
+    ev = parse(_tx("vacating via bravo csa one two three", role="pilot"), PLT)
+    assert [type(e) for e in ev] == [ReadbackObserved, RunwayVacated]
+
+
+def test_take_suffix():
+    assert take_suffix("cleared to land csa nine seven five".split()) == ["csa", "nine", "seven", "five"]
+    assert take_suffix("we are cleared for takeoff runway one three".split()) == []
+    assert take_suffix("line up runway three one csa two mike".split()) == ["csa", "two", "mike"]
+
+
+def test_snap_callsign_matches_abbreviations_in_order_only():
+    active = ("csa eight three eight whiskey", "csa seven three zero", "air france one nine eight romeo")
+    assert snap_callsign("csa eight eight whiskey", active) == "csa eight three eight whiskey"
+    assert snap_callsign("air france one nine", active) == "air france one nine eight romeo"
+    assert snap_callsign("csa seven three charlie", active) == "csa seven three charlie"   # charlie is not in any candidate
+    assert snap_callsign("lufthansa seven three", active) == "lufthansa seven three"       # name disagrees
+    assert snap_callsign("", active) == ""
+    assert snap_callsign("csa eight", ("csa eight one", "csa eight two")) == "csa eight"     # ambiguous: leave it
+
+
+def test_window_mode_snaps_pilot_callsign_but_role_mode_does_not():
+    text = "reducing one sixty csa eight eight whiskey"
+    win = Context(mode="window", role="pilot", active_callsigns=("csa eight three eight whiskey",))
+    assert parse(_tx(text, role="pilot"), win)[0].callsign == "csa eight three eight whiskey"
+    assert parse(_tx(text, role="pilot"), PLT)[0].callsign == "csa eight eight whiskey"
+
+
+def test_none_mode_turns_a_pilot_readback_into_a_reservation():
+    text = "cleared for takeoff runway three one csa two mike zulu"
+    assert _kinds(parse(_tx(text, role="pilot"), Context(mode="none"))) == [("ClearTakeoff", "csa two mike zulu", "31")]
