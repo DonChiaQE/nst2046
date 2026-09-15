@@ -2,8 +2,8 @@ import pytest
 
 from atcdb.engine import ClearToLand, NoOp, State, fold
 from atcdb.parsing import Context
-from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, get_events,
-                          list_recordings, load_recording)
+from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, clear_events,
+                          get_events, list_recordings, load_recording)
 from atcdb.schema import init_db
 
 
@@ -101,7 +101,7 @@ def test_get_events_stores_a_noop_row_for_an_empty_parse(tmp_path, monkeypatch):
     conn = init_db(tmp_path / "t.sqlite")
     txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
     calls = []
-    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [NoOp()]}, calls))
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: []}, calls))
     get_events(conn, txs[0], "rule", Context(mode="role", role="controller"))
     assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [NoOp(t=0.0, text=SEQUENCE[0][1])]
     assert calls == [SEQUENCE[0][1]]
@@ -149,3 +149,16 @@ def test_build_timeline_records_a_parser_error_and_keeps_going(tmp_path, monkeyp
     assert tl.steps[1].events == () and tl.steps[1].state == tl.steps[0].state
     assert tl.steps[2].state.seq == 2
     assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2   # the failed one was not cached
+
+
+def test_clear_events_deletes_only_the_matching_cache_entries(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [NoOp()]}, []))
+    get_events(conn, txs[0], "rule", Context(mode="role", role="controller"))
+    get_events(conn, txs[0], "rule", Context(mode="window", role="controller"))
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2
+    assert clear_events(conn, "rule", context="window") == 1
+    assert [r[0] for r in conn.execute("SELECT context FROM events")] == ["role"]
+    assert clear_events(conn, "rule") == 1 and conn.execute("SELECT count(*) FROM events").fetchone()[0] == 0
+    assert clear_events(conn, "rule") == 0

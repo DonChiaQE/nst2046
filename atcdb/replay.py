@@ -3,12 +3,14 @@
 `get_events` is the single cache path (cached rows from `events`, or parse-and-store on a miss); the
 precompute script and the web API both go through it. `build_timeline` folds the cached/parsed events so
 "state after transmission k" is available for every k, which is what the replay UI scrubs through.
+Window-mode parses depend on engine state, so after changing engine rules run `scripts/parse_events.py
+--refresh` (see `clear_events`).
 """
 import sqlite3
 from dataclasses import dataclass
 
 from atcdb import parse_rules
-from atcdb.engine import Conflict, Event, State, apply
+from atcdb.engine import Conflict, Event, NoOp, State, apply
 from atcdb.parsing import CONTEXT_MODES, WINDOW, Context, Parser, Transmission, event_to_row, row_to_event
 
 PARSERS: dict[str, Parser] = {"rule": parse_rules.parse}
@@ -84,7 +86,8 @@ def list_recordings(conn: sqlite3.Connection, facility: str = "Tower", min_trans
 def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Context,
                model: str | None = None, model_version: str | None = None) -> list[Event]:
     """Events for one transcript under (parser, model, version, context mode): from the `events` cache, or parsed
-    and stored. A parser exception propagates and nothing is stored, so the next call retries."""
+    and stored. A parser exception propagates and nothing is stored, so the next call retries. An empty parse is
+    stored as one NOOP row, so the transcript is not a cache miss forever."""
     if model is None:
         model, model_version = PARSER_MODELS[parser]
     model_version = model_version or ""
@@ -94,13 +97,31 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
            ORDER BY seq""", (tx.transcript_id, parser, model, model_version, ctx.mode)).fetchall()
     if rows:
         return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
-    events = PARSERS[parser](tx, ctx)
-    conn.executemany(
-        """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
-    conn.commit()
+    events = PARSERS[parser](tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
+    try:
+        conn.executemany(
+            """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
+        conn.commit()
+    except Exception:
+        conn.rollback()   # a partial insert must never be committed later by someone else's commit
+        raise
     return events
+
+
+def clear_events(conn: sqlite3.Connection, parser: str, model: str | None = None, model_version: str | None = None,
+                 context: str | None = None) -> int:
+    """Delete cached events for a parser (optionally narrowed to model / version / context mode). Returns rows deleted.
+    Needed because `window`-mode parses depend on engine state: after tuning engine rules, refresh the cache."""
+    sql, params = "DELETE FROM events WHERE parser = ?", [parser]
+    for col, val in (("model", model), ("model_version", model_version), ("context", context)):
+        if val is not None:
+            sql += f" AND {col} = ?"
+            params.append(val)
+    n = conn.execute(sql, params).rowcount
+    conn.commit()
+    return n
 
 
 def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "rule", transcript_kind: str = "gold",

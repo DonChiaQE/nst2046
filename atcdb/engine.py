@@ -10,7 +10,7 @@ runway and hold), CROSS = cross the runway while taxiing, HOLD_SHORT = stop befo
 """
 import re
 from dataclasses import dataclass, field, replace
-from typing import ClassVar
+from typing import ClassVar, Iterable
 
 from atcdb.readback import check_readback, extract_items
 
@@ -146,6 +146,8 @@ STALE_S = 300.0   # a reservation this old (transmission time) is dropped silent
 
 # (new_kind, active_kind) -> verdict, checked against OTHER aircraft's reservations on the same runway.
 # LAND after LAND is legal (anticipated separation). LUAW then LAND is the Austin 2023 pattern.
+# A conflict where either side's callsign is unknown ("") is capped at warning in `apply`: the engine cannot
+# tell whether an unidentified aircraft is a different aircraft from the one it conflicts with.
 MATRIX: dict[tuple[str, str], str] = {
     ("LAND", "LAND"): "ok",        ("LAND", "TAKEOFF"): "alert",      ("LAND", "LUAW"): "alert",      ("LAND", "CROSS"): "alert",
     ("TAKEOFF", "LAND"): "alert",  ("TAKEOFF", "TAKEOFF"): "warning", ("TAKEOFF", "LUAW"): "alert",   ("TAKEOFF", "CROSS"): "alert",
@@ -199,11 +201,14 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
             runways, _ = _release(runways, cs)   # one aircraft is in one place: its old reservation is superseded
         for r in runways.get(event.runway, ()):
             verdict = MATRIX[(event.kind, r.kind)]
-            if verdict != "ok":
-                conflicts.append(Conflict(
-                    "RUNWAY", verdict, event.runway, (cs, r.callsign), seq,
-                    f"{_name(cs)} given {_PHRASE[event.kind]} on runway {event.runway} while "
-                    f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}"))
+            if verdict == "ok":
+                continue
+            if not cs or not r.callsign:
+                verdict = "warning"   # an unidentified aircraft may be the same aircraft: tunable, see spec Section 1
+            conflicts.append(Conflict(
+                "RUNWAY", verdict, event.runway, (cs, r.callsign), seq,
+                f"{_name(cs)} given {_PHRASE[event.kind]} on runway {event.runway} while "
+                f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}"))
         runways[event.runway] = runways.get(event.runway, ()) + (Reservation(cs, event.kind, seq, event.t),)
         if cs:
             aircraft[cs] = replace(ac, runway=event.runway, kind=event.kind, holding_short=None,
@@ -212,7 +217,7 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
         if cs:
             aircraft[cs] = replace(ac, holding_short=event.runway, pending=event.text or ac.pending, last_seq=seq)
     elif isinstance(event, RunwayVacated):
-        runways, dropped = _release(runways, cs) if cs else (runways, False)
+        runways, _ = _release(runways, cs) if cs else (runways, False)
         if cs:
             aircraft[cs] = replace(ac, runway=None, kind=None, last_seq=seq)
     elif isinstance(event, GoAround):
@@ -240,7 +245,7 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
     return State(seq=seq, runways=runways, aircraft=aircraft), conflicts
 
 
-def fold(events, state: State | None = None) -> tuple[State, list[Conflict]]:
+def fold(events: Iterable[Event], state: State | None = None) -> tuple[State, list[Conflict]]:
     """Apply events in order. Returns the final state and every conflict raised along the way."""
     state = state or State()
     conflicts: list[Conflict] = []

@@ -228,3 +228,20 @@ def test_instruction_without_text_expects_no_readback():
 def test_instruction_with_no_readback_items_expects_nothing():
     _, c = fold([GoAround(callsign=CSA, text="csa one two three go around"), ReadbackObserved(callsign=CSA, text="going around")])
     assert c == []
+
+
+def test_unknown_callsign_instruction_reserves_but_only_warns():
+    # An instruction whose callsign the parser could not extract still occupies the runway ...
+    state, c = fold([LineUpAndWait(callsign="a", runway="31", t=0.0), ClearTakeoff(callsign="", runway="31", t=5.0)])
+    assert _kinds(state, "31") == [("a", "LUAW"), ("", "TAKEOFF")]
+    # ... but the engine cannot tell whether it is a different aircraft, so it warns instead of alerting.
+    assert [(x.severity, x.callsigns) for x in c] == [("warning", ("", "a"))]
+    assert "an unidentified aircraft" in c[0].explanation
+    # Two unknowns on one runway: also a warning, never an alert.
+    _, c = fold([ClearToLand(callsign="", runway="31", t=0.0), ClearToCross(callsign="", runway="31", t=5.0)])
+    assert [x.severity for x in c] == ["warning"]
+    # Nothing can release an unknown reservation except staleness.
+    state, _ = fold([ClearToLand(callsign="", runway="31", t=0.0), RunwayVacated(callsign="", t=5.0)])
+    assert _kinds(state, "31") == [("", "LAND")]
+    state, _ = fold([NoOp(t=STALE_S + 1)], state)
+    assert state.runways == {}

@@ -4,6 +4,7 @@
 Usage:
     python scripts/parse_events.py [--parser rule] [--context window] [--transcript gold]
                                    [--facility Tower] [--min-transmissions 4] [--limit N] [--db data/atc.sqlite]
+                                   [--refresh]
 
 Idempotent per (parser, model, version, context): re-running only parses what is missing.
 """
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from atcdb.parsing import CONTEXT_MODES  # noqa: E402
-from atcdb.replay import PARSERS, build_timeline, list_recordings  # noqa: E402
+from atcdb.replay import PARSER_MODELS, PARSERS, build_timeline, clear_events, list_recordings  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
 
@@ -29,9 +30,14 @@ def main() -> None:
     ap.add_argument("--facility", default="Tower")
     ap.add_argument("--min-transmissions", type=int, default=4)
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--refresh", action="store_true", help="delete this parser/context's cached events first")
     args = ap.parse_args()
 
     conn = init_db(args.db)
+    if args.refresh:
+        model, version = PARSER_MODELS[args.parser]
+        n = clear_events(conn, args.parser, model, version, args.context)
+        print(f"cleared {n} cached events")
     recordings = list_recordings(conn, facility=args.facility, min_transmissions=args.min_transmissions, transcript_kind=args.transcript)
     if args.limit:
         recordings = recordings[:args.limit]
