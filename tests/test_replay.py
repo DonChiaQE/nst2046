@@ -7,6 +7,16 @@ from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context,
 from atcdb.schema import init_db
 
 
+def _fake_parser(events_by_text, calls):
+    def parse(tx, ctx):
+        calls.append(tx.text)
+        out = events_by_text[tx.text]
+        if isinstance(out, Exception):
+            raise out
+        return out
+    return parse
+
+
 def _seed(conn, turns, external_id="r1", facility="Tower"):
     """One recording with `turns` = [(role, text), ...] at 10 s spacing, gold transcripts by 'human'. Returns its id."""
     conn.execute("INSERT OR IGNORE INTO sources (id, name, kind) VALUES (1, 'test', 'corpus')")
@@ -67,3 +77,75 @@ def test_list_recordings_keeps_tower_recordings_with_enough_transmissions_and_a_
     rows = list_recordings(conn)
     assert [(r["id"], r["external_id"], r["n_transmissions"], r["n_runway_mentions"]) for r in rows] == [(big, "big", 7, 5)]
     assert list_recordings(conn, min_transmissions=2)[1]["external_id"] == "short"
+
+
+def test_get_events_parses_once_then_serves_the_cache(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    calls = []
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [ClearToLand(callsign="csa one two three", runway="31")]}, calls))
+    monkeypatch.setitem(PARSER_MODELS, "rule", ("fake", "v0"))
+    ctx = Context(mode="role", role="controller")
+    first = get_events(conn, txs[0], "rule", ctx)
+    second = get_events(conn, txs[0], "rule", ctx)
+    assert calls == [SEQUENCE[0][1]]
+    assert first == [ClearToLand(callsign="csa one two three", runway="31")]
+    assert second == [ClearToLand(callsign="csa one two three", runway="31", t=0.0, text=SEQUENCE[0][1])]
+    rows = conn.execute("SELECT parser, model, model_version, context, seq, kind, runway FROM events").fetchall()
+    assert [tuple(r) for r in rows] == [("rule", "fake", "v0", "role", 0, "LAND", "31")]
+    get_events(conn, txs[0], "rule", Context(mode="none"))   # a different context mode is a different cache entry
+    assert len(calls) == 2 and conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2
+
+
+def test_get_events_stores_a_noop_row_for_an_empty_parse(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    calls = []
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [NoOp()]}, calls))
+    get_events(conn, txs[0], "rule", Context(mode="role", role="controller"))
+    assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [NoOp(t=0.0, text=SEQUENCE[0][1])]
+    assert calls == [SEQUENCE[0][1]]
+    assert conn.execute("SELECT kind FROM events").fetchone()[0] == "NOOP"
+
+
+def test_get_events_does_not_cache_a_failed_parse(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: RuntimeError("api down")}, []))
+    with pytest.raises(RuntimeError):
+        get_events(conn, txs[0], "rule", Context(mode="role", role="controller"))
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 0
+
+
+def test_build_timeline_with_the_rules_parser_end_to_end(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE)
+    tl = build_timeline(conn, rid)
+    assert isinstance(tl, Timeline) and (tl.parser, tl.model, tl.context, tl.transcript_kind) == ("rule", "rules", "window", "gold")
+    assert len(tl.steps) == 7 and all(isinstance(s, Step) and s.error is None for s in tl.steps)
+    assert [(r.callsign, r.kind) for r in tl.steps[0].state.runways["31"]] == [("csa one two three", "LAND")]
+    assert tl.steps[1].conflicts == () and tl.steps[1].state.aircraft["csa one two three"].pending is None
+    c = tl.steps[2].conflicts
+    assert len(c) == 1 and (c[0].type, c[0].severity, c[0].runway, c[0].callsigns) == ("RUNWAY", "alert", "31", ("lufthansa four five six", "csa one two three"))
+    assert tl.steps[4].state.aircraft["csa one two three"].runway is None            # runway vacated
+    assert "31" not in tl.steps[5].state.runways                                      # handoff to ground released the crossing
+    r = tl.steps[6].conflicts
+    assert len(r) == 1 and (r[0].type, r[0].severity, r[0].callsigns) == ("READBACK", "warning", ("lufthansa four five six",))
+    assert sum(len(s.conflicts) for s in tl.steps) == 2
+    assert conn.execute("SELECT count(DISTINCT transcript_id) FROM events").fetchone()[0] == 7
+    again = build_timeline(conn, rid)   # second run is served from the cache and must be identical
+    assert [s.events for s in again.steps] == [s.events for s in tl.steps]
+
+
+def test_build_timeline_records_a_parser_error_and_keeps_going(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE[:3])
+    table = {SEQUENCE[0][1]: [ClearToLand(callsign="csa one two three", runway="31")],
+             SEQUENCE[1][1]: RuntimeError("api down"),
+             SEQUENCE[2][1]: [NoOp()]}
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser(table, []))
+    tl = build_timeline(conn, rid, context="role")
+    assert [s.error for s in tl.steps] == [None, "RuntimeError: api down", None]
+    assert tl.steps[1].events == () and tl.steps[1].state == tl.steps[0].state
+    assert tl.steps[2].state.seq == 2
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2   # the failed one was not cached

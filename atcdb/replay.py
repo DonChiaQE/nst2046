@@ -81,9 +81,47 @@ def list_recordings(conn: sqlite3.Connection, facility: str = "Tower", min_trans
            ORDER BY n_transmissions DESC, r.id""", (transcript_kind, facility, min_transmissions)).fetchall()
 
 
-def get_events(*args, **kwargs):
-    raise NotImplementedError   # Task 10
+def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Context,
+               model: str | None = None, model_version: str | None = None) -> list[Event]:
+    """Events for one transcript under (parser, model, version, context mode): from the `events` cache, or parsed
+    and stored. A parser exception propagates and nothing is stored, so the next call retries."""
+    if model is None:
+        model, model_version = PARSER_MODELS[parser]
+    model_version = model_version or ""
+    rows = conn.execute(
+        """SELECT kind, callsign, runway, extra_json FROM events
+           WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
+           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, ctx.mode)).fetchall()
+    if rows:
+        return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
+    events = PARSERS[parser](tx, ctx)
+    conn.executemany(
+        """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
+    conn.commit()
+    return events
 
 
-def build_timeline(*args, **kwargs):
-    raise NotImplementedError   # Task 10
+def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "rule", transcript_kind: str = "gold",
+                   context: str = "window", model: str | None = None, model_version: str | None = None,
+                   transcript_model: str | None = None) -> Timeline:
+    """Fold a whole recording: one Step per transmission with its events, the conflicts they raised and the state after."""
+    if model is None:
+        model, model_version = PARSER_MODELS[parser]
+    txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
+    state = State()
+    steps: list[Step] = []
+    for k, tx in enumerate(txs):
+        ctx = build_context(context, tx, txs[:k], state)
+        error = None
+        try:
+            events = get_events(conn, tx, parser, ctx, model, model_version)
+        except Exception as e:   # a flaky parser (API error) must not break the replay; nothing was cached
+            events, error = [], f"{type(e).__name__}: {e}"
+        conflicts: list[Conflict] = []
+        for e in events:
+            state, new = apply(state, e)
+            conflicts.extend(new)
+        steps.append(Step(tx=tx, events=tuple(events), conflicts=tuple(conflicts), state=state, error=error))
+    return Timeline(recording_id, parser, model, model_version or "", context, transcript_kind, tuple(steps))
