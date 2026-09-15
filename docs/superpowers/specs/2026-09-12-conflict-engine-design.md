@@ -62,17 +62,19 @@ Feasibility checked against `data/atc.sqlite`: 1,142 Tower + 133 Ground recordin
   `HoldShort` never conflicts (it is the safe instruction) but records intent; it is released by
   the next instruction to the same callsign. Readback mismatch: warning by default, **alert**
   when the mismatched item is the runway.
-- **Releases**: `RunwayVacated`; `Handoff` to `ground` (releases LAND) or `departure`
-  (releases TAKEOFF); `GoAround` cancels LAND. Fallback for missed release calls: a
+- **Releases**: `RunwayVacated`; `Handoff` to `ground` (releases LAND and CROSS — a taxiing
+  aircraft handed to ground is off the runway) or `departure` (releases TAKEOFF); `GoAround`
+  cancels LAND. Fallback for missed release calls: a
   reservation older than a **staleness timeout, initially 300 s** of transmission time
   (`start_s`), is dropped silently. Tunable.
 - **Conflict record**: `(type RUNWAY|READBACK, severity alert|warning, runway, callsigns,
   triggering transmission_id, human-readable explanation)` — explanation is what the app
   displays.
 - **Persistence**: new `events` table, one row per event, keyed by
-  `(transmission_id, parser, model, model_version, context)` + `seq`, with `kind`, `callsign`,
-  `runway`, `extra_json`. `parser ∈ {rule, llm}`, `context ∈ {none, role, window}` (the
-  Section 2 context modes). A transmission that parses to no instruction is stored as a single
+  `(transcript_id, parser, model, model_version, context)` + `seq`, with `kind`, `callsign`,
+  `runway`, `extra_json`. Keying by `transcript_id` (not `transmission_id`) means a gold parse
+  and an ASR parse of the same transmission are distinct cache entries. `parser ∈ {rule, llm}`,
+  `context ∈ {none, role, window}` (the Section 2 context modes). A transmission that parses to no instruction is stored as a single
   `NoOp` row so the cache knows it was parsed. Parse **failures are not cached**; the next
   replay retries. Conflicts are derived at replay/eval time, not stored.
 
@@ -108,8 +110,8 @@ repo's flat-modules-under-`atcdb`, thin-scripts convention:
 - `atcdb/replay.py` — pure logic with a DB read at the edge. `build_timeline(conn,
   recording_id, parser, model, transcript_kind, context) -> Timeline`: for each transmission
   k in time order, the transcript used, the events the chosen parser produced, the folded
-  state after k, and any conflicts raised at k. A single `get_events(conn, transmission_id,
-  parser, model, context)` helper returns cached rows from `events` or parses-and-caches on a
+  state after k, and any conflicts raised at k. A single `get_events(conn, tx, parser, ctx,
+  model, model_version)` helper returns cached rows from `events` or parses-and-caches on a
   miss; the precompute script (`scripts/parse_events.py`) and the API share that one code path.
 - `atcdb/api.py` — FastAPI app built by `create_app(db_path)` so tests point it at a fixture
   DB. Serves the static front-end and a small JSON API. Run with `uvicorn atcdb.api:app`.
