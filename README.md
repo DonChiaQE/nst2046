@@ -1,6 +1,6 @@
 # nst2046
 
-ATC (air traffic control) speech → transcripts → database, for analysing potentially ambiguous / non-standard phraseology.
+ATC (air traffic control) speech → transcripts → database, for analysing potentially ambiguous / non-standard phraseology. The conflict engine (`atcdb/engine.py`) turns parsed clearances into runway reservations and flags incompatible ones; see `docs/superpowers/specs/2026-09-12-conflict-engine-design.md`.
 
 ## Setup
 
@@ -25,7 +25,11 @@ hf download jacktol/whisper-medium.en-fine-tuned-for-ATC-faster-whisper --local-
 python scripts/run_asr.py --split test
 python scripts/score_wer.py --report docs/results/wer-baseline.md
 
-pytest   # 29 tests
+# 4. conflict engine (phase 1): parse transmissions into runway events, replay a recording, flag conflicts
+python scripts/parse_events.py                     # cache rules-parser events for every replayable tower recording
+python scripts/show_replay.py uwb-atcc_TWR-DM7AI0  # step through one recording: events, conflicts, runway board
+
+pytest   # 133 tests
 ```
 
 See `docs/` for the sourcing research and the database design spec.
