@@ -185,3 +185,46 @@ def test_handoff_and_hold_short_with_text_set_pending():
     assert state.aircraft["b"].pending == "b hold short of runway one three"
     state, _ = fold([Handoff(callsign="c", to="ground")], state)
     assert state.aircraft["c"].pending is None
+
+
+CSA = "csa one two three"
+LAND_31 = ClearToLand(callsign=CSA, runway="31", text="csa one two three runway three one cleared to land")
+
+
+def test_correct_readback_clears_pending_without_conflict():
+    state, c = fold([LAND_31, ReadbackObserved(callsign=CSA, text="cleared to land runway three one csa one two three")])
+    assert c == [] and state.aircraft[CSA].pending is None
+
+
+def test_wrong_runway_in_readback_is_an_alert():
+    state, c = fold([LAND_31, ReadbackObserved(callsign=CSA, text="cleared to land runway one three csa one two three")])
+    assert len(c) == 1
+    assert (c[0].type, c[0].severity, c[0].runway, c[0].callsigns, c[0].seq) == ("READBACK", "alert", "31", (CSA,), 2)
+    assert "three one" in c[0].explanation and "one three" in c[0].explanation
+    assert state.aircraft[CSA].pending is None
+
+
+def test_missing_frequency_after_handoff_is_a_warning():
+    lh = "lufthansa five mike echo"
+    events = [Handoff(callsign=lh, to="ground", text="lufthansa five mike echo contact ground one two one nine bye"),
+              ReadbackObserved(callsign=lh, text="one two one five bye bye lufthansa five mike echo")]
+    _, c = fold(events)
+    assert [(x.type, x.severity, x.runway) for x in c] == [("READBACK", "warning", None)]
+
+
+def test_readback_with_nothing_pending_is_ignored():
+    state, c = fold([ReadbackObserved(callsign=CSA, text="roger")])
+    assert c == [] and state.aircraft == {}
+    state, c = fold([LAND_31, ReadbackObserved(callsign=CSA, text="cleared to land runway three one csa one two three"),
+                     ReadbackObserved(callsign=CSA, text="runway vacated csa one two three")])
+    assert c == []
+
+
+def test_instruction_without_text_expects_no_readback():
+    _, c = fold([ClearToLand(callsign=CSA, runway="31"), ReadbackObserved(callsign=CSA, text="roger")])
+    assert c == []
+
+
+def test_instruction_with_no_readback_items_expects_nothing():
+    _, c = fold([GoAround(callsign=CSA, text="csa one two three go around"), ReadbackObserved(callsign=CSA, text="going around")])
+    assert c == []

@@ -225,6 +225,16 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
         if cs:
             aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind,
                                    pending=event.text or ac.pending, last_seq=seq)
+    elif isinstance(event, ReadbackObserved):
+        if ac is not None and ac.pending:
+            missing = [(k, v) for k, v, verdict in check_readback(extract_items(ac.pending), event.text) if verdict == "missing"]
+            if missing:
+                severity = "alert" if any(k == "runway" for k, _ in missing) else "warning"
+                what = ", ".join(f"{k} {v}" for k, v in missing)
+                conflicts.append(Conflict(
+                    "READBACK", severity, ac.runway, (cs,), seq,
+                    f"{cs} did not read back {what} (instruction: '{ac.pending}'; readback: '{event.text}')"))
+            aircraft[cs] = replace(ac, pending=None, last_seq=seq)
     elif isinstance(event, NoOp):
         pass
     return State(seq=seq, runways=runways, aircraft=aircraft), conflicts
