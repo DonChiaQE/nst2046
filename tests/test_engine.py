@@ -2,7 +2,7 @@ import pytest
 
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HoldShort,
                           LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
-                          State, apply, fold, normalize_runway)
+                          STALE_S, State, apply, fold, normalize_runway)
 
 
 @pytest.mark.parametrize("text,expected", [
@@ -123,3 +123,56 @@ def test_apply_does_not_mutate_its_input_and_seq_counts_every_event():
     assert s1.seq == 1 and s1.aircraft["a"].last_seq == 1
     s2, _ = fold([NoOp(), NoOp()], s1)
     assert s2.seq == 3
+
+
+def test_runway_vacated_releases_so_a_crossing_is_fine():
+    state, conflicts = fold([ClearToLand(callsign="a", runway="31"), RunwayVacated(callsign="a"),
+                             ClearToCross(callsign="b", runway="31")])
+    assert conflicts == []
+    assert _kinds(state, "31") == [("b", "CROSS")]
+    assert (state.aircraft["a"].runway, state.aircraft["a"].kind) == (None, None)
+
+
+def test_handoff_to_ground_releases_landing_and_crossing_but_tower_does_not():
+    _, c = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="ground"), ClearToCross(callsign="b", runway="31")])
+    assert c == []
+    _, c = fold([ClearToCross(callsign="a", runway="31"), Handoff(callsign="a", to="ground"), ClearToLand(callsign="b", runway="31")])
+    assert c == []
+    _, c = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="tower"), ClearToCross(callsign="b", runway="31")])
+    assert [x.severity for x in c] == ["alert"]
+
+
+def test_handoff_to_departure_releases_takeoff_only():
+    _, c = fold([ClearTakeoff(callsign="a", runway="31"), Handoff(callsign="a", to="departure"), ClearToLand(callsign="b", runway="31")])
+    assert c == []
+    _, c = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="departure"), ClearToCross(callsign="b", runway="31")])
+    assert [x.severity for x in c] == ["alert"]
+
+
+def test_go_around_cancels_landing_only():
+    state, c = fold([ClearToLand(callsign="a", runway="31"), GoAround(callsign="a"), ClearToCross(callsign="b", runway="31")])
+    assert c == [] and _kinds(state, "31") == [("b", "CROSS")]
+    state, _ = fold([ClearTakeoff(callsign="a", runway="31"), GoAround(callsign="a")])
+    assert _kinds(state, "31") == [("a", "TAKEOFF")]
+
+
+def test_stale_reservation_is_dropped_silently():
+    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=STALE_S + 1)])
+    assert c == []
+    state, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=100.0)])
+    assert [x.severity for x in c] == ["alert"]
+    state, _ = fold([NoOp(t=STALE_S + 101)], state)   # both the t=0 LAND and the t=100 CROSS are now stale
+    assert state.runways == {} and state.aircraft["a"].runway is None
+
+
+def test_hold_short_never_conflicts_and_is_recorded_until_the_next_instruction():
+    state, c = fold([ClearToLand(callsign="a", runway="13"), HoldShort(callsign="b", runway="13")])
+    assert c == []
+    assert state.aircraft["b"].holding_short == "13" and _kinds(state, "13") == [("a", "LAND")]
+    state, c = fold([ClearToCross(callsign="b", runway="13")], state)
+    assert state.aircraft["b"].holding_short is None and state.aircraft["b"].kind == "CROSS"
+
+
+def test_release_events_for_unknown_callsigns_do_not_crash():
+    state, c = fold([RunwayVacated(callsign="zzz"), GoAround(callsign=""), Handoff(callsign="", to="ground")])
+    assert c == [] and state.seq == 3
