@@ -101,3 +101,123 @@ class NoOp(Event):
 
 
 RESERVATION_KINDS = ("LAND", "TAKEOFF", "LUAW", "CROSS")
+
+
+# --- state ------------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Reservation:
+    callsign: str
+    kind: str            # LAND | TAKEOFF | LUAW | CROSS
+    seq: int             # event seq that created it
+    t: float             # transmission time it was created at
+
+
+@dataclass(frozen=True)
+class Aircraft:
+    callsign: str
+    runway: str | None = None          # runway of its active reservation, if any
+    kind: str | None = None            # kind of that reservation
+    holding_short: str | None = None   # runway it was told to hold short of
+    pending: str | None = None         # instruction text awaiting the pilot's readback
+    last_seq: int = 0
+
+
+@dataclass(frozen=True)
+class Conflict:
+    type: str                    # RUNWAY | READBACK
+    severity: str                # alert | warning
+    runway: str | None
+    callsigns: tuple[str, ...]   # triggering callsign first
+    seq: int                     # seq of the triggering event
+    explanation: str             # what the app displays
+
+
+@dataclass(frozen=True)
+class State:
+    seq: int = 0
+    runways: dict[str, tuple[Reservation, ...]] = field(default_factory=dict)
+    aircraft: dict[str, Aircraft] = field(default_factory=dict)
+
+
+# --- rules ------------------------------------------------------------------------------------
+
+STALE_S = 300.0   # a reservation this old (transmission time) is dropped silently: we missed the release call
+
+# (new_kind, active_kind) -> verdict, checked against OTHER aircraft's reservations on the same runway.
+# LAND after LAND is legal (anticipated separation). LUAW then LAND is the Austin 2023 pattern.
+MATRIX: dict[tuple[str, str], str] = {
+    ("LAND", "LAND"): "ok",        ("LAND", "TAKEOFF"): "alert",      ("LAND", "LUAW"): "alert",      ("LAND", "CROSS"): "alert",
+    ("TAKEOFF", "LAND"): "alert",  ("TAKEOFF", "TAKEOFF"): "warning", ("TAKEOFF", "LUAW"): "alert",   ("TAKEOFF", "CROSS"): "alert",
+    ("LUAW", "LAND"): "alert",     ("LUAW", "TAKEOFF"): "warning",    ("LUAW", "LUAW"): "warning",    ("LUAW", "CROSS"): "warning",
+    ("CROSS", "LAND"): "alert",    ("CROSS", "TAKEOFF"): "alert",     ("CROSS", "LUAW"): "warning",   ("CROSS", "CROSS"): "ok",
+}
+
+_PHRASE = {"LAND": "a landing clearance", "TAKEOFF": "a takeoff clearance",
+           "LUAW": "a line-up-and-wait instruction", "CROSS": "a crossing clearance"}
+
+
+def _name(callsign: str) -> str:
+    return callsign or "an unidentified aircraft"
+
+
+def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str,
+             kinds: tuple[str, ...] = RESERVATION_KINDS) -> tuple[dict[str, tuple[Reservation, ...]], bool]:
+    """Drop `callsign`'s reservations of the given kinds. Returns (new runways, whether anything was dropped)."""
+    out, dropped = {}, False
+    for rwy, res in runways.items():
+        keep = tuple(r for r in res if not (r.callsign == callsign and r.kind in kinds))
+        dropped = dropped or len(keep) != len(res)
+        if keep:
+            out[rwy] = keep
+    return out, dropped
+
+
+def _expire(state: State, now: float) -> tuple[dict[str, tuple[Reservation, ...]], dict[str, Aircraft]]:
+    """Copy of the runway map and aircraft map with reservations older than STALE_S removed."""
+    runways, aircraft = {}, dict(state.aircraft)
+    for rwy, res in state.runways.items():
+        keep = tuple(r for r in res if now - r.t <= STALE_S)
+        for r in res:
+            if r not in keep and r.callsign in aircraft:
+                aircraft[r.callsign] = replace(aircraft[r.callsign], runway=None, kind=None)
+        if keep:
+            runways[rwy] = keep
+    return runways, aircraft
+
+
+def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
+    """Fold one event into the state. Pure: returns a new State and the conflicts this event raised."""
+    seq = state.seq + 1
+    runways, aircraft = _expire(state, event.t)
+    conflicts: list[Conflict] = []
+    cs = event.callsign
+    ac = aircraft.get(cs, Aircraft(callsign=cs)) if cs else None
+
+    if isinstance(event, RunwayInstruction) and event.kind in RESERVATION_KINDS:
+        if cs:
+            runways, _ = _release(runways, cs)   # one aircraft is in one place: its old reservation is superseded
+        for r in runways.get(event.runway, ()):
+            verdict = MATRIX[(event.kind, r.kind)]
+            if verdict != "ok":
+                conflicts.append(Conflict(
+                    "RUNWAY", verdict, event.runway, (cs, r.callsign), seq,
+                    f"{_name(cs)} given {_PHRASE[event.kind]} on runway {event.runway} while "
+                    f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}"))
+        runways[event.runway] = runways.get(event.runway, ()) + (Reservation(cs, event.kind, seq, event.t),)
+        if cs:
+            aircraft[cs] = replace(ac, runway=event.runway, kind=event.kind, holding_short=None,
+                                   pending=event.text or ac.pending, last_seq=seq)
+    elif isinstance(event, NoOp):
+        pass
+    return State(seq=seq, runways=runways, aircraft=aircraft), conflicts
+
+
+def fold(events, state: State | None = None) -> tuple[State, list[Conflict]]:
+    """Apply events in order. Returns the final state and every conflict raised along the way."""
+    state = state or State()
+    conflicts: list[Conflict] = []
+    for e in events:
+        state, new = apply(state, e)
+        conflicts.extend(new)
+    return state, conflicts
