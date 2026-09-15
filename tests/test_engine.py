@@ -176,3 +176,12 @@ def test_hold_short_never_conflicts_and_is_recorded_until_the_next_instruction()
 def test_release_events_for_unknown_callsigns_do_not_crash():
     state, c = fold([RunwayVacated(callsign="zzz"), GoAround(callsign=""), Handoff(callsign="", to="ground")])
     assert c == [] and state.seq == 3
+
+
+def test_handoff_and_hold_short_with_text_set_pending():
+    state, _ = fold([Handoff(callsign="a", to="ground", text="a contact ground one two one nine")])
+    assert state.aircraft["a"].pending == "a contact ground one two one nine"
+    state, _ = fold([HoldShort(callsign="b", runway="13", text="b hold short of runway one three")], state)
+    assert state.aircraft["b"].pending == "b hold short of runway one three"
+    state, _ = fold([Handoff(callsign="c", to="ground")], state)
+    assert state.aircraft["c"].pending is None

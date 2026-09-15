@@ -212,16 +212,16 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
         if cs:
             aircraft[cs] = replace(ac, holding_short=event.runway, pending=event.text or ac.pending, last_seq=seq)
     elif isinstance(event, RunwayVacated):
-        runways, dropped = _release(runways, cs)
+        runways, dropped = _release(runways, cs) if cs else (runways, False)
         if cs:
             aircraft[cs] = replace(ac, runway=None, kind=None, last_seq=seq)
     elif isinstance(event, GoAround):
-        runways, dropped = _release(runways, cs, ("LAND",))
+        runways, dropped = _release(runways, cs, ("LAND",)) if cs else (runways, False)
         if cs:
             aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind, last_seq=seq)
     elif isinstance(event, Handoff):
         kinds = {"ground": ("LAND", "CROSS"), "departure": ("TAKEOFF",)}.get(event.to, ())
-        runways, dropped = _release(runways, cs, kinds) if kinds else (runways, False)
+        runways, dropped = _release(runways, cs, kinds) if cs and kinds else (runways, False)
         if cs:
             aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind,
                                    pending=event.text or ac.pending, last_seq=seq)
