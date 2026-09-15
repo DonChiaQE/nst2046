@@ -2,7 +2,7 @@
 import sqlite3
 from pathlib import Path
 
-TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs"]
+TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs", "events"]
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS sources (
@@ -107,6 +107,25 @@ CREATE TABLE IF NOT EXISTS readback_pairs (
     UNIQUE (instruction_tid, readback_tid, gold_model)
 );
 CREATE INDEX IF NOT EXISTS ix_readback_pairs_verdict ON readback_pairs (rule_verdict, same_aircraft);
+
+-- Parsed events per transcript (see atcdb/engine.py, atcdb/replay.py). One row per event; a transcript
+-- that parsed to nothing gets a single NOOP row so the cache knows it was parsed. Failed parses are not stored.
+CREATE TABLE IF NOT EXISTS events (
+    id               INTEGER PRIMARY KEY,
+    transcript_id    INTEGER NOT NULL REFERENCES transcripts(id),
+    parser           TEXT NOT NULL CHECK (parser IN ('rule', 'llm')),
+    model            TEXT NOT NULL,
+    model_version    TEXT NOT NULL DEFAULT '',
+    context          TEXT NOT NULL CHECK (context IN ('none', 'role', 'window')),
+    seq              INTEGER NOT NULL,
+    kind             TEXT NOT NULL,
+    callsign         TEXT NOT NULL DEFAULT '',
+    runway           TEXT,
+    extra_json       TEXT,
+    created_at_utc   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE (transcript_id, parser, model, model_version, context, seq)
+);
+CREATE INDEX IF NOT EXISTS ix_events_transcript ON events (transcript_id, parser, model);
 """
 
 

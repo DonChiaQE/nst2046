@@ -1,5 +1,7 @@
 import sqlite3
 
+import pytest
+
 from atcdb.schema import init_db, TABLES
 
 
@@ -10,7 +12,41 @@ def table_names(conn):
 def test_init_db_creates_all_tables(tmp_path):
     conn = init_db(tmp_path / "t.sqlite")
     assert set(TABLES) <= table_names(conn)
-    assert {"sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs"} == set(TABLES)
+    assert {"sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules",
+            "readback_pairs", "events"} == set(TABLES)
+
+
+def _seed_transcript(conn) -> int:
+    conn.execute("INSERT INTO sources (id, name, kind) VALUES (1, 's', 'corpus')")
+    conn.execute("INSERT INTO recordings (id, source_id, external_id) VALUES (1, 1, 'r1')")
+    conn.execute("INSERT INTO transmissions (id, recording_id, external_id) VALUES (1, 1, 'x1')")
+    conn.execute("INSERT INTO transcripts (id, transmission_id, kind, model, raw_text, normalized_text) "
+                 "VALUES (1, 1, 'gold', 'human', 'a', 'a')")
+    conn.commit()
+    return 1
+
+
+def test_events_rows_are_unique_per_transcript_parser_model_context_seq(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    tid = _seed_transcript(conn)
+    row = (tid, "rule", "rules", "v1", "window", 0, "LAND", "csa one two three", "31", None)
+    conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json) "
+                 "VALUES (?,?,?,?,?,?,?,?,?,?)", row)
+    conn.commit()
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json) "
+                     "VALUES (?,?,?,?,?,?,?,?,?,?)", row)
+
+
+def test_events_reject_unknown_parser_or_context(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    tid = _seed_transcript(conn)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind) "
+                     "VALUES (?, 'magic', 'm', '', 'window', 0, 'NOOP')", (tid,))
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind) "
+                     "VALUES (?, 'rule', 'm', '', 'everything', 0, 'NOOP')", (tid,))
 
 
 def test_init_db_is_idempotent_and_keeps_data(tmp_path):
