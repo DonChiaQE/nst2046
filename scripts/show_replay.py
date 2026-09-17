@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from atcdb.engine import RunwayInstruction  # noqa: E402
 from atcdb.parsing import CONTEXT_MODES  # noqa: E402
-from atcdb.replay import PARSERS, build_timeline  # noqa: E402
+from atcdb.replay import PARSERS, build_timeline, default_transcript_model  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
 ROLE = {"controller": "CTL", "pilot": "PLT", "mixed": "MIX", "unknown": "???"}
@@ -48,7 +48,8 @@ def main() -> None:
                        (args.recording if args.recording.isdigit() else -1, args.recording)).fetchone()
     if row is None:
         sys.exit(f"no recording {args.recording!r}")
-    tl = build_timeline(conn, row["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context)
+    tl = build_timeline(conn, row["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context,
+                       transcript_model=default_transcript_model(conn, args.transcript))
     print(f"recording {row['id']} ({row['external_id']}) — {len(tl.steps)} transmissions — {tl.parser}/{tl.context}/{tl.transcript_kind}\n")
     for k, s in enumerate(tl.steps):
         m, sec = divmod(int(s.tx.start_s), 60)

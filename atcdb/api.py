@@ -34,6 +34,8 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
     app = FastAPI(title="ATC conflict engine", docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json")
 
     def db():
+        if not Path(db_path).is_file():   # never let a request silently create an empty corpus database
+            raise HTTPException(503, f"corpus database not found at {db_path}; build it first (see README)")
         return closing(init_db(db_path))
 
     @app.get("/api/capabilities")
@@ -76,7 +78,9 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
             raise HTTPException(404, f"no clip for transmission {transmission_id}")
         return FileResponse(path, media_type="audio/wav")
 
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")   # last: API routes take precedence
+    # Mounted last: a mount at "/" swallows every route registered after it, so add new routes (such as the phase-4
+    # live endpoint) above this line.
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
     return app
 
 

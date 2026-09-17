@@ -140,3 +140,13 @@ def test_front_end_assets_are_served(client):
     assert js.status_code == 200 and "javascript" in js.headers["content-type"] and "/api/capabilities" in js.text
     css = client.get("/style.css")
     assert css.status_code == 200 and css.headers["content-type"].startswith("text/css")
+
+
+def test_missing_corpus_database_is_a_clear_503_and_is_not_created(tmp_path):
+    missing = tmp_path / "nowhere" / "atc.sqlite"
+    client = TestClient(create_app(missing, tmp_path))
+    for url in ("/api/capabilities", "/api/recordings", "/api/recordings/1/replay", "/api/clips/1"):
+        r = client.get(url)
+        assert r.status_code == 503 and "not found" in r.json()["detail"]
+    assert not missing.exists()
+    assert client.get("/").status_code == 200   # the page still loads and shows the message in its status line

@@ -112,28 +112,38 @@ def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str) -> 
     return models[0] if models else None
 
 
+def _cached_events(conn: sqlite3.Connection, tx: Transmission, parser: str, model: str, model_version: str,
+                   mode: str) -> list[Event]:
+    rows = conn.execute(
+        """SELECT kind, callsign, runway, extra_json FROM events
+           WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
+           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, mode)).fetchall()
+    return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
+
+
 def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Context,
                model: str | None = None, model_version: str | None = None) -> list[Event]:
     """Events for one transcript under (parser, model, version, context mode): from the `events` cache, or parsed
     and stored. A parser exception propagates and nothing is stored, so the next call retries. An empty parse is
-    stored as one NOOP row, so the transcript is not a cache miss forever. Rows another request stored first (two web
-    requests replaying the same uncached recording) are kept, not an error."""
+    stored as one NOOP row, so the transcript is not a cache miss forever. If another request cached the same
+    transcript while this one was parsing, the first writer's parse wins: it is what stays cached and what is returned,
+    so the cache never mixes rows from two different parses."""
     if model is None:
         model, model_version = PARSER_MODELS[parser]
     model_version = model_version or ""
-    rows = conn.execute(
-        """SELECT kind, callsign, runway, extra_json FROM events
-           WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
-           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, ctx.mode)).fetchall()
-    if rows:
-        return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
+    cached = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+    if cached:
+        return cached
     events = PARSERS[parser](tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
     try:
         conn.executemany(
-            """INSERT OR IGNORE INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
+            """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
         conn.commit()
+    except sqlite3.IntegrityError:
+        conn.rollback()   # lost the race: nothing of ours is kept
+        return _cached_events(conn, tx, parser, model, model_version, ctx.mode)
     except Exception:
         conn.rollback()   # a partial insert must never be committed later by someone else's commit
         raise

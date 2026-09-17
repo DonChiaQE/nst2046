@@ -91,6 +91,7 @@ async function loadReplay() {
   const id = $("recording").value;
   ui.timeline = null;
   ui.k = 0;
+  render();   // clear the previous recording and disable the transport while the new one loads
   if (id) {
     const query = new URLSearchParams({ parser: $("parser").value, context: $("context").value, transcript: $("transcript").value });
     setStatus("Loading…");

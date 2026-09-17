@@ -1,6 +1,6 @@
 import pytest
 
-from atcdb.engine import ClearToLand, NoOp, State, fold
+from atcdb.engine import ClearToLand, NoOp, ReadbackObserved, State, fold
 from atcdb.parsing import Context
 from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, clear_events,
                           default_transcript_model, get_events, get_recording, list_recordings, load_recording,
@@ -194,16 +194,32 @@ def test_transcript_models_and_the_pinned_default(tmp_path):
     assert default_transcript_model(conn, "llm") is None
 
 
-def test_get_events_tolerates_rows_another_request_stored_first(tmp_path, monkeypatch):
+def test_get_events_returns_the_rows_another_request_stored_first(tmp_path, monkeypatch):
     conn = init_db(tmp_path / "t.sqlite")
     txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
-    land = ClearToLand(callsign="csa one two three", runway="31")
 
     def racing_parser(tx, ctx):   # a concurrent request caches the same parse while this one is still parsing
         conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway) "
                      "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'LAND', 'csa one two three', '31')", (tx.transcript_id, PARSER_MODELS["rule"][1]))
-        return [land]
+        conn.commit()
+        return [ClearToLand(callsign="csa one two three", runway="31")]
 
     monkeypatch.setitem(PARSERS, "rule", racing_parser)
-    assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [land]
+    assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == \
+        [ClearToLand(callsign="csa one two three", runway="31", t=0.0, text=SEQUENCE[0][1])]
     assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 1
+
+
+def test_get_events_never_mixes_two_different_racing_parses(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+
+    def racing_parser(tx, ctx):   # the other request cached a one-row NOOP parse; this request parses two different rows
+        conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind) "
+                     "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'NOOP')", (tx.transcript_id, PARSER_MODELS["rule"][1]))
+        conn.commit()
+        return [ClearToLand(callsign="csa one two three", runway="31"), ReadbackObserved(callsign="csa one two three", text="x")]
+
+    monkeypatch.setitem(PARSERS, "rule", racing_parser)
+    assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [NoOp(t=0.0, text=SEQUENCE[0][1])]
+    assert [tuple(r) for r in conn.execute("SELECT seq, kind FROM events ORDER BY seq")] == [(0, "NOOP")]
