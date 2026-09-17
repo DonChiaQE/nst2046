@@ -133,3 +133,10 @@ def test_clip_under_a_symlinked_data_directory_is_served(tmp_path):
     conn.commit()
     conn.close()
     assert TestClient(create_app(tmp_path / "s.sqlite", root)).get("/api/clips/1").status_code == 200
+
+
+def test_front_end_assets_are_served(client):
+    js = client.get("/app.js")
+    assert js.status_code == 200 and "javascript" in js.headers["content-type"] and "/api/capabilities" in js.text
+    css = client.get("/style.css")
+    assert css.status_code == 200 and css.headers["content-type"].startswith("text/css")
