@@ -3,7 +3,8 @@ import pytest
 from atcdb.engine import ClearToLand, NoOp, State, fold
 from atcdb.parsing import Context
 from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, clear_events,
-                          get_events, list_recordings, load_recording)
+                          default_transcript_model, get_events, get_recording, list_recordings, load_recording,
+                          transcript_models)
 from atcdb.schema import init_db
 
 
@@ -162,3 +163,47 @@ def test_clear_events_deletes_only_the_matching_cache_entries(tmp_path, monkeypa
     assert [r[0] for r in conn.execute("SELECT context FROM events")] == ["role"]
     assert clear_events(conn, "rule") == 1 and conn.execute("SELECT count(*) FROM events").fetchone()[0] == 0
     assert clear_events(conn, "rule") == 0
+
+
+def test_list_recordings_returns_plain_dicts(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE)
+    rows = list_recordings(conn)
+    assert rows == [{"id": rid, "source": "test", "external_id": "r1", "airport_icao": None, "facility": "Tower",
+                     "n_transmissions": 7, "n_runway_mentions": 5}]
+    assert type(rows[0]) is dict
+
+
+def test_get_recording_distinguishes_unknown_from_empty(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, [], external_id="empty")
+    assert get_recording(conn, rid) == {"id": rid, "source": "test", "external_id": "empty", "airport_icao": None, "facility": "Tower"}
+    assert get_recording(conn, rid + 1) is None
+
+
+def test_transcript_models_and_the_pinned_default(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    assert transcript_models(conn) == {} and default_transcript_model(conn, "gold") is None
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    for kind, model in (("gold", "atco2-xml"), ("asr", "whisper-b"), ("asr", "whisper-a")):
+        conn.execute("INSERT INTO transcripts (transmission_id, kind, model, raw_text, normalized_text) VALUES (?, ?, ?, 'x', 'x')",
+                     (txs[0].id, kind, model))
+    assert transcript_models(conn) == {"asr": ["whisper-a", "whisper-b"], "gold": ["atco2-xml", "human"]}
+    assert default_transcript_model(conn, "gold") == "human"
+    assert default_transcript_model(conn, "asr") == "whisper-a"
+    assert default_transcript_model(conn, "llm") is None
+
+
+def test_get_events_tolerates_rows_another_request_stored_first(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    land = ClearToLand(callsign="csa one two three", runway="31")
+
+    def racing_parser(tx, ctx):   # a concurrent request caches the same parse while this one is still parsing
+        conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway) "
+                     "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'LAND', 'csa one two three', '31')", (tx.transcript_id, PARSER_MODELS["rule"][1]))
+        return [land]
+
+    monkeypatch.setitem(PARSERS, "rule", racing_parser)
+    assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [land]
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 1
