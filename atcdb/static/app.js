@@ -67,7 +67,15 @@ async function init() {
 }
 
 async function loadRecordings() {
-  const recordings = await getJSON(`/api/recordings?transcript=${encodeURIComponent($("transcript").value)}`);
+  let recordings;
+  try {
+    recordings = await getJSON(`/api/recordings?transcript=${encodeURIComponent($("transcript").value)}`);
+  } catch (error) {
+    $("recording").replaceChildren();
+    await loadReplay();   // nothing selected: clears the board, feed and conflicts
+    setStatus(`Could not load the recording list: ${error.message}`);
+    return;
+  }
   const select = $("recording");
   const previous = ui.wanted || select.value;
   ui.wanted = null;
