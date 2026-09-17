@@ -1,5 +1,7 @@
 ctranslate2==4.8.1
+fastapi==0.141.1
 faster-whisper==1.2.1
+httpx2==2.13.0
 huggingface_hub==1.28.0
 jiwer==4.0.0
 numpy==2.5.2
@@ -7,3 +9,4 @@ pandas==3.0.5
 pyarrow==25.0.1
 pytest==9.1.1
 soundfile==0.14.0
+uvicorn==0.53.0
