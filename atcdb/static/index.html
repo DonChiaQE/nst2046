@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Runway conflict replay</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <h1>Runway conflict replay</h1>
+    <label>Recording <select id="recording"></select></label>
+    <label>Parser <select id="parser"></select></label>
+    <label>Context <select id="context"></select></label>
+    <label>Transcript <select id="transcript"></select></label>
+    <div class="transport">
+      <button id="first" type="button" title="First transmission">⏮</button>
+      <button id="prev" type="button" title="Previous (←)">◀</button>
+      <button id="play" type="button">Play</button>
+      <button id="next" type="button" title="Next (→)">▶</button>
+      <button id="last" type="button" title="Last transmission">⏭</button>
+      <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Position in recording">
+      <span id="position">0 / 0</span>
+    </div>
+  </header>
+  <div id="banner" class="banner" role="alert" hidden></div>
+  <p id="status" class="status" role="status"></p>
+  <main class="layout">
+    <section>
+      <h2>Runway board</h2>
+      <div id="board" class="board"></div>
+      <h2>Conflicts so far</h2>
+      <ol id="conflicts" class="conflicts"></ol>
+    </section>
+    <section>
+      <h2>Transmissions</h2>
+      <ol id="feed" class="feed"></ol>
+    </section>
+  </main>
+  <audio id="audio" preload="none"></audio>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # ATC conflict engine — design
 
-**Status: APPROVED 2026-09-14.** Sections 1–4 reviewed with the user. Next step: implementation
+**Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17.** Phase 1 (engine core) merged. Next step: phase-2 implementation
 plan via `superpowers:writing-plans`.
 
 ## Context / pivot
@@ -173,6 +173,39 @@ capabilities. JS gets no unit tests — manual smoke run only.
 
 **Deferred.** Side-by-side rules-vs-Claude event column in the feed (cheap, since both
 timelines are single responses) — not v1. Intersecting-runway geometry — out, as locked.
+
+### Section 3 addendum — phase-2 decisions (approved 2026-09-17)
+
+Settles the API-surface questions the phase-1 review left open. Where this addendum and the text above disagree,
+the addendum wins.
+
+- **JSON layer.** New pure module `atcdb/serialize.py` turns `Timeline`, `Step`, `State`, `Conflict` and events into
+  plain dicts. No web dependency, so response shapes are unit-tested without HTTP and `atcdb/api.py` stays routing
+  only. Each replay step carries the transmission, its events, the conflicts it raised, any parse error, the runway
+  board snapshot and the aircraft map. The timeline carries every runway named anywhere in the recording, so the
+  board never reflows. The client derives the cumulative conflict list itself.
+- **Recordings and errors.** `list_recordings` returns dicts. A new `get_recording` distinguishes an unknown id
+  (404) from a known recording with no transcripts of the requested kind (200, empty steps). An unknown parser, an
+  unknown context mode or an unknown transcript kind is rejected with 422.
+- **Database access.** One SQLite connection per request, opened and closed inside each handler from the path given
+  to `create_app(db_path, project_root)`. Not a yield-dependency: FastAPI may run a sync dependency and a sync
+  handler on different pool threads, and a connection must not cross threads. No shared connection, no
+  `check_same_thread` flag. Module-level `app = create_app()` uses the corpus DB, so `uvicorn atcdb.api:app` works.
+- **Transcript pinning.** Gold replays pin the `human` model (865 transmissions also carry an `atco2-xml` gold
+  transcript, and the cache key must not drift between runs); any other kind takes its alphabetically first model.
+  An explicit `transcript_model` query parameter overrides the default.
+- **Cache key.** Unchanged. The app never tunes engine rules, so `parse_events.py --refresh` stays the invalidation
+  path; an engine version in the key moves to phase 3, where tuning happens.
+- **Front-end.** `atcdb/static/` with `index.html`, `app.js`, `style.css`, served at `/`. Layout as sketched above.
+  A runway card lists active reservations, lists aircraft holding short of it in a lighter style, and turns red
+  (alert) or amber (warning) when a conflict at the current step names that runway. Play advances every 2 s; the
+  left and right arrow keys step; a play button per transmission streams its clip through one shared `<audio>`.
+- **Capabilities.** Registered parsers with their model and version, the context modes, the transcript kinds and
+  models that exist in the DB, and `live: false`.
+- **Testing.** Shape tests for `serialize.py`; API tests with FastAPI's `TestClient` on a seeded temporary DB,
+  including a generated WAV for the clip route; manual browser smoke run for the JS.
+- **Dependencies.** `fastapi`, `uvicorn`, and `httpx2` (Starlette's test client warns on plain `httpx`), pinned.
+  `python-multipart` waits for phase 4 and `anthropic` for phase 3.
 
 ## Section 4 — Evaluation plan
 

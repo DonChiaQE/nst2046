@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from atcdb.parsing import CONTEXT_MODES  # noqa: E402
-from atcdb.replay import PARSER_MODELS, PARSERS, build_timeline, clear_events, list_recordings  # noqa: E402
+from atcdb.replay import PARSER_MODELS, PARSERS, build_timeline, clear_events, default_transcript_model, list_recordings  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
 
@@ -39,11 +39,12 @@ def main() -> None:
         n = clear_events(conn, args.parser, model, version, args.context)
         print(f"cleared {n} cached events")
     recordings = list_recordings(conn, facility=args.facility, min_transmissions=args.min_transmissions, transcript_kind=args.transcript)
+    transcript_model = default_transcript_model(conn, args.transcript)
     if args.limit:
         recordings = recordings[:args.limit]
     kinds, conflicts, errors, n_steps = Counter(), Counter(), 0, 0
     for i, rec in enumerate(recordings, 1):
-        tl = build_timeline(conn, rec["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context)
+        tl = build_timeline(conn, rec["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context, transcript_model=transcript_model)
         for step in tl.steps:
             n_steps += 1
             errors += step.error is not None

@@ -67,9 +67,9 @@ def build_context(mode: str, tx: Transmission, history: list[Transmission], stat
 
 
 def list_recordings(conn: sqlite3.Connection, facility: str = "Tower", min_transmissions: int = 4,
-                    transcript_kind: str = "gold") -> list[sqlite3.Row]:
+                    transcript_kind: str = "gold") -> list[dict]:
     """Recordings worth replaying: the given facility, enough transmissions, at least one runway mention."""
-    return conn.execute(
+    rows = conn.execute(
         """SELECT r.id, s.name AS source, r.external_id, r.airport_icao, r.facility,
                   COUNT(DISTINCT x.id) AS n_transmissions,
                   COUNT(DISTINCT CASE WHEN t.normalized_text LIKE '%runway%' THEN x.id END) AS n_runway_mentions
@@ -81,22 +81,59 @@ def list_recordings(conn: sqlite3.Connection, facility: str = "Tower", min_trans
            GROUP BY r.id
            HAVING n_transmissions >= ? AND n_runway_mentions >= 1
            ORDER BY n_transmissions DESC, r.id""", (transcript_kind, facility, min_transmissions)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_recording(conn: sqlite3.Connection, recording_id: int) -> dict | None:
+    """One recording's identity (id, source, external_id, airport_icao, facility), or None if the id is unknown.
+    Distinguishes "no such recording" from "a recording with no transcripts of the requested kind"."""
+    row = conn.execute(
+        """SELECT r.id, s.name AS source, r.external_id, r.airport_icao, r.facility
+           FROM recordings r JOIN sources s ON s.id = r.source_id
+           WHERE r.id = ?""", (recording_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def transcript_models(conn: sqlite3.Connection) -> dict[str, list[str]]:
+    """Transcript kinds present in the DB, each with its models in alphabetical order."""
+    out: dict[str, list[str]] = {}
+    for r in conn.execute("SELECT DISTINCT kind, model FROM transcripts ORDER BY kind, model"):
+        out.setdefault(r["kind"], []).append(r["model"])
+    return out
+
+
+def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str) -> str | None:
+    """The transcript model a replay pins when none is given, so cache keys do not drift between runs: `human` for
+    gold (some transmissions also carry an `atco2-xml` gold transcript), otherwise the alphabetically first model.
+    None when the DB has no transcripts of that kind."""
+    models = transcript_models(conn).get(transcript_kind, [])
+    if transcript_kind == "gold" and "human" in models:
+        return "human"
+    return models[0] if models else None
+
+
+def _cached_events(conn: sqlite3.Connection, tx: Transmission, parser: str, model: str, model_version: str,
+                   mode: str) -> list[Event]:
+    rows = conn.execute(
+        """SELECT kind, callsign, runway, extra_json FROM events
+           WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
+           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, mode)).fetchall()
+    return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
 
 
 def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Context,
                model: str | None = None, model_version: str | None = None) -> list[Event]:
     """Events for one transcript under (parser, model, version, context mode): from the `events` cache, or parsed
     and stored. A parser exception propagates and nothing is stored, so the next call retries. An empty parse is
-    stored as one NOOP row, so the transcript is not a cache miss forever."""
+    stored as one NOOP row, so the transcript is not a cache miss forever. If another request cached the same
+    transcript while this one was parsing, the first writer's parse wins: it is what stays cached and what is returned,
+    so the cache never mixes rows from two different parses."""
     if model is None:
         model, model_version = PARSER_MODELS[parser]
     model_version = model_version or ""
-    rows = conn.execute(
-        """SELECT kind, callsign, runway, extra_json FROM events
-           WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
-           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, ctx.mode)).fetchall()
-    if rows:
-        return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
+    cached = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+    if cached:
+        return cached
     events = PARSERS[parser](tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
     try:
         conn.executemany(
@@ -104,6 +141,9 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
         conn.commit()
+    except sqlite3.IntegrityError:
+        conn.rollback()   # lost the race: nothing of ours is kept
+        return _cached_events(conn, tx, parser, model, model_version, ctx.mode)
     except Exception:
         conn.rollback()   # a partial insert must never be committed later by someone else's commit
         raise

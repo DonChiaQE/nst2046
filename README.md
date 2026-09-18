@@ -29,7 +29,10 @@ python scripts/score_wer.py --report docs/results/wer-baseline.md
 python scripts/parse_events.py                     # cache rules-parser events for every replayable tower recording
 python scripts/show_replay.py uwb-atcc_TWR-DM7AI0  # step through one recording: events, conflicts, runway board
 
-pytest   # 133 tests
+# 5. replay UI: step through a recording in the browser (runway board, transmissions, conflicts, audio)
+uvicorn atcdb.api:app --reload                     # then open http://127.0.0.1:8000/?recording=528
+
+pytest   # 153 tests
 ```
 
 See `docs/` for the sourcing research and the database design spec.
