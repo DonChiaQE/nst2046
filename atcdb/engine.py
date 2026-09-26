@@ -17,22 +17,25 @@ from atcdb.readback import check_readback, extract_items
 _DIGIT_WORD = {"zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
                "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9"}
 _SIDE = {"left": "L", "right": "R", "centre": "C", "center": "C", "l": "L", "r": "R", "c": "C"}
-_RUNWAY_RE = re.compile(r"^(\d{2})([lrc])?$")
+_RUNWAY_RE = re.compile(r"^(\d{1,2})([lrc])?$")
 
 
 def normalize_runway(text: str) -> str | None:
-    """'three one' -> '31', 'one six right' -> '16R', '16r' -> '16R'. None if it is not a runway designator."""
+    """'three one' -> '31', 'one six right' -> '16R', '16r' -> '16R', 'four left' -> '04L'. None if it is not a runway
+    designator. A single digit is zero-padded: US controllers say "runway four left" where ICAO says "zero four left"."""
     words = (text or "").strip().lower().split()
     if not words:
         return None
-    if all(w in _DIGIT_WORD for w in words[:2]) and len(words) >= 2:
-        digits = _DIGIT_WORD[words[0]] + _DIGIT_WORD[words[1]]
-        rest = words[2:]
+    if words[0] in _DIGIT_WORD:
+        if len(words) >= 2 and words[1] in _DIGIT_WORD:
+            digits, rest = _DIGIT_WORD[words[0]] + _DIGIT_WORD[words[1]], words[2:]
+        else:
+            digits, rest = "0" + _DIGIT_WORD[words[0]], words[1:]
     else:
         m = _RUNWAY_RE.match(words[0])
         if not m:
             return None
-        digits, rest = m.group(1), ([m.group(2)] if m.group(2) else []) + words[1:]
+        digits, rest = m.group(1).zfill(2), ([m.group(2)] if m.group(2) else []) + words[1:]
     if not 1 <= int(digits) <= 36:
         return None
     if len(rest) > 1 or (rest and rest[0] not in _SIDE):

@@ -15,8 +15,13 @@ from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoArou
     ("31", "31"),
     ("16r", "16R"),
     ("", None),
-    ("three", None),
+    ("three", "03"),       # US phraseology drops the leading zero: "runway three"
+    ("four left", "04L"),
+    ("nine", "09"),
+    ("4l", "04L"),
+    ("zero", None),        # no runway 00
     ("four zero", None),   # no such runway: heading 01-36 only
+    ("left", None),
 ])
 def test_normalize_runway(text, expected):
     assert normalize_runway(text) == expected
