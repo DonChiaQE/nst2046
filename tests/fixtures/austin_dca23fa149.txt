@@ -1,0 +1,100 @@
+# NTSB DCA23FA149, Group Chair's Factual Report, Attachment 1: ATC Audio Transcript (partial), transcribed 5 June 2023.
+# Runway incursion at Austin-Bergstrom (KAUS), 4 February 2023: FedEx 1432 (FDX1432) cleared to land runway 18L,
+# Southwest 708 (SWA708) then cleared for takeoff on 18L. US government public record.
+# Generated from the PDF's text layer (pdftotext -raw); page footers removed, wrapped lines rejoined, curly quotes
+# and dashes normalised to ASCII. Format: time|ident|transmission. Times are CST (HHMM:SS); a blank time is a line the
+# NTSB left untimed. AUS-LC / AUS-LCR are the local controller and the controller being relieved; UNK is unidentified.
+0545:12|AUS-LCR|[intrafacility] alright
+|AUS-LC|[intrafacility] hello
+|AUS-LCR|[intrafacility] lets see here [indiscernible] i-l-s is one eight left and one eight right south flow very low visibility quarter mile but it's it's kinda like it's obscured at two hundred so yeah you can see like right down here but yeah whatever um so we need pireps all that good stuff the lights are all cranked up the rabbit and all that stuff um there's r-v-rs there's no special things and traffic is uh there's nothing for local that's it
+|AUS-LC|[intrafacility] no questions
+0545:44|AUS-LCR|[intrafacility] [indiscernible]
+0547:52|AAL1913|tower american nineteen thirteens ready for takeoff one eight left
+0547:59|AUS-LC|american nineteen thirteen austin tower fly heading one seven zero runway one eight left cleared for takeoff
+0548:05|AAL1913|k heading one seven zero cleared for takeoff one eight left ya got the r-v-rs
+0548:23|AAL1913|tower american nineteen thirteen ya have r-v-rs one eight left
+0548:28|AUS-LC|i'm sorry who's that calling local
+0548:31|AAL1913|american nineteen thirteen's asking for the r-v-rs on one eight left
+0548:36|AUS-LC|american nineteen thirteen runway one eight left r-v-r is touchdown a thousand midpoint one thousand four hundred and rollout is one thousand eight hundred
+0548:47|AAL1913|thank you american nineteen thirteen
+0550:35|AUS-LC|american nineteen thirteen contact departure
+0550:38|AAL1913|american nineteen thirteen good morning
+0553:44|DAL1344|tower delta thirteen forty-four holding short runway one eight left ready for departure
+0553:50|AUS-LC|delta thirteen forty-four austin tower runway one eight left r-v-r touchdown one thousand two hundred midpoint one thousand two hundred rollout one thousand two hundred fly heading one seven zero runway one eight left cleared for takeoff
+0554:02|DAL1344|runway one eight left cleared for takeoff heading one seven zero delta thirteen forty-four
+0556:01|SWA1881|tower southwest eighteen eighty-one we're uh one eight left ready
+0556:06|AUS-LC|southwest eighteen eighty-one roger hold short
+0556:09|SWA1881|holding short one eight left southwest eighteen eighty-one
+0556:11|AUS-LC|delta thirteen forty-four contact departure
+0556:14|DAL1344|departure delta thirteen forty-four good day
+0556:17|AUS-LC|southwest eighteen eighty-one austin tower runway one eight left r-v-r touchdown one thousand eight hundred midpoint one thousand two hundred rollout one thousand two hundred fly heading one seven zero runway one eight left cleared for takeoff
+0556:29|SWA1881|one seven zero heading on departure cleared for takeoff one eight left southwest eighteen eighty-one
+0558:33|AUS-LC|southwest eighteen eighty-one contact departure have a good flight
+0558:37|SWA1881|goin to departure southwest eighteen eighty-one good day
+0559:17|SWA785|seven eighty-five we're all set at the end we're holding short one eight left
+0559:21|AUS-LC|southwest eighteen eighty-one contact departure
+0559:30|AUS-LC|southwest seven eighty-five austin tower runway one eight left r-v-r one thousand six hundred midpoint one thousand six hundred rollout one thousand two hundred fly heading one niner zero runway one eight left cleared for takeoff
+0559:43|SWA785|alright copy all heading one ninety cleared for takeoff one eight left southwest seven eighty-five
+0601:36|AUS-LC|southwest seven eighty-five contact departure
+0601:39|SWA785|southwest seven eighty-five we'll see ya
+0608:52|SKW4635|uh tower skywest forty-six thirty-five good morning approaching one eight right at charlie
+0609:04|AUS-LC|skywest forty-six thirty-five austin tower runway one eight right r-v-r one thousand six hundred rollout two thousand fly heading one niner zero runway one eight right cleared for takeoff
+0609:15|SKW4635|fly heading one niner zero one eight right cleared for takeoff skywest forty-six thirty-five
+0611:07|AUS-LC|skywest forty-six thirty-five contact departure
+0611:11|SKW4635|[indiscernible] skywest forty-six thirty-five [indiscernible]
+0611:28|AAL2327|and tower american uh twenty-three twenty-seven holding short one eight left at bravo
+0611:35|AUS-LC|american twenty-three twenty-seven austin tower one eight left r-v-r touchdown one thousand two hundred midpoint two thousand rollout one thousand four hundred fly heading one niner zero runway one eight left cleared for takeoff
+0611:49|AAL2327|cleared for takeoff one eight left fly heading one nine zero copy r-v-rs american thirt uh twenty-three twenty-seven
+0612:53|DAL422|tower delta four twenty-two uh what's the r-v-r for one eight right
+0613:00|AUS-LC|runway one eight right r-v-r touchdown two thousand eight hundred rollout one thousand six hundred
+0613:06|DAL422|thank you
+0614:17|AUS-LC|american twenty-three twenty-seven contact departure
+0614:20|AAL2327|departure american twenty-three twenty-seven
+0615:26|AUS-LC|delta four twenty-two austin tower one eight right r-v-r touchdown two thousand four hundred rollout one thousand six hundred fly heading one niner zero runway one eight right cleared for takeoff
+0615:37|DAL422|heading one niner zero one eight right cleared for takeoff delta four twenty-two
+0616:51|AAL2549|hey good morning tower american twenty-five forty-nine we'll be ready at one eight left
+0616:57|AUS-LC|roger
+0617:01|AUS-LC|american twenty-five forty-nine austin tower one eight left r-v-r one touchdown one thousand two hundred rollout midpoint also one thousand two hundred fly heading one seven zero runway one eight left cleared for takeoff
+0617:15|AAL2549|heading one seven zero one eight left cleared for takeoff american twenty-five forty-nine
+0617:19|AUS-LC|delta four twenty-two contact departure
+0617:21|DAL422|departure good day
+0618:02|AUS-LC|delta four twenty-two contact departure
+0619:08|AUS-LC|american twenty-five forty-nine contact departure
+0619:11|AAL2549|departure american twenty-five forty-nine good morning
+0622:44|SWA1542|tower southwest fifteen forty-twos ready at eighteen left
+0622:54|AUS-LC|southwest fifteen forty-two austin tower runway one eight left r-v-r touchdown two thousand four hundred midpoint eight hundred rollout one thousand six hundred fly heading one seven zero runway one eight left cleared for takeoff
+0623:08|SWA1542|[indiscernible] one seven zero degrees one eight left cleared for takeoff southwest fifteen forty-two
+0624:37|AUS-LC|southwest fifteen forty-two contact departure
+0624:40|SWA1542|departure fifteen forty-two see ya
+0628:26|NKS1145|and tower spirit wings eleven forty-five uh on charlie gonna be holding short one eight right we're ready to go
+0628:41|AUS-LC|spirit wings eleven forty-five austin tower one eight right r-v-r touchdown one thousand two hundred rollout one thousand six hundred fly heading one niner zero runway one eight right cleared for takeoff
+0628:51|NKS1145|alright fly heading one nine zero one eight right cleared for takeoff spirit wings eleven forty-five
+0631:36|NKS1145|[indiscernible] departure spirit uh eleven forty-five
+0631:42|AUS-LC|spirit eleven forty-five contact departure have a good mornin
+0631:45|NKS1145|good morning
+0631:46|UNK|how far out for you do you want me to push this just a few feet
+0631:50|AUS-LC|you're on local
+0634:02|FDX1432|austin tower fedex fourteen thirty-two heavy passing five point four [break in transmission] [indiscernible] cat three i-l-s runway one eight left
+0634:14|AUS-LC|fedex fourteen thirty-two heavy austin tower one eight left r-v-r touchdown one thousand four hundred midpoint six hundred rollout one thousand eight hundred one eight left cleared to land
+0634:25|FDX1432|cleared to land one eight left fedex fourteen thirty-two heavy
+0638:47|SWA708|tower southwest seven o eight we're short of one eight left we're ready
+0638:58|AUS-LC|southwest seven zero eight austin tower runway one eight left r-v-r one thousand two hundred midpoint six hundred rollout one thousand six hundred fly heading one seven zero runway one eight left cleared for takeoff traffic three mile final is a heavy seven sixty-seven
+0639:13|SWA708|okay that's one seven zero cleared for takeoff one eight left copy the traffic southwest seven zero eight
+0639:29|FDX1432|tower confirm uh fedex fourteen thirty-two heavy's cleared to land on the one eight left
+0639:34|AUS-LC|fedex fourteen thirty-two heavy that is affirmative one eight left you are cleared to land traffic departing prior to your arrival's a seven thirty-seven
+0639:40|FDX1432|roger
+0640:10|AUS-LC|southwest seven zero eight confirm on the roll
+0640:13|SWA708|rollin now
+0640:31|FDX1432|southwest abort
+0640:34|FDX1432|fedex is on the go
+0640:44|AUS-LC|southwest seven zero eight roger you can turn right when able
+0640:49|SWA708|negative
+0641:06|AUS-LC|fedex fourteen thirty-two climb maintain three thousand when able you can turn left heading zero eight zero
+0641:12|FDX1432|we're in the turn to zero eight zero three thousand fedex fourteen thirty-two heavy
+0641:39|AUS-LC|southwest seven zero eight you can turn uh left heading one seven zero
+0641:42|SWA708|one seventy southwest seven o eight
+0641:44|AUS-LC|fedex fourteen thirty-two turn left heading three six zero contact approach on one two five point three two
+0641:55|FDX1432|twenty-five thirty-two left three six zero fedex fourteen thirty-two heavy
+0642:00|AUS-LC|i'm sorry who was that
+0642:12|AUS-LC|southwest seven zero eight you can contact departure
+0642:14|SWA708|seven o eight
