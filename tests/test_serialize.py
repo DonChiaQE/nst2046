@@ -33,6 +33,7 @@ def test_step_dict_carries_transmission_events_conflicts_board_and_aircraft():
     assert [(c["type"], c["severity"], c["runway"], c["callsigns"], c["seq"]) for c in d["conflicts"]] == \
         [("RUNWAY", "alert", "31", ["c", "a"], 3)]
     assert "runway 31" in d["conflicts"][0]["explanation"]
+    assert d["conflicts"][0]["basis"] is None   # LAND against a held LUAW has no verified ICAO citation
 
 
 def test_timeline_dict_names_every_runway_and_is_json_ready():

@@ -14,7 +14,7 @@ def event_dict(e: Event) -> dict:
 
 def conflict_dict(c: Conflict) -> dict:
     return {"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns), "seq": c.seq,
-            "explanation": c.explanation}
+            "explanation": c.explanation, "basis": c.basis}
 
 
 def transmission_dict(tx: Transmission) -> dict:

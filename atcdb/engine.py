@@ -138,6 +138,7 @@ class Conflict:
     callsigns: tuple[str, ...]   # triggering callsign first
     seq: int                     # seq of the triggering event
     explanation: str             # what the app displays
+    basis: str | None = None     # id of the phraseology_rules row this conflict rests on (atcdb/doctrine.py), if any
 
 
 @dataclass(frozen=True)
@@ -164,6 +165,13 @@ MATRIX: dict[tuple[str, str], str] = {
     ("TAKEOFF", "LAND"): "alert",  ("TAKEOFF", "TAKEOFF"): "warning", ("TAKEOFF", "LUAW"): "alert",   ("TAKEOFF", "CROSS"): "alert",
     ("LUAW", "LAND"): "alert",     ("LUAW", "TAKEOFF"): "warning",    ("LUAW", "LUAW"): "warning",    ("LUAW", "CROSS"): "warning",
     ("CROSS", "LAND"): "alert",    ("CROSS", "TAKEOFF"): "alert",     ("CROSS", "LUAW"): "warning",   ("CROSS", "CROSS"): "ok",
+}
+
+# (new_kind, active_kind) -> the atcdb/doctrine.py rule that cell encodes. Cells without an entry have no verified citation.
+MATRIX_BASIS: dict[tuple[str, str], str] = {
+    ("LAND", "LAND"): "icao-4444-7.10.2-proviso",
+    ("TAKEOFF", "LAND"): "icao-4444-7.9.2",
+    ("LAND", "TAKEOFF"): "icao-4444-7.10.1",
 }
 
 _PHRASE = {"LAND": "a landing clearance", "TAKEOFF": "a takeoff clearance",
@@ -224,7 +232,8 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
             conflicts.append(Conflict(
                 "RUNWAY", verdict, event.runway, (cs, r.callsign), seq,
                 f"{_name(cs)} given {_PHRASE[event.kind]} on runway {event.runway} while "
-                f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}"))
+                f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}",
+                MATRIX_BASIS.get((event.kind, r.kind))))
         runways[event.runway] = runways.get(event.runway, ()) + (Reservation(cs, event.kind, seq, event.t),)
         if cs:
             aircraft[cs] = replace(ac, runway=event.runway, kind=event.kind, holding_short=None, holding_short_t=None,

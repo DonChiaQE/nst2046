@@ -323,3 +323,12 @@ def test_unknown_handoff_target_releases_nothing_and_is_counted():
     assert [x.severity for x in c] == ["alert"] and state.ignored == 1
     state, _ = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="ground")])
     assert state.ignored == 0
+
+
+def test_runway_conflicts_carry_their_doctrine_basis():
+    _, c = fold([ClearToLand(callsign="fedex", runway="18L"), ClearTakeoff(callsign="southwest", runway="18L")])
+    assert [x.basis for x in c] == ["icao-4444-7.9.2"]
+    _, c = fold([ClearTakeoff(callsign="southwest", runway="18L"), ClearToLand(callsign="fedex", runway="18L")])
+    assert [x.basis for x in c] == ["icao-4444-7.10.1"]
+    _, c = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="31")])
+    assert [x.basis for x in c] == [None]   # no verified citation for this cell yet

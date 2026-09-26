@@ -1,0 +1,24 @@
+from atcdb import doctrine
+from atcdb.engine import MATRIX, MATRIX_BASIS
+from atcdb.schema import init_db
+
+
+def test_every_rule_has_the_schema_columns_and_a_unique_id():
+    assert len({r["id"] for r in doctrine.RULES}) == len(doctrine.RULES)
+    for r in doctrine.RULES:
+        assert set(r) == {"id", "document", "section", "category", "pattern", "description"}
+        assert (r["section"] is None) == (r["document"] == doctrine.HEURISTIC)   # a heuristic cites no paragraph
+
+
+def test_every_matrix_citation_names_a_rule_and_a_real_cell():
+    ids = {r["id"] for r in doctrine.RULES}
+    assert set(MATRIX_BASIS) <= set(MATRIX)
+    assert set(MATRIX_BASIS.values()) <= ids
+
+
+def test_init_db_seeds_phraseology_rules_idempotently(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    conn = init_db(tmp_path / "t.sqlite")   # a second open must not duplicate or fail
+    rows = conn.execute("SELECT id, document, section FROM phraseology_rules ORDER BY id").fetchall()
+    assert len(rows) == len(doctrine.RULES)
+    assert ("icao-4444-7.9.2", doctrine.DOC_4444, "7.9.2") in [tuple(r) for r in rows]
