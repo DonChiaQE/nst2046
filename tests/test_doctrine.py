@@ -22,3 +22,17 @@ def test_init_db_seeds_phraseology_rules_idempotently(tmp_path):
     rows = conn.execute("SELECT id, document, section FROM phraseology_rules ORDER BY id").fetchall()
     assert len(rows) == len(doctrine.RULES)
     assert ("icao-4444-7.9.2", doctrine.DOC_4444, "7.9.2") in [tuple(r) for r in rows]
+
+
+def test_seed_writes_nothing_once_the_table_already_matches_rules_but_corrects_a_stale_row(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    before = conn.total_changes
+    doctrine.seed(conn)   # table already matches RULES: no write, no commit
+    assert conn.total_changes == before
+
+    rule_id = doctrine.RULES[0]["id"]
+    conn.execute("UPDATE phraseology_rules SET description = 'stale' WHERE id = ?", (rule_id,))
+    conn.commit()
+    doctrine.seed(conn)   # table now differs from RULES: the stale row is corrected
+    row = conn.execute("SELECT description FROM phraseology_rules WHERE id = ?", (rule_id,)).fetchone()
+    assert row[0] == doctrine.RULES[0]["description"]

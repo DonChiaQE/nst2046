@@ -42,8 +42,17 @@ RULES: list[dict] = [
 ]
 
 
+_COLUMNS = ("id", "document", "section", "category", "pattern", "description")
+
+
 def seed(conn: sqlite3.Connection) -> None:
-    """Write RULES into `phraseology_rules`. Idempotent: rows are replaced by id."""
+    """Write RULES into `phraseology_rules`, replacing rows by id. Idempotent, and a no-op (no write, no commit)
+    when the table already holds exactly RULES: `init_db` calls this on every open, including once per API
+    request, so a table that already matches must cost nothing."""
+    current = {row[0]: tuple(row) for row in conn.execute(f"SELECT {', '.join(_COLUMNS)} FROM phraseology_rules")}
+    wanted = {r["id"]: tuple(r[c] for c in _COLUMNS) for r in RULES}
+    if current == wanted:
+        return
     conn.executemany("INSERT OR REPLACE INTO phraseology_rules (id, document, section, category, pattern, description) "
                      "VALUES (:id, :document, :section, :category, :pattern, :description)", RULES)
     conn.commit()
