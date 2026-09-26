@@ -1,6 +1,7 @@
 # ATC conflict engine — design
 
-**Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17.** Phase 1 (engine core) merged. Next step: phase-2 implementation
+**Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17; phase-3 design-pass addendum written
+2026-09-26, awaiting review.** Phases 1 and 2 merged (PR #1, PR #2). Next step: review the addendum, then the phase-2.5
 plan via `superpowers:writing-plans`.
 
 ## Context / pivot
@@ -255,6 +256,154 @@ through push-to-talk and the engine flags it live. Pass/fail, no metric.
 **Caveats to state in the report.** The readback sheets (`data/labels/`) are still unlabelled
 and the event sheet competes for the same labelling time; the report says which sheet was
 prioritised and why. Injected conflicts are synthetic; the case studies are the only real ones.
+
+## Addendum — phase-3 design pass (decided 2026-09-19, written 2026-09-26)
+
+Records the decisions from the phase-3 brainstorm and the findings from running real incident transcripts through
+the engine. Where this addendum and anything above disagree, the addendum wins; it amends Sections 1, 2 and 4 and
+replaces the build order.
+
+### A.1 Build order
+
+Phase 3 is split, and engine tuning moves ahead of it:
+
+1. ~~Engine core~~ (merged, PR #1). 2. ~~App~~ (merged, PR #2).
+3. **2.5 — engine tuning and Section 1 amendments** (A.3). Nothing to do with the Claude parser; lands first so no
+   LLM parse or evaluation number is produced against an engine that is about to change.
+4. **3a — Claude parser** plus the cache-affecting carry-overs (A.4). Ends with `parser=claude` working in the
+   replay UI.
+5. **3b — evaluation** (A.5). Gets its own design pass before its plan.
+6. **4 — live push-to-talk and incident case studies** (A.6).
+
+### A.2 Findings that constrain the design
+
+Measured on the 309 foldable tower recordings (gold, `human`) and two NTSB incident dockets.
+
+- **Recordings are clips, not sessions.** Median span 23 s, p90 48 s, max 139 s. `STALE_S = 300` has never fired on
+  this corpus. 62 of 309 recordings raise at least one conflict; 85 in total (50 RUNWAY, 35 READBACK).
+- **Releases are almost never spoken.** About 2% of reservations see a release call inside the clip. The controller
+  establishes that a runway is clear by looking; the transmitted proxy is the handoff (`contact ground` 186 times vs
+  `cleared to land` 187 times), not `runway vacated` (about 5 genuine pilot reports in 3,767 transmissions, and zero
+  controller requests for one). Section 1's choice of the ground handoff as a release is confirmed.
+- **Austin 2023 (NTSB DCA23FA149, Attachment 1)** — the verbatim tower transcript, folded through the engine with the
+  rules parser, *models* correctly (a TAKEOFF against a held LAND on 18L is the matrix's alert cell) but the parser
+  fails three ways: the landing clearance `…one eight left cleared to land` is dropped because the LAND pattern needs
+  the token `runway`; US compound-number callsigns (`fedex fourteen thirty-two heavy`, `american nineteen thirteen`)
+  extract as `''`, which caps the conflict at warning; the conflict fires 36 s late, at the controller's
+  re-confirmation, and only because the takeoff clearance had already put 18L into `window` context. The landing and
+  takeoff clearances are **284 s** apart.
+- **Single-digit runways do not normalise.** `normalize_runway("four left")` returns `None`; only `zero four left`
+  parses. US controllers drop the leading zero. Any US airport with runways 1–9 is affected, whichever extractor
+  produced the string.
+- **Corpus recording 528 (step 17) is a correct parse and a false alert.** Air France 198R is cleared to cross 13,
+  CSA 38W is then cleared to land 13, and the crossing is never released on frequency. Extraction is right; the
+  missing information is not in the audio. No parser change fixes it.
+- **JFK 2023 (DCA23LA125) is outside the envelope.** Every transmission was lawful; American 106 crossed 4L without a
+  clearance that was ever spoken. Surface radar (ASDE-X) caught it. A radio-only system cannot, whatever the
+  extractor.
+- **Framing.** ICAO Doc 4444 (7.9.2, 7.10.1) governs physical separation; the engine has no position data. It detects
+  **incompatible clearances**, a proxy for loss of separation. Reports state this rather than claim ICAO compliance.
+
+### A.3 Phase 2.5 — engine tuning (amends Section 1)
+
+1. **Holding short expires and releases.** `Aircraft` gains the time its `holding_short` was set; `_expire` clears it
+   on its own timeout; `RunwayVacated` and a ground or departure handoff clear it.
+2. **HoldShort cancels that aircraft's reservation on the named runway.** "Hold short runway 13" after a crossing
+   clearance for 13 is a cancellation in real phraseology. A hold-short of a *different* runway does not release
+   anything: the transmission that clears Air France across 13 also tells it to hold short of 24, so releasing on
+   it would erase the crossing the moment it is issued. Recording 528 therefore stays a false alert, on purpose.
+3. **READBACK conflicts carry a runway.** The missing item's own runway value, else `ac.runway`, else
+   `ac.holding_short`, so a runway-readback alert highlights a card.
+4. **Handoff targets are validated** against `HANDOFF_TARGETS`; an unknown target still releases nothing but is counted.
+5. **Dropped-instruction counter** on `Step` and `Timeline` (instructions whose runway will not resolve, unknown
+   handoff targets), serialised through the API.
+6. **Staleness per kind, mechanism only.** `STALE_S` becomes a dict keyed by reservation kind, every kind defaulting
+   to 300 s so behaviour and existing tests are unchanged. A test pins **LAND ≥ 284 s** with Austin as the reason.
+   CROSS and LUAW values are chosen in 3b against the false-alarm metric, not guessed.
+7. **`normalize_runway` accepts single-digit designators** (`four left` → `04L`). It lives in the engine and every
+   extractor's runway string goes through it, so this is a shared bug, not a rules-parser tuning.
+8. **ICAO citations.** `phraseology_rules` (empty today) is populated with the Doc 4444 paragraph behind each matrix
+   cell: 7.10.2 (landing clearance), 7.9.3.1 (take-off clearance), the 7.10.2 proviso (LAND after LAND is lawful),
+   7.9.2 and 7.10.1 (TAKEOFF against LAND). The handoff release and the staleness timeout are recorded as engineering
+   heuristics with no ICAO basis. Conflict explanations may cite the paragraph.
+9. **Fixtures.** Austin becomes a replay fixture (NTSB records are public; the hand-keyed text is re-checked against
+   the PDF before commit): it must raise a RUNWAY conflict on 18L. Recording 528 becomes a regression test that runs
+   against `data/atc.sqlite` and skips when the corpus is absent, since UWB-ATCC is CC BY-NC-ND and is not
+   redistributed in the repo: it must still raise its alert at step 17.
+
+### A.4 Phase 3a — Claude parser (amends Section 2)
+
+- **Models and configuration.** Haiku 4.5 (`claude-haiku-4-5`) and Sonnet 5 (`claude-sonnet-5`) as the cheap and
+  strong arms, configured to match: both do one-shot extraction with thinking off. Haiku at temperature 0; Sonnet 5
+  rejects `temperature` with a 400, so it runs with `thinking: {type: "disabled"}` and `effort: "low"`.
+  Reproducibility comes from the cache (one parse per key, ever) and a `strict: true` tool schema, not from
+  temperature. Section 2's "temperature 0" is superseded.
+- **One tool.** `report_events`, taking an `events` array; `kind` enumerated over the ten event kinds, `to` over
+  `HANDOFF_TARGETS`; `additionalProperties: false`; forced `tool_choice` (supported on both models). The four fields
+  per event — change, runway, callsign, type — match the engine's `Event` one to one.
+- **What is cached.** Unchanged contract: API errors and `stop_reason: "refusal"` propagate and cache nothing.
+  Individual events that fail validation are dropped and counted (A.3.5); a parse with nothing left stores the NOOP
+  row.
+- **Registry.** `PARSER_MODELS` becomes `dict[str, list[str]]`. The Claude parser is resolved lazily on first use, so
+  importing `atcdb.replay` never needs `anthropic`. `parse_llm.VERSION = "p1"`, bumped by hand whenever the prompt or
+  schema changes, like `parse_rules.VERSION`.
+- **Capabilities.** One entry per parser-model pair, each with `available: bool` and a `reason` (`anthropic not
+  installed`, `ANTHROPIC_API_KEY not set`). The UI lists unavailable parsers disabled, with the reason as a tooltip.
+- **API.** A validated `model` query parameter on the replay endpoint; an unknown parser-model pair is a 422 (today
+  FastAPI ignores it and silently returns the rules parse).
+- **Carry-overs landing here** (they must precede the first cached LLM parse): per-recording transcript pinning, so
+  the `synthetic` gold recordings from conflict injection replay; `get_events` re-raises when the re-read after an
+  `IntegrityError` is empty; a request token in `app.js`, now load-bearing because a cold Claude replay is one call
+  per transmission.
+- **Latency.** `window` context depends on the engine state after the previous transmission, so a cold replay is
+  sequential (about 30–60 s for recording 528). `none` and `role` can run in parallel; that concurrency belongs to
+  3b's evaluation script, not 3a. `parse_events.py` gains `--parser`, `--model`, `--recording` and a `--dry-run`
+  that prints the call count and estimated cost before spending.
+- **Cost.** The whole tower corpus under both models and all three context modes is about $66; the 200-transmission
+  labelled slice about $3.50. Cost does not shape the design; prompt caching is not engineered for.
+- **Testing.** The Anthropic client is injected, so a small fake client covers response-to-event mapping, validation,
+  dropping and prompt rendering without a mock framework; a few recorded real responses back the mapper; lazy
+  registration is tested with `anthropic` absent; one live smoke test skips without a key.
+
+### A.5 Phase 3b — evaluation (amends Section 4)
+
+The written report (section 4, "Technical Investigation Plan") is now the commitment; this spec follows it.
+
+- **Pre-registered primary comparison:** rule-based vs Sonnet, `window` context, human-transcribed input. Factors
+  varied around it: extractor (rule, Haiku, Sonnet), context (none, role, last 4), transcript (human, ASR).
+- **Level 1, extraction.** About 200 real tower transmissions labelled blind to every parser; 50 labelled twice for
+  Cohen's κ; kept as a standing regression test. Metrics: exact event-set match, per-field precision and recall, and
+  a consequence-weighted Risk score (Chang et al., 2026) whose weights come from perturbing labelled events (wrong
+  runway, wrong type, wrong callsign, missed, spurious) and observing the engine's output change.
+- **Level 2, end to end.** Positives: synthetic conflicts injected into real sequences (as in Section 4),
+  sequences reconstructed by hand from triaged ASRS narratives, and NTSB-investigated events. Negatives: unperturbed
+  real recordings. Metrics: recall, false alarms per hour of real audio, a taxonomy of failure types; κ on the ASRS
+  triage and on the adjudication of every alert.
+- **Ablation.** The LLM judge (whole sequence in, conflicts out) scored on the Level 2 sets.
+- **Reporting.** Bootstrap confidence intervals throughout. The false-alarm rate is a finding, not a parameter to
+  tune away; per-kind staleness (A.3.6) is tuned on a split that is not used for the reported numbers.
+- **Left for the 3b design pass:** the ASRS triage and reconstruction procedure, the Risk-weight derivation, and
+  labelling logistics. **Risk:** Level 1 has no gold until someone labels ~250 rows, and the readback sheets are
+  still 0/250. Labelling can run in parallel with 2.5 and 3a and should start now.
+
+### A.6 Phase 4 — case studies (amends Section 4)
+
+LiveATC keeps archives for 30 days, so case-study audio and text come from NTSB dockets. Only major (`FA`/`MA`)
+investigations carry a verbatim ATC transcript; smaller ones (Sarasota DCA23LA179, Boston DCA23LA192, JFK
+DCA23LA125) hold raw audio and paraphrase in the factual report. Austin is the confirmed case; LaGuardia 2026
+(DCA26MA161, the report's motivating incident) is the next candidate once its docket is public. JFK is written up as
+the out-of-envelope example.
+
+### A.7 Open questions for review
+
+1. **Freeze the rules parser for the comparison?** Fixing the `runway`-token and US-callsign gaps (A.2) makes a
+   fairer baseline, but they were found on Austin, and the report's appendix already shows the v1 behaviour.
+   Recommendation: freeze `parse_rules` v1 as the pre-registered baseline and report its gaps as findings; fix only
+   `normalize_runway` (A.3.7), which is shared.
+2. **Engine version in the cache key?** `window`-mode parses depend on engine state, and 2.5 and 3b both change the
+   engine. Today the fix is `parse_events.py --refresh`, which for LLM parses costs a few dollars and silently
+   leaves stale rows if forgotten. Recommendation: add a hand-bumped `ENGINE_VERSION` to the key in 3a, before the
+   first LLM parse is cached.
 
 ## Suggested build order
 
