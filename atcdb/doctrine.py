@@ -21,7 +21,8 @@ RULES: list[dict] = [
     {"id": "icao-4444-7.10.2-proviso", "document": DOC_4444, "section": "7.10.2", "category": "compatibility",
      "pattern": "LAND/LAND",
      "description": "A clearance to land shall not be issued until a preceding landing aircraft has crossed the runway "
-                    "threshold, so successive landing clearances are lawful. Basis for: LAND after LAND is not a conflict."},
+                    "threshold, so a second landing clearance is conditionally lawful. Basis for: LAND after LAND is not "
+                    "a conflict; the engine does not model the threshold crossing."},
     {"id": "icao-4444-7.9.2", "document": DOC_4444, "section": "7.9.2", "category": "compatibility", "pattern": "TAKEOFF/LAND",
      "description": "A departing aircraft will not normally be permitted to commence take-off until the preceding departing "
                     "aircraft has crossed the end of the runway-in-use or has started a turn or until all preceding "
