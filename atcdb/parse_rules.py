@@ -188,6 +188,20 @@ def _pilot_events(tx: Transmission, ctx: Context) -> list[Event]:
     return events
 
 
+def count_unresolved(tx: Transmission, ctx: Context) -> int:
+    """How many instruction kinds `parse` recognised in this transmission but dropped because no runway could be placed
+    on them (spec addendum A.3.5). A diagnostic beside `parse`, not part of it: `parse`'s output is unchanged, so VERSION
+    stays v1 and the frozen baseline is untouched. Pilot transmissions never yield instructions, so they count 0."""
+    role = ctx.role if ctx.mode != "none" else "unknown"
+    if role == "pilot":
+        return 0
+    placed, unplaced = set(), set()
+    for kind, rx in INSTRUCTION_RES:
+        for m in rx.finditer(tx.text):
+            (placed if _runway_for(tx.text, m, kind, ctx) else unplaced).add(kind)
+    return len(unplaced - placed)
+
+
 def parse(tx: Transmission, ctx: Context) -> list[Event]:
     """Events for one transmission. Controller-side phrasing is only extracted for controller / mixed / unknown
     roles; pilot transmissions become readbacks (plus pilot-reported releases). Mode `none` has no role, so

@@ -21,7 +21,7 @@ def test_step_dict_carries_transmission_events_conflicts_board_and_aircraft():
     land = ClearToLand(callsign="c", runway="31")
     state, conflicts = apply(state, land)
     d = step_dict(3, Step(tx=TX, events=(land,), conflicts=tuple(conflicts), state=state))
-    assert d["index"] == 3 and d["error"] is None
+    assert d["index"] == 3 and d["error"] is None and d["dropped"] == 0
     assert d["transmission"] == {"id": 7, "transcript_id": 70, "start_s": 12.5, "role": "controller", "text": TX.text}
     assert d["events"] == [{"kind": "LAND", "callsign": "c", "runway": "31", "to": None}]
     assert d["board"] == {"31": [{"callsign": "a", "kind": "LUAW"}, {"callsign": "c", "kind": "LAND"}]}
@@ -47,7 +47,7 @@ def test_timeline_dict_names_every_runway_and_is_json_ready():
     d = timeline_dict(tl, rec, "human")
     assert {k: v for k, v in d.items() if k != "steps"} == {
         "recording": rec, "parser": "rule", "model": "rules", "model_version": "v1", "context": "window",
-        "transcript_kind": "gold", "transcript_model": "human", "runways": ["24", "31"]}
+        "transcript_kind": "gold", "transcript_model": "human", "runways": ["24", "31"], "dropped": 0}
     assert [(s["index"], s["error"]) for s in d["steps"]] == [(0, None), (1, "RuntimeError: boom"), (2, None)]
     assert json.loads(json.dumps(d)) == d
 
@@ -56,3 +56,11 @@ def test_timeline_dict_for_a_recording_with_no_steps():
     tl = Timeline(recording_id=5, parser="rule", model="rules", model_version="v1", context="window", transcript_kind="asr", steps=())
     d = timeline_dict(tl, {"id": 5}, None)
     assert (d["runways"], d["steps"], d["transcript_model"]) == ([], [], None)
+
+
+def test_dropped_counts_are_serialised_per_step_and_in_total():
+    tl = Timeline(recording_id=5, parser="rule", model="rules", model_version="v1", context="window", transcript_kind="gold",
+                  steps=(Step(tx=TX, events=(), conflicts=(), state=State(), dropped=1),
+                         Step(tx=TX, events=(), conflicts=(), state=State(), dropped=2)))
+    d = timeline_dict(tl, {"id": 5}, "human")
+    assert [s["dropped"] for s in d["steps"]] == [1, 2] and d["dropped"] == 3

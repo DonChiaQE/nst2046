@@ -8,6 +8,7 @@ Window-mode parses depend on engine state, so after changing engine rules run `s
 """
 import sqlite3
 from dataclasses import dataclass
+from typing import Callable
 
 from atcdb import parse_rules
 from atcdb.engine import Conflict, Event, NoOp, State, apply
@@ -15,6 +16,8 @@ from atcdb.parsing import CONTEXT_MODES, WINDOW, Context, Parser, Transmission, 
 
 PARSERS: dict[str, Parser] = {"rule": parse_rules.parse}
 PARSER_MODELS: dict[str, tuple[str, str]] = {"rule": ("rules", parse_rules.VERSION)}   # parser -> (model, model_version)
+# parser -> instructions it recognised but could not place on a runway, for one transmission (spec addendum A.3.5)
+DROP_COUNTERS: dict[str, Callable[[Transmission, Context], int]] = {"rule": parse_rules.count_unresolved}
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,7 @@ class Step:
     conflicts: tuple[Conflict, ...]   # raised by this transmission's events
     state: State                      # after this transmission
     error: str | None = None          # parser failure: events are empty and the fold simply continued
+    dropped: int = 0                  # instructions lost at this step: unplaceable runway, or ignored by the engine
 
 
 @dataclass(frozen=True)
@@ -35,6 +39,10 @@ class Timeline:
     context: str
     transcript_kind: str
     steps: tuple[Step, ...]
+
+    @property
+    def dropped(self) -> int:
+        return sum(s.dropped for s in self.steps)
 
 
 def load_recording(conn: sqlite3.Connection, recording_id: int, transcript_kind: str = "gold",
@@ -181,8 +189,10 @@ def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "r
         except Exception as e:   # a flaky parser (API error) must not break the replay; nothing was cached
             events, error = [], f"{type(e).__name__}: {e}"
         conflicts: list[Conflict] = []
+        ignored_before = state.ignored
         for e in events:
             state, new = apply(state, e)
             conflicts.extend(new)
-        steps.append(Step(tx=tx, events=tuple(events), conflicts=tuple(conflicts), state=state, error=error))
+        dropped = DROP_COUNTERS.get(parser, lambda tx, ctx: 0)(tx, ctx) + state.ignored - ignored_before
+        steps.append(Step(tx=tx, events=tuple(events), conflicts=tuple(conflicts), state=state, error=error, dropped=dropped))
     return Timeline(recording_id, parser, model, model_version or "", context, transcript_kind, tuple(steps))
