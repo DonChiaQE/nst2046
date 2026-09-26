@@ -1,7 +1,7 @@
 import pytest
 
 from atcdb import engine
-from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HoldShort,
+from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HANDOFF_TARGETS, HoldShort,
                           LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
                           STALE_S, State, apply, fold, normalize_runway)
 
@@ -303,3 +303,23 @@ def test_hold_short_of_another_runway_keeps_the_crossing():
                      ClearToLand(callsign="csa", runway="13")])
     assert _kinds(state, "13") == [("af", "CROSS"), ("csa", "LAND")]
     assert [(x.type, x.severity, x.runway) for x in c] == [("RUNWAY", "alert", "13")]
+
+
+def test_readback_conflict_names_the_runway_that_was_missed():
+    hold = HoldShort(callsign="b", runway="13", text="b hold short of runway one three")
+    _, c = fold([hold, ReadbackObserved(callsign="b", text="holding short runway three one b")])
+    assert [(x.type, x.severity, x.runway) for x in c] == [("READBACK", "alert", "13")]   # was None before phase 2.5
+
+
+def test_readback_conflict_falls_back_to_the_hold_short_runway():
+    hold = HoldShort(callsign="b", runway="13", text="b hold short of runway one three contact ground one two one nine")
+    _, c = fold([hold, ReadbackObserved(callsign="b", text="holding short runway one three one two one five b")])
+    assert [(x.type, x.severity, x.runway) for x in c] == [("READBACK", "warning", "13")]
+
+
+def test_unknown_handoff_target_releases_nothing_and_is_counted():
+    assert HANDOFF_TARGETS == ("ground", "departure", "tower", "approach")
+    state, c = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="grund"), ClearToCross(callsign="b", runway="31")])
+    assert [x.severity for x in c] == ["alert"] and state.ignored == 1
+    state, _ = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="ground")])
+    assert state.ignored == 0

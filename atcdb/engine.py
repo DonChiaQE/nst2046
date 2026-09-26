@@ -88,9 +88,12 @@ class GoAround(Event):
     pass
 
 
+HANDOFF_TARGETS = ("ground", "departure", "tower", "approach")
+
+
 @dataclass(frozen=True, kw_only=True)
 class Handoff(Event):
-    to: str              # ground | departure | tower | approach
+    to: str              # one of HANDOFF_TARGETS; anything else releases nothing and is counted in State.ignored
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -142,6 +145,7 @@ class State:
     seq: int = 0
     runways: dict[str, tuple[Reservation, ...]] = field(default_factory=dict)
     aircraft: dict[str, Aircraft] = field(default_factory=dict)
+    ignored: int = 0     # events so far that the engine received but could not act on (unknown handoff target)
 
 
 # --- rules ------------------------------------------------------------------------------------
@@ -204,6 +208,7 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
     seq = state.seq + 1
     runways, aircraft = _expire(state, event.t)
     conflicts: list[Conflict] = []
+    ignored = state.ignored
     cs = event.callsign
     ac = aircraft.get(cs, Aircraft(callsign=cs)) if cs else None
 
@@ -241,6 +246,8 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
         if cs:
             aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind, last_seq=seq)
     elif isinstance(event, Handoff):
+        if event.to not in HANDOFF_TARGETS:   # releases nothing, but the fold counts it (spec addendum A.3.4)
+            ignored += 1
         kinds = {"ground": ("LAND", "CROSS"), "departure": ("TAKEOFF",)}.get(event.to, ())
         runways, dropped = _release(runways, cs, kinds) if cs and kinds else (runways, False)
         if cs:
@@ -255,13 +262,14 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
             if missing:
                 severity = "alert" if any(k == "runway" for k, _ in missing) else "warning"
                 what = ", ".join(f"{k} {v}" for k, v in missing)
+                missed_runway = next((normalize_runway(v) for k, v in missing if k == "runway"), None)
                 conflicts.append(Conflict(
-                    "READBACK", severity, ac.runway, (cs,), seq,
+                    "READBACK", severity, missed_runway or ac.runway or ac.holding_short, (cs,), seq,
                     f"{cs} did not read back {what} (instruction: '{ac.pending}'; readback: '{event.text}')"))
             aircraft[cs] = replace(ac, pending=None, last_seq=seq)
     elif isinstance(event, NoOp):
         pass
-    return State(seq=seq, runways=runways, aircraft=aircraft), conflicts
+    return State(seq=seq, runways=runways, aircraft=aircraft, ignored=ignored), conflicts
 
 
 def fold(events: Iterable[Event], state: State | None = None) -> tuple[State, list[Conflict]]:
