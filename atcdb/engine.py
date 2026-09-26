@@ -122,6 +122,7 @@ class Aircraft:
     runway: str | None = None          # runway of its active reservation, if any
     kind: str | None = None            # kind of that reservation
     holding_short: str | None = None   # runway it was told to hold short of
+    holding_short_t: float | None = None   # transmission time of that instruction; drives its staleness
     pending: str | None = None         # instruction text awaiting the pilot's readback
     last_seq: int = 0
 
@@ -169,12 +170,13 @@ def _name(callsign: str) -> str:
     return callsign or "an unidentified aircraft"
 
 
-def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str,
-             kinds: tuple[str, ...] = RESERVATION_KINDS) -> tuple[dict[str, tuple[Reservation, ...]], bool]:
-    """Drop `callsign`'s reservations of the given kinds. Returns (new runways, whether anything was dropped)."""
+def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str, kinds: tuple[str, ...] = RESERVATION_KINDS,
+             runway: str | None = None) -> tuple[dict[str, tuple[Reservation, ...]], bool]:
+    """Drop `callsign`'s reservations of the given kinds (only on `runway`, if given). Returns (new runways, whether
+    anything was dropped)."""
     out, dropped = {}, False
     for rwy, res in runways.items():
-        keep = tuple(r for r in res if not (r.callsign == callsign and r.kind in kinds))
+        keep = tuple(r for r in res if not (r.callsign == callsign and r.kind in kinds and runway in (None, rwy)))
         dropped = dropped or len(keep) != len(res)
         if keep:
             out[rwy] = keep
@@ -182,8 +184,11 @@ def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str,
 
 
 def _expire(state: State, now: float) -> tuple[dict[str, tuple[Reservation, ...]], dict[str, Aircraft]]:
-    """Copy of the runway map and aircraft map with reservations older than their kind's STALE_S removed."""
+    """Copy of the runway map and aircraft map with reservations and hold-shorts older than their STALE_S removed."""
     runways, aircraft = {}, dict(state.aircraft)
+    for cs, a in aircraft.items():
+        if a.holding_short and a.holding_short_t is not None and now - a.holding_short_t > STALE_S["HOLD_SHORT"]:
+            aircraft[cs] = replace(a, holding_short=None, holding_short_t=None)
     for rwy, res in state.runways.items():
         keep = tuple(r for r in res if now - r.t <= STALE_S[r.kind])
         for r in res:
@@ -217,15 +222,20 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
                 f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}"))
         runways[event.runway] = runways.get(event.runway, ()) + (Reservation(cs, event.kind, seq, event.t),)
         if cs:
-            aircraft[cs] = replace(ac, runway=event.runway, kind=event.kind, holding_short=None,
+            aircraft[cs] = replace(ac, runway=event.runway, kind=event.kind, holding_short=None, holding_short_t=None,
                                    pending=event.text or ac.pending, last_seq=seq)
     elif isinstance(event, HoldShort):
         if cs:
-            aircraft[cs] = replace(ac, holding_short=event.runway, pending=event.text or ac.pending, last_seq=seq)
+            # "hold short runway 13" cancels this aircraft's clearance for 13; a hold-short of another runway releases
+            # nothing (a crossing clearance for 13 often ends "... hold short of runway 24").
+            runways, dropped = _release(runways, cs, runway=event.runway)
+            aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind,
+                                   holding_short=event.runway, holding_short_t=event.t,
+                                   pending=event.text or ac.pending, last_seq=seq)
     elif isinstance(event, RunwayVacated):
         runways, _ = _release(runways, cs) if cs else (runways, False)
         if cs:
-            aircraft[cs] = replace(ac, runway=None, kind=None, last_seq=seq)
+            aircraft[cs] = replace(ac, runway=None, kind=None, holding_short=None, holding_short_t=None, last_seq=seq)
     elif isinstance(event, GoAround):
         runways, dropped = _release(runways, cs, ("LAND",)) if cs else (runways, False)
         if cs:
@@ -234,7 +244,10 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
         kinds = {"ground": ("LAND", "CROSS"), "departure": ("TAKEOFF",)}.get(event.to, ())
         runways, dropped = _release(runways, cs, kinds) if cs and kinds else (runways, False)
         if cs:
+            leaving = event.to in ("ground", "departure")   # off the tower's runways: any hold-short no longer applies
             aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind,
+                                   holding_short=None if leaving else ac.holding_short,
+                                   holding_short_t=None if leaving else ac.holding_short_t,
                                    pending=event.text or ac.pending, last_seq=seq)
     elif isinstance(event, ReadbackObserved):
         if ac is not None and ac.pending:

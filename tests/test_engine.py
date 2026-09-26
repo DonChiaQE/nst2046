@@ -269,3 +269,37 @@ def test_landing_clearance_outlives_the_austin_gap():
     assert STALE_S["LAND"] >= 284
     _, c = fold([ClearToLand(callsign="fedex", runway="18L", t=0.0), ClearTakeoff(callsign="southwest", runway="18L", t=284.0)])
     assert [(x.type, x.severity, x.runway) for x in c] == [("RUNWAY", "alert", "18L")]
+
+
+def test_hold_short_expires():
+    state, _ = fold([HoldShort(callsign="b", runway="13", t=0.0)])
+    assert state.aircraft["b"].holding_short == "13"
+    state, _ = fold([NoOp(t=STALE_S["HOLD_SHORT"] - 1)], state)
+    assert state.aircraft["b"].holding_short == "13"
+    state, _ = fold([NoOp(t=STALE_S["HOLD_SHORT"] + 1)], state)
+    assert (state.aircraft["b"].holding_short, state.aircraft["b"].holding_short_t) == (None, None)
+
+
+def test_vacating_or_leaving_the_frequency_ends_a_hold_short():
+    for release in (RunwayVacated(callsign="b"), Handoff(callsign="b", to="ground"), Handoff(callsign="b", to="departure")):
+        state, _ = fold([HoldShort(callsign="b", runway="13"), release])
+        assert state.aircraft["b"].holding_short is None, release
+    state, _ = fold([HoldShort(callsign="b", runway="13"), Handoff(callsign="b", to="tower")])
+    assert state.aircraft["b"].holding_short == "13"
+
+
+def test_hold_short_cancels_the_aircrafts_clearance_for_that_runway():
+    state, _ = fold([ClearToCross(callsign="b", runway="13"), HoldShort(callsign="b", runway="13")])
+    assert _kinds(state, "13") == []
+    assert (state.aircraft["b"].runway, state.aircraft["b"].kind, state.aircraft["b"].holding_short) == (None, None, "13")
+    _, c = fold([ClearToCross(callsign="b", runway="13"), HoldShort(callsign="b", runway="13"), ClearToLand(callsign="a", runway="13")])
+    assert c == []
+
+
+def test_hold_short_of_another_runway_keeps_the_crossing():
+    # Recording 528: "air france one nine eight romeo ... cross runway one three continue via delta to hold short of runway
+    # two four" parses to a CROSS on 13 followed by a HOLD_SHORT of 24. The crossing must survive the second event.
+    state, c = fold([ClearToCross(callsign="af", runway="13"), HoldShort(callsign="af", runway="24"),
+                     ClearToLand(callsign="csa", runway="13")])
+    assert _kinds(state, "13") == [("af", "CROSS"), ("csa", "LAND")]
+    assert [(x.type, x.severity, x.runway) for x in c] == [("RUNWAY", "alert", "13")]
