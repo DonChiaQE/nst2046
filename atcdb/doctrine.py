@@ -47,12 +47,13 @@ _COLUMNS = ("id", "document", "section", "category", "pattern", "description")
 
 def seed(conn: sqlite3.Connection) -> None:
     """Write RULES into `phraseology_rules`, replacing rows by id. Idempotent, and a no-op (no write, no commit)
-    when the table already holds exactly RULES: `init_db` calls this on every open, including once per API
-    request, so a table that already matches must cost nothing."""
+    when the table already agrees with RULES on every id RULES owns: `init_db` calls this on every open, including
+    once per API request, so a table that already matches must cost nothing. The table is shared (annotations.rule_id
+    references it), so foreign rows outside RULES are ignored by the comparison and never touched or deleted."""
     current = {row[0]: tuple(row) for row in conn.execute(f"SELECT {', '.join(_COLUMNS)} FROM phraseology_rules")}
     wanted = {r["id"]: tuple(r[c] for c in _COLUMNS) for r in RULES}
-    if current == wanted:
-        return
+    if {k: current.get(k) for k in wanted} == wanted:   # compare only the ids RULES owns: the table is shared
+        return                                          # (annotations.rule_id references it) so a foreign row must not count
     conn.executemany("INSERT OR REPLACE INTO phraseology_rules (id, document, section, category, pattern, description) "
                      "VALUES (:id, :document, :section, :category, :pattern, :description)", RULES)
     conn.commit()

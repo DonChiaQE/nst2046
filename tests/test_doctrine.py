@@ -36,3 +36,19 @@ def test_seed_writes_nothing_once_the_table_already_matches_rules_but_corrects_a
     doctrine.seed(conn)   # table now differs from RULES: the stale row is corrected
     row = conn.execute("SELECT description FROM phraseology_rules WHERE id = ?", (rule_id,)).fetchone()
     assert row[0] == doctrine.RULES[0]["description"]
+
+
+def test_seed_ignores_a_foreign_row_it_does_not_own(tmp_path):
+    # phraseology_rules is shared: annotations.rule_id references rows seed() does not own (e.g. a human annotator's
+    # own rule). seed() must compare only the ids in RULES, not the whole table, or a foreign row makes every
+    # comparison miss and every init_db call rewrites and commits (spec finding: init_db runs once per API request).
+    conn = init_db(tmp_path / "t.sqlite")
+    conn.execute(
+        "INSERT INTO phraseology_rules (id, document, section, category, pattern, description) VALUES (?, ?, ?, ?, ?, ?)",
+        ("human-note-1", "human", None, "note", None, "a human annotator's own rule row, not in doctrine.RULES"))
+    conn.commit()
+    before = conn.total_changes
+    doctrine.seed(conn)   # table matches RULES on every id RULES cares about: no write, no commit
+    assert conn.total_changes == before
+    row = conn.execute("SELECT id FROM phraseology_rules WHERE id = ?", ("human-note-1",)).fetchone()
+    assert row is not None
