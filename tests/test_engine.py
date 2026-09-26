@@ -1,5 +1,6 @@
 import pytest
 
+from atcdb import engine
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HoldShort,
                           LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
                           STALE_S, State, apply, fold, normalize_runway)
@@ -162,11 +163,11 @@ def test_go_around_cancels_landing_only():
 
 
 def test_stale_reservation_is_dropped_silently():
-    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=STALE_S + 1)])
+    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=STALE_S["LAND"] + 1)])
     assert c == []
     state, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=100.0)])
     assert [x.severity for x in c] == ["alert"]
-    state, _ = fold([NoOp(t=STALE_S + 101)], state)   # both the t=0 LAND and the t=100 CROSS are now stale
+    state, _ = fold([NoOp(t=100 + max(STALE_S.values()) + 1)], state)   # both the t=0 LAND and the t=100 CROSS are now stale
     assert state.runways == {} and state.aircraft["a"].runway is None
 
 
@@ -248,5 +249,23 @@ def test_unknown_callsign_instruction_reserves_but_only_warns():
     # Nothing can release an unknown reservation except staleness.
     state, _ = fold([ClearToLand(callsign="", runway="31", t=0.0), RunwayVacated(callsign="", t=5.0)])
     assert _kinds(state, "31") == [("", "LAND")]
-    state, _ = fold([NoOp(t=STALE_S + 1)], state)
+    state, _ = fold([NoOp(t=STALE_S["LAND"] + 1)], state)
     assert state.runways == {}
+
+
+# --- phase 2.5 (spec addendum A.3) -------------------------------------------------------------
+
+def test_staleness_is_per_kind(monkeypatch):
+    assert set(STALE_S) == set(RESERVATION_KINDS) | {"HOLD_SHORT"}
+    monkeypatch.setitem(engine.STALE_S, "CROSS", 30.0)
+    _, c = fold([ClearToCross(callsign="a", runway="31", t=0.0), ClearToLand(callsign="b", runway="31", t=31.0)])
+    assert c == []                                     # the crossing timed out after 30 s
+    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=31.0)])
+    assert [x.severity for x in c] == ["alert"]        # the landing clearance did not
+
+
+def test_landing_clearance_outlives_the_austin_gap():
+    # Austin 2023: FedEx cleared to land 18L at 0634:14, Southwest cleared for takeoff on 18L at 0638:58, 284 s later.
+    assert STALE_S["LAND"] >= 284
+    _, c = fold([ClearToLand(callsign="fedex", runway="18L", t=0.0), ClearTakeoff(callsign="southwest", runway="18L", t=284.0)])
+    assert [(x.type, x.severity, x.runway) for x in c] == [("RUNWAY", "alert", "18L")]

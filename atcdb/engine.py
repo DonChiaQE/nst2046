@@ -145,7 +145,10 @@ class State:
 
 # --- rules ------------------------------------------------------------------------------------
 
-STALE_S = 300.0   # a reservation this old (transmission time) is dropped silently: we missed the release call
+# A reservation (or hold-short) older than its kind's timeout, in transmission time, is dropped silently: we missed the
+# release call. Per kind so that 3b can shorten CROSS and LUAW against the false-alarm metric (spec addendum A.3.6).
+# LAND must stay >= 284 s: at Austin 2023 the landing and the conflicting takeoff clearance were 284 s apart.
+STALE_S: dict[str, float] = {"LAND": 300.0, "TAKEOFF": 300.0, "LUAW": 300.0, "CROSS": 300.0, "HOLD_SHORT": 300.0}
 
 # (new_kind, active_kind) -> verdict, checked against OTHER aircraft's reservations on the same runway.
 # LAND after LAND is legal (anticipated separation). LUAW then LAND is the Austin 2023 pattern.
@@ -179,10 +182,10 @@ def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str,
 
 
 def _expire(state: State, now: float) -> tuple[dict[str, tuple[Reservation, ...]], dict[str, Aircraft]]:
-    """Copy of the runway map and aircraft map with reservations older than STALE_S removed."""
+    """Copy of the runway map and aircraft map with reservations older than their kind's STALE_S removed."""
     runways, aircraft = {}, dict(state.aircraft)
     for rwy, res in state.runways.items():
-        keep = tuple(r for r in res if now - r.t <= STALE_S)
+        keep = tuple(r for r in res if now - r.t <= STALE_S[r.kind])
         for r in res:
             if r not in keep and r.callsign in aircraft:
                 aircraft[r.callsign] = replace(aircraft[r.callsign], runway=None, kind=None)
