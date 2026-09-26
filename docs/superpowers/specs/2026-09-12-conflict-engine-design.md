@@ -1,8 +1,7 @@
 # ATC conflict engine — design
 
-**Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17; phase-3 design-pass addendum written
-2026-09-26, awaiting review.** Phases 1 and 2 merged (PR #1, PR #2). Next step: review the addendum, then the phase-2.5
-plan via `superpowers:writing-plans`.
+**Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17; phase-3 design-pass addendum approved
+2026-09-26.** Phases 1 and 2 merged (PR #1, PR #2). Next step: the phase-2.5 plan via `superpowers:writing-plans`.
 
 ## Context / pivot
 
@@ -394,16 +393,12 @@ DCA23LA125) hold raw audio and paraphrase in the factual report. Austin is the c
 (DCA26MA161, the report's motivating incident) is the next candidate once its docket is public. JFK is written up as
 the out-of-envelope example.
 
-### A.7 Open questions for review
+### A.7 Decisions on review (2026-09-26)
 
-1. **Freeze the rules parser for the comparison?** Fixing the `runway`-token and US-callsign gaps (A.2) makes a
-   fairer baseline, but they were found on Austin, and the report's appendix already shows the v1 behaviour.
-   Recommendation: freeze `parse_rules` v1 as the pre-registered baseline and report its gaps as findings; fix only
-   `normalize_runway` (A.3.7), which is shared.
-2. **Engine version in the cache key?** `window`-mode parses depend on engine state, and 2.5 and 3b both change the
-   engine. Today the fix is `parse_events.py --refresh`, which for LLM parses costs a few dollars and silently
-   leaves stale rows if forgotten. Recommendation: add a hand-bumped `ENGINE_VERSION` to the key in 3a, before the
-   first LLM parse is cached.
+1. **The rules parser is frozen at v1** as the pre-registered baseline. Its `runway`-token and US-callsign gaps are
+   reported as findings, not fixed. Only `normalize_runway` changes (A.3.7), because every extractor depends on it.
+2. **The cache key gains a hand-bumped `ENGINE_VERSION`** in 3a, before the first LLM parse is cached, so `window`
+   parses made against an older engine are never served after 2.5 or 3b changes it.
 
 ## Suggested build order
 
