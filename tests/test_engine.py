@@ -312,8 +312,11 @@ def test_readback_conflict_names_the_runway_that_was_missed():
 
 
 def test_readback_conflict_falls_back_to_the_hold_short_runway():
-    hold = HoldShort(callsign="b", runway="13", text="b hold short of runway one three contact ground one two one nine")
-    _, c = fold([hold, ReadbackObserved(callsign="b", text="holding short runway one three one two one five b")])
+    # The missed item is a "contact tower" frequency, not a ground handoff: a handoff to ground (or departure) would
+    # release the hold-short (see heuristic-handoff-release in atcdb/doctrine.py), which the real rules parser would
+    # also emit from that text, making this scenario impossible. A handoff to tower releases nothing.
+    hold = HoldShort(callsign="b", runway="13", text="b hold short of runway one three contact tower one one nine decimal seven")
+    _, c = fold([hold, ReadbackObserved(callsign="b", text="holding short runway one three b")])
     assert [(x.type, x.severity, x.runway) for x in c] == [("READBACK", "warning", "13")]
 
 
