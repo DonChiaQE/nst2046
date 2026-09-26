@@ -4,6 +4,7 @@ Austin is NTSB public record and is committed as a fixture. Recording 528 comes 
 which is not redistributed, so its test reads the local corpus DB read-only and skips without it. Both pin the frozen
 rules-parser baseline (parse_rules v1, spec addendum A.7): these are findings the evaluation reports, not bugs to fix.
 """
+import contextlib
 import re
 import sqlite3
 from pathlib import Path
@@ -77,9 +78,9 @@ def test_austin_rules_baseline():
 def test_recording_528_keeps_its_known_false_alert():
     # Air France 198R is cleared to cross 13, then CSA 38W is cleared to land 13. The crossing is complete (Air France is
     # next told to hold short of 24) but nobody says so on frequency. Extraction is correct; the release is not in the audio.
-    conn = sqlite3.connect(f"file:{CORPUS}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
-    txs = load_recording(conn, 528, "gold", "human")
-    result = fold_rules(txs)
-    raised = [(k + 1, c.type, c.severity, c.runway, c.callsigns) for k, (cs, _) in enumerate(result) for c in cs if c.type == "RUNWAY"]
-    assert raised == [(17, "RUNWAY", "alert", "13", ("csa three eight whiskey", "air france one nine eight romeo"))]
+    with contextlib.closing(sqlite3.connect(f"file:{CORPUS}?mode=ro", uri=True)) as conn:
+        conn.row_factory = sqlite3.Row
+        txs = load_recording(conn, 528, "gold", "human")
+        result = fold_rules(txs)
+        raised = [(k + 1, c.type, c.severity, c.runway, c.callsigns) for k, (cs, _) in enumerate(result) for c in cs if c.type == "RUNWAY"]
+        assert raised == [(17, "RUNWAY", "alert", "13", ("csa three eight whiskey", "air france one nine eight romeo"))]
