@@ -133,6 +133,15 @@ def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str, rec
     return models[0] if models else None
 
 
+def _resolve_model(parser: str, model: str | None) -> str:
+    """The model to use: `model`, or the parser's default when none is given, checked against `PARSER_MODELS[parser]`
+    so a rules parse can never be cached under a Claude model id or vice versa."""
+    model = model or PARSER_MODELS[parser][0]
+    if model not in PARSER_MODELS[parser]:
+        raise ValueError(f"unknown model {model!r} for parser {parser!r}; expected one of {PARSER_MODELS[parser]}")
+    return model
+
+
 def cache_version(model_version: str, mode: str) -> str:
     """The `model_version` a cache row is stored under. A `window` parse saw the engine's state, so it is also keyed by
     ENGINE_VERSION (spec addendum A.7.2); `none` and `role` parses never see it and keep the plain version."""
@@ -156,7 +165,7 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
     transcript while this one was parsing, the first writer's parse wins: it is what stays cached and what is returned,
     so the cache never mixes rows from two different parses. An `IntegrityError` that leaves no rows behind was not a
     race (a foreign-key failure, say) and is re-raised rather than returned as an empty parse."""
-    model = model or PARSER_MODELS[parser][0]
+    model = _resolve_model(parser, model)
     model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     cached = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
     if cached:
@@ -184,7 +193,9 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
 def clear_events(conn: sqlite3.Connection, parser: str, model: str | None = None, model_version: str | None = None,
                  context: str | None = None) -> int:
     """Delete cached events for a parser (optionally narrowed to model / version / context mode). Returns rows deleted.
-    Needed because `window`-mode parses depend on engine state: after tuning engine rules, refresh the cache."""
+    `window`-mode parses are already invalidated automatically when engine rules change, via ENGINE_VERSION in the
+    cache key (see `cache_version`); a manual clear is for discarding parses you no longer want, e.g. a bad prompt
+    run. `model_version`, when given, must be the stored key, i.e. `cache_version(version, context)`."""
     sql, params = "DELETE FROM events WHERE parser = ?", [parser]
     for col, val in (("model", model), ("model_version", model_version), ("context", context)):
         if val is not None:
@@ -201,7 +212,7 @@ def uncached_parses(conn: sqlite3.Connection, recording_id: int, parser: str = "
     """The transmissions `build_timeline` would have to parse, each with the context it would be parsed in as far as the
     cache knows (cached events are folded; a missing parse contributes nothing to later context). Parses nothing and
     stores nothing: this is what `parse_events.py --dry-run` counts."""
-    model = model or PARSER_MODELS[parser][0]
+    model = _resolve_model(parser, model)
     model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
     state, out = State(), []
@@ -219,7 +230,7 @@ def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "r
                    context: str = "window", model: str | None = None, model_version: str | None = None,
                    transcript_model: str | None = None) -> Timeline:
     """Fold a whole recording: one Step per transmission with its events, the conflicts they raised and the state after."""
-    model = model or PARSER_MODELS[parser][0]
+    model = _resolve_model(parser, model)
     model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
     state = State()

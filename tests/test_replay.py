@@ -320,6 +320,20 @@ def test_the_pinned_transcript_model_is_chosen_per_recording(tmp_path):
     assert default_transcript_model(conn, "asr", synthetic) is None
 
 
+def test_an_unknown_model_for_the_parser_is_rejected(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE[:1])
+    txs = load_recording(conn, rid)
+    msg = "unknown model 'claude-sonnet-5' for parser 'rule'"
+    with pytest.raises(ValueError, match=msg):
+        get_events(conn, txs[0], "rule", Context(mode="role", role="controller"), model="claude-sonnet-5")
+    with pytest.raises(ValueError, match=msg):
+        build_timeline(conn, rid, parser="rule", model="claude-sonnet-5")
+    with pytest.raises(ValueError, match=msg):
+        uncached_parses(conn, rid, parser="rule", model="claude-sonnet-5")
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 0   # nothing was cached under the wrong model
+
+
 def test_the_registry_knows_both_parsers_and_their_models():
     assert PARSER_MODELS == {"rule": ["rules"], "llm": ["claude-haiku-4-5", "claude-sonnet-5"]}
     assert PARSER_VERSIONS == {"rule": VERSION, "llm": "p1"}
@@ -348,6 +362,27 @@ def test_llm_replays_resolve_the_model_only_on_a_miss_and_cache_unresolved_event
     assert [tuple(r) for r in conn.execute("SELECT DISTINCT parser, model, model_version FROM events")] == \
         [("llm", "claude-sonnet-5", f"p1+engine{engine.ENGINE_VERSION}")]
     assert build_timeline(conn, rid, parser="llm").model == "claude-haiku-4-5"   # the first model is the default
+
+
+def test_a_cached_llm_replay_works_with_anthropic_absent(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE[:2])
+    txs = load_recording(conn, rid)
+    calls = []
+    monkeypatch.setitem(PARSERS, "llm",
+                        _fake_parser({SEQUENCE[0][1]: [ClearToLand(callsign="csa one two three", runway="31")],
+                                      SEQUENCE[1][1]: [NoOp()]}, calls))
+    first = build_timeline(conn, rid, parser="llm")   # fills the cache under the real registry entry's model/version
+    assert len(calls) == 2 and all(s.error is None for s in first.steps)
+    monkeypatch.setitem(PARSERS, "llm", parse_llm.make_parser)   # restore the real registry entry
+
+    monkeypatch.setitem(sys.modules, "anthropic", None)   # makes `import anthropic` raise ImportError
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    again = build_timeline(conn, rid, parser="llm")   # served entirely from the cache: no SDK, no key needed
+    assert again.steps[0].events == (ClearToLand(callsign="csa one two three", runway="31", t=txs[0].start_s, text=txs[0].text),)
+    assert again.steps[1].events == (NoOp(t=txs[1].start_s, text=txs[1].text),)
+    assert all(s.error is None for s in again.steps)
+    assert len(calls) == 2   # the second replay never touched the (now-blocked) parser
 
 
 def test_uncached_parses_lists_what_a_replay_would_still_have_to_parse(tmp_path):
