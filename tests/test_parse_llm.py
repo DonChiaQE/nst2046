@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -9,8 +10,8 @@ import pytest
 from atcdb import parse_llm
 from atcdb.engine import (HANDOFF_TARGETS, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, ReadbackObserved,
                           RunwayVacated, Unresolved)
-from atcdb.parse_llm import (EVENT_KINDS, MODELS, SYSTEM, TOOL, ParseError, estimate_cost, make_parser, render_prompt, request,
-                             to_events)
+from atcdb.parse_llm import (EVENT_KINDS, MODELS, SYSTEM, TOOL, ParseError, estimate_cost, events_from_response, make_parser,
+                             render_prompt, request, to_events)
 from atcdb.parsing import Context, Transmission
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -162,3 +163,54 @@ def test_estimate_cost_scales_with_the_calls_and_the_price():
     assert 0 < one < 0.01
     assert estimate_cost("claude-haiku-4-5", ["x" * 400] * 10) == pytest.approx(10 * one)
     assert estimate_cost("claude-sonnet-5", ["x" * 400]) == pytest.approx(2 * one)   # both prices are double Haiku's
+
+
+# --- recorded replies (scripts/record_llm_fixtures.py) -----------------------------------------
+
+FIXTURE = ROOT / "tests" / "fixtures" / "llm_responses.json"
+
+# (case, model) -> what the recorded reply maps to: (event type, callsign, runway or handoff target).
+RECORDED = {
+    **{("austin_landing_clearance", m): [("ClearToLand", "fedex fourteen thirty-two heavy", "18L")] for m in MODELS},
+    **{("austin_takeoff_clearance", m): [("ClearTakeoff", "southwest seven zero eight", "18L")] for m in MODELS},
+    # Findings, not expectations to fix here: Haiku reads the pilot's readback as a new clearance for the heading,
+    # Sonnet sees a readback but misses the callsign said at the end.
+    ("austin_takeoff_readback", "claude-haiku-4-5"): [("ClearTakeoff", "one seven zero", "18L")],
+    ("austin_takeoff_readback", "claude-sonnet-5"): [("ReadbackObserved", "", None)],
+    **{("austin_handoff", m): [("Handoff", "american nineteen thirteen", "departure")] for m in MODELS},
+    **{("cross_then_hold_short", m): [("ClearToCross", "lufthansa four five six", "24"),
+                                      ("HoldShort", "lufthansa four five six", "31")] for m in MODELS},
+    **{("window_snaps_to_the_active_runway", m): [("ClearToLand", "csa one two three", "31")] for m in MODELS},
+}
+
+
+def _recorded():
+    """Each recorded reply as (case, model, transmission, context, response), the response shaped like the SDK's Message."""
+    for r in json.loads(FIXTURE.read_text()):
+        c = r["context"]
+        ctx = Context(mode=c["mode"], role=c["role"], history=tuple(tuple(h) for h in c["history"]),
+                      active_callsigns=tuple(c["active_callsigns"]), active_runways=tuple(c["active_runways"]))
+        tx = Transmission(id=0, transcript_id=0, text=r["text"], role=r["role"], start_s=0.0)
+        response = SimpleNamespace(stop_reason=r["stop_reason"], content=[SimpleNamespace(**b) for b in r["content"]])
+        yield r["case"], r["model"], tx, ctx, response
+
+
+def test_recorded_replies_map_to_the_pinned_events():
+    seen = set()
+    for case, model, tx, ctx, response in _recorded():
+        got = [(type(e).__name__, e.callsign, getattr(e, "runway", None) or getattr(e, "to", None))
+               for e in events_from_response(response, tx)]
+        assert got == RECORDED[(case, model)], (case, model)
+        seen.add((case, model))
+    assert seen == set(RECORDED)
+
+
+def test_the_recorded_replies_are_for_this_parser_version():
+    # A change to the prompt, the tool or the request bumps VERSION; then re-run scripts/record_llm_fixtures.py.
+    assert {r["version"] for r in json.loads(FIXTURE.read_text())} == {parse_llm.VERSION}
+
+
+@pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="ANTHROPIC_API_KEY not set: live smoke test skipped")
+def test_live_smoke_haiku_parses_a_landing_clearance():
+    events = make_parser("claude-haiku-4-5")(TX, ROLE)
+    assert [(type(e).__name__, e.callsign, e.runway) for e in events] == [("ClearToLand", "csa one two three", "31")]
