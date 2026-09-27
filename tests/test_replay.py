@@ -9,7 +9,7 @@ from atcdb.parse_rules import VERSION
 from atcdb.parsing import Context
 from atcdb.replay import (PARSER_AVAILABILITY, PARSER_MODELS, PARSER_VERSIONS, PARSERS, Step, Timeline, build_context,
                           build_timeline, cache_version, clear_events, default_transcript_model, get_events, get_recording,
-                          list_recordings, load_recording, transcript_models)
+                          list_recordings, load_recording, transcript_models, uncached_parses)
 from atcdb.schema import init_db
 
 
@@ -313,3 +313,19 @@ def test_llm_replays_resolve_the_model_only_on_a_miss_and_cache_unresolved_event
     assert [tuple(r) for r in conn.execute("SELECT DISTINCT parser, model, model_version FROM events")] == \
         [("llm", "claude-sonnet-5", f"p1+engine{engine.ENGINE_VERSION}")]
     assert build_timeline(conn, rid, parser="llm").model == "claude-haiku-4-5"   # the first model is the default
+
+
+def test_uncached_parses_lists_what_a_replay_would_still_have_to_parse(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE[:3])
+    txs = load_recording(conn, rid)
+    assert [tx for tx, _ in uncached_parses(conn, rid)] == txs
+    build_timeline(conn, rid)                                  # the rules parser caches all three in window mode
+    assert uncached_parses(conn, rid) == []
+    assert len(uncached_parses(conn, rid, context="role")) == 3   # another context mode is another cache entry
+    conn.execute("DELETE FROM events WHERE transcript_id = ?", (txs[2].transcript_id,))
+    conn.commit()
+    [(tx, ctx)] = uncached_parses(conn, rid)
+    assert tx == txs[2] and ctx.active_runways == ("31",)       # the cached LAND on 31 is folded into the context
+    assert ctx.history == tuple((r, t) for r, t in SEQUENCE[:2])
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2   # counting parsed and stored nothing

@@ -30,6 +30,11 @@ MODEL_SETTINGS: dict[str, dict[str, Any]] = {
 }
 MAX_TOKENS = 1024   # a transmission yields a handful of events; a truncated reply raises ParseError
 
+# For `parse_events.py --dry-run` only. USD per million tokens, (input, output), as listed 2026-06.
+PRICES_PER_MTOK: dict[str, tuple[float, float]] = {"claude-haiku-4-5": (1.00, 5.00), "claude-sonnet-5": (2.00, 10.00)}
+_TOOL_USE_OVERHEAD_TOKENS = 350   # the system prompt the API adds when tools are present (rough)
+_OUTPUT_TOKENS = 150              # a tool call with a handful of events (rough)
+
 _RUNWAY_EVENTS = {"LAND": ClearToLand, "TAKEOFF": ClearTakeoff, "LUAW": LineUpAndWait, "CROSS": ClearToCross,
                   "HOLD_SHORT": HoldShort}
 EVENT_KINDS = (*_RUNWAY_EVENTS, "VACATED", "GO_AROUND", "HANDOFF", "READBACK", "NOOP")
@@ -162,6 +167,15 @@ def make_parser(model: str, client: Any = None) -> Parser:
         return events_from_response(response, tx)
 
     return parse
+
+
+def estimate_cost(model: str, prompts: list[str]) -> float:
+    """Rough USD for one call per user prompt: about four characters a token for the prompt, the system prompt and the
+    tool, plus the API's tool-use overhead in, and a short tool call out. Good to a factor of two; for dry runs only."""
+    fixed = (len(SYSTEM) + len(json.dumps(TOOL))) / 4 + _TOOL_USE_OVERHEAD_TOKENS
+    tokens_in = sum(fixed + len(p) / 4 for p in prompts)
+    price_in, price_out = PRICES_PER_MTOK[model]
+    return (tokens_in * price_in + len(prompts) * _OUTPUT_TOKENS * price_out) / 1e6
 
 
 def availability() -> tuple[bool, str | None]:

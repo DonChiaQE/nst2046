@@ -195,6 +195,26 @@ def clear_events(conn: sqlite3.Connection, parser: str, model: str | None = None
     return n
 
 
+def uncached_parses(conn: sqlite3.Connection, recording_id: int, parser: str = "rule", transcript_kind: str = "gold",
+                    context: str = "window", model: str | None = None, model_version: str | None = None,
+                    transcript_model: str | None = None) -> list[tuple[Transmission, Context]]:
+    """The transmissions `build_timeline` would have to parse, each with the context it would be parsed in as far as the
+    cache knows (cached events are folded; a missing parse contributes nothing to later context). Parses nothing and
+    stores nothing: this is what `parse_events.py --dry-run` counts."""
+    model = model or PARSER_MODELS[parser][0]
+    model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
+    txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
+    state, out = State(), []
+    for k, tx in enumerate(txs):
+        ctx = build_context(context, tx, txs[:k], state)
+        cached = _cached_events(conn, tx, parser, model, model_version, context)
+        if not cached:
+            out.append((tx, ctx))
+        for e in cached:
+            state, _ = apply(state, e)
+    return out
+
+
 def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "rule", transcript_kind: str = "gold",
                    context: str = "window", model: str | None = None, model_version: str | None = None,
                    transcript_model: str | None = None) -> Timeline:

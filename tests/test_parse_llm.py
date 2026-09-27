@@ -9,7 +9,8 @@ import pytest
 from atcdb import parse_llm
 from atcdb.engine import (HANDOFF_TARGETS, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, ReadbackObserved,
                           RunwayVacated, Unresolved)
-from atcdb.parse_llm import EVENT_KINDS, MODELS, SYSTEM, TOOL, ParseError, make_parser, render_prompt, request, to_events
+from atcdb.parse_llm import (EVENT_KINDS, MODELS, SYSTEM, TOOL, ParseError, estimate_cost, make_parser, render_prompt, request,
+                             to_events)
 from atcdb.parsing import Context, Transmission
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -153,3 +154,11 @@ def test_importing_the_parser_does_not_import_the_sdk():
     code = "import sys, atcdb.parse_llm; print('anthropic' in sys.modules)"
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
     assert out.stdout.strip() == "False"
+
+
+def test_estimate_cost_scales_with_the_calls_and_the_price():
+    assert estimate_cost("claude-haiku-4-5", []) == 0
+    one = estimate_cost("claude-haiku-4-5", ["x" * 400])
+    assert 0 < one < 0.01
+    assert estimate_cost("claude-haiku-4-5", ["x" * 400] * 10) == pytest.approx(10 * one)
+    assert estimate_cost("claude-sonnet-5", ["x" * 400]) == pytest.approx(2 * one)   # both prices are double Haiku's
