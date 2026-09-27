@@ -1,8 +1,13 @@
+import sqlite3
+from dataclasses import replace
+
 import pytest
 
+from atcdb import engine
 from atcdb.engine import ClearToLand, Handoff, NoOp, ReadbackObserved, State, fold
+from atcdb.parse_rules import VERSION
 from atcdb.parsing import Context
-from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, clear_events,
+from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, cache_version, clear_events,
                           default_transcript_model, get_events, get_recording, list_recordings, load_recording,
                           transcript_models)
 from atcdb.schema import init_db
@@ -239,3 +244,29 @@ def test_build_timeline_counts_events_the_engine_ignored(tmp_path, monkeypatch):
     monkeypatch.setitem(PARSERS, "rule", _fake_parser({"a contact grund one two one nine": [Handoff(callsign="a", to="grund")]}, []))
     tl = build_timeline(conn, rid, context="role")
     assert tl.steps[0].dropped == 1
+
+
+def test_window_parses_are_keyed_by_the_engine_version(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    calls = []
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [NoOp()]}, calls))
+    window, role = Context(mode="window", role="controller"), Context(mode="role", role="controller")
+    get_events(conn, txs[0], "rule", window)
+    get_events(conn, txs[0], "rule", role)
+    stored = sorted(r[0] for r in conn.execute("SELECT model_version FROM events"))
+    assert stored == [VERSION, f"{VERSION}+engine{engine.ENGINE_VERSION}"]
+    monkeypatch.setattr(engine, "ENGINE_VERSION", "test")
+    assert (cache_version("v1", "window"), cache_version("v1", "role"), cache_version("v1", "none")) == ("v1+enginetest", "v1", "v1")
+    get_events(conn, txs[0], "rule", window)   # a new engine: the window parse is a miss and is parsed again
+    get_events(conn, txs[0], "rule", role)     # role parses never see engine state: still served from the cache
+    assert len(calls) == 3
+
+
+def test_get_events_re_raises_an_integrity_error_that_left_no_rows(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [NoOp()]}, []))
+    orphan = replace(txs[0], transcript_id=999_999)   # no such transcript: the foreign key fails and nobody cached anything
+    with pytest.raises(sqlite3.IntegrityError):
+        get_events(conn, orphan, "rule", Context(mode="role", role="controller"))

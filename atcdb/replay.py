@@ -3,14 +3,14 @@
 `get_events` is the single cache path (cached rows from `events`, or parse-and-store on a miss); the
 precompute script and the web API both go through it. `build_timeline` folds the cached/parsed events so
 "state after transmission k" is available for every k, which is what the replay UI scrubs through.
-Window-mode parses depend on engine state, so after changing engine rules run `scripts/parse_events.py
---refresh` (see `clear_events`).
+Window-mode parses depend on engine state, so their cache key carries `engine.ENGINE_VERSION` (see `cache_version`):
+bump it after changing engine rules and the old window parses are simply never read again.
 """
 import sqlite3
 from dataclasses import dataclass
 from typing import Callable
 
-from atcdb import parse_rules
+from atcdb import engine, parse_rules
 from atcdb.engine import Conflict, Event, NoOp, State, apply
 from atcdb.parsing import CONTEXT_MODES, WINDOW, Context, Parser, Transmission, event_to_row, row_to_event
 
@@ -120,12 +120,18 @@ def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str) -> 
     return models[0] if models else None
 
 
+def cache_version(model_version: str, mode: str) -> str:
+    """The `model_version` a cache row is stored under. A `window` parse saw the engine's state, so it is also keyed by
+    ENGINE_VERSION (spec addendum A.7.2); `none` and `role` parses never see it and keep the plain version."""
+    return f"{model_version}+engine{engine.ENGINE_VERSION}" if mode == "window" else model_version
+
+
 def _cached_events(conn: sqlite3.Connection, tx: Transmission, parser: str, model: str, model_version: str,
                    mode: str) -> list[Event]:
     rows = conn.execute(
         """SELECT kind, callsign, runway, extra_json FROM events
            WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
-           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, mode)).fetchall()
+           ORDER BY seq""", (tx.transcript_id, parser, model, cache_version(model_version, mode), mode)).fetchall()
     return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
 
 
@@ -135,7 +141,8 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
     and stored. A parser exception propagates and nothing is stored, so the next call retries. An empty parse is
     stored as one NOOP row, so the transcript is not a cache miss forever. If another request cached the same
     transcript while this one was parsing, the first writer's parse wins: it is what stays cached and what is returned,
-    so the cache never mixes rows from two different parses."""
+    so the cache never mixes rows from two different parses. An `IntegrityError` that leaves no rows behind was not a
+    race (a foreign-key failure, say) and is re-raised rather than returned as an empty parse."""
     if model is None:
         model, model_version = PARSER_MODELS[parser]
     model_version = model_version or ""
@@ -147,11 +154,15 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
         conn.executemany(
             """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
+            [(tx.transcript_id, parser, model, cache_version(model_version, ctx.mode), ctx.mode, i, *event_to_row(e))
+             for i, e in enumerate(events)])
         conn.commit()
     except sqlite3.IntegrityError:
         conn.rollback()   # lost the race: nothing of ours is kept
-        return _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+        winner = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+        if not winner:
+            raise
+        return winner
     except Exception:
         conn.rollback()   # a partial insert must never be committed later by someone else's commit
         raise
