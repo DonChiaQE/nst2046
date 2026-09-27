@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from atcdb.parsing import CONTEXT_MODES  # noqa: E402
-from atcdb.replay import (PARSER_MODELS, PARSERS, build_timeline, cache_version, clear_events,  # noqa: E402
-                          default_transcript_model, list_recordings)
+from atcdb.replay import (PARSER_MODELS, PARSER_VERSIONS, PARSERS, build_timeline, cache_version,  # noqa: E402
+                          clear_events, default_transcript_model, list_recordings)
 from atcdb.schema import init_db  # noqa: E402
 
 
@@ -36,7 +36,7 @@ def main() -> None:
 
     conn = init_db(args.db)
     if args.refresh:
-        model, version = PARSER_MODELS[args.parser]
+        model, version = PARSER_MODELS[args.parser][0], PARSER_VERSIONS[args.parser]
         n = clear_events(conn, args.parser, model, cache_version(version, args.context), args.context)
         print(f"cleared {n} cached events")
     recordings = list_recordings(conn, facility=args.facility, min_transmissions=args.min_transmissions, transcript_kind=args.transcript)

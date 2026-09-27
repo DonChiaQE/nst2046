@@ -10,12 +10,18 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Callable
 
-from atcdb import engine, parse_rules
+from atcdb import engine, parse_llm, parse_rules
 from atcdb.engine import Conflict, Event, NoOp, State, apply
 from atcdb.parsing import CONTEXT_MODES, WINDOW, Context, Parser, Transmission, event_to_row, row_to_event
 
-PARSERS: dict[str, Parser] = {"rule": parse_rules.parse}
-PARSER_MODELS: dict[str, tuple[str, str]] = {"rule": ("rules", parse_rules.VERSION)}   # parser -> (model, model_version)
+# parser -> factory taking a model id. `get_events` calls it only on a cache miss, so the Claude client is created the
+# first time a transmission needs parsing, and a replay served from the cache needs no SDK and no key (spec addendum A.4).
+PARSERS: dict[str, Callable[[str], Parser]] = {"rule": lambda model: parse_rules.parse, "llm": parse_llm.make_parser}
+PARSER_MODELS: dict[str, list[str]] = {"rule": ["rules"], "llm": list(parse_llm.MODELS)}   # the first is the default
+PARSER_VERSIONS: dict[str, str] = {"rule": parse_rules.VERSION, "llm": parse_llm.VERSION}   # bumped by hand, cache key
+# parser -> (can a cold parse run here, and if not why); served by the capabilities route
+PARSER_AVAILABILITY: dict[str, Callable[[], tuple[bool, str | None]]] = {"rule": lambda: (True, None),
+                                                                          "llm": parse_llm.availability}
 # parser -> instructions it recognised but could not place on a runway, for one transmission (spec addendum A.3.5)
 DROP_COUNTERS: dict[str, Callable[[Transmission, Context], int]] = {"rule": parse_rules.count_unresolved}
 
@@ -150,13 +156,12 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
     transcript while this one was parsing, the first writer's parse wins: it is what stays cached and what is returned,
     so the cache never mixes rows from two different parses. An `IntegrityError` that leaves no rows behind was not a
     race (a foreign-key failure, say) and is re-raised rather than returned as an empty parse."""
-    if model is None:
-        model, model_version = PARSER_MODELS[parser]
-    model_version = model_version or ""
+    model = model or PARSER_MODELS[parser][0]
+    model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     cached = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
     if cached:
         return cached
-    events = PARSERS[parser](tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
+    events = PARSERS[parser](model)(tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
     try:
         conn.executemany(
             """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
@@ -194,8 +199,8 @@ def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "r
                    context: str = "window", model: str | None = None, model_version: str | None = None,
                    transcript_model: str | None = None) -> Timeline:
     """Fold a whole recording: one Step per transmission with its events, the conflicts they raised and the state after."""
-    if model is None:
-        model, model_version = PARSER_MODELS[parser]
+    model = model or PARSER_MODELS[parser][0]
+    model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
     state = State()
     steps: list[Step] = []
@@ -213,4 +218,4 @@ def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "r
             conflicts.extend(new)
         dropped = DROP_COUNTERS.get(parser, lambda tx, ctx: 0)(tx, ctx) + state.ignored - ignored_before
         steps.append(Step(tx=tx, events=tuple(events), conflicts=tuple(conflicts), state=state, error=error, dropped=dropped))
-    return Timeline(recording_id, parser, model, model_version or "", context, transcript_kind, tuple(steps))
+    return Timeline(recording_id, parser, model, model_version, context, transcript_kind, tuple(steps))

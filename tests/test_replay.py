@@ -4,12 +4,12 @@ from dataclasses import replace
 import pytest
 
 from atcdb import engine
-from atcdb.engine import ClearToLand, Handoff, NoOp, ReadbackObserved, State, fold
+from atcdb.engine import ClearToLand, Handoff, NoOp, ReadbackObserved, State, Unresolved, fold
 from atcdb.parse_rules import VERSION
 from atcdb.parsing import Context
-from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, cache_version, clear_events,
-                          default_transcript_model, get_events, get_recording, list_recordings, load_recording,
-                          transcript_models)
+from atcdb.replay import (PARSER_AVAILABILITY, PARSER_MODELS, PARSER_VERSIONS, PARSERS, Step, Timeline, build_context,
+                          build_timeline, cache_version, clear_events, default_transcript_model, get_events, get_recording,
+                          list_recordings, load_recording, transcript_models)
 from atcdb.schema import init_db
 
 
@@ -20,7 +20,7 @@ def _fake_parser(events_by_text, calls):
         if isinstance(out, Exception):
             raise out
         return out
-    return parse
+    return lambda model: parse   # PARSERS maps a parser name to a factory taking the model id
 
 
 def _seed(conn, turns, external_id="r1", facility="Tower"):
@@ -90,7 +90,8 @@ def test_get_events_parses_once_then_serves_the_cache(tmp_path, monkeypatch):
     txs = load_recording(conn, _seed(conn, SEQUENCE[:1]))
     calls = []
     monkeypatch.setitem(PARSERS, "rule", _fake_parser({SEQUENCE[0][1]: [ClearToLand(callsign="csa one two three", runway="31")]}, calls))
-    monkeypatch.setitem(PARSER_MODELS, "rule", ("fake", "v0"))
+    monkeypatch.setitem(PARSER_MODELS, "rule", ["fake"])
+    monkeypatch.setitem(PARSER_VERSIONS, "rule", "v0")
     ctx = Context(mode="role", role="controller")
     first = get_events(conn, txs[0], "rule", ctx)
     second = get_events(conn, txs[0], "rule", ctx)
@@ -205,11 +206,11 @@ def test_get_events_returns_the_rows_another_request_stored_first(tmp_path, monk
 
     def racing_parser(tx, ctx):   # a concurrent request caches the same parse while this one is still parsing
         conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway) "
-                     "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'LAND', 'csa one two three', '31')", (tx.transcript_id, PARSER_MODELS["rule"][1]))
+                     "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'LAND', 'csa one two three', '31')", (tx.transcript_id, VERSION))
         conn.commit()
         return [ClearToLand(callsign="csa one two three", runway="31")]
 
-    monkeypatch.setitem(PARSERS, "rule", racing_parser)
+    monkeypatch.setitem(PARSERS, "rule", lambda model: racing_parser)
     assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == \
         [ClearToLand(callsign="csa one two three", runway="31", t=0.0, text=SEQUENCE[0][1])]
     assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 1
@@ -221,11 +222,11 @@ def test_get_events_never_mixes_two_different_racing_parses(tmp_path, monkeypatc
 
     def racing_parser(tx, ctx):   # the other request cached a one-row NOOP parse; this request parses two different rows
         conn.execute("INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind) "
-                     "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'NOOP')", (tx.transcript_id, PARSER_MODELS["rule"][1]))
+                     "VALUES (?, 'rule', 'rules', ?, 'role', 0, 'NOOP')", (tx.transcript_id, VERSION))
         conn.commit()
         return [ClearToLand(callsign="csa one two three", runway="31"), ReadbackObserved(callsign="csa one two three", text="x")]
 
-    monkeypatch.setitem(PARSERS, "rule", racing_parser)
+    monkeypatch.setitem(PARSERS, "rule", lambda model: racing_parser)
     assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [NoOp(t=0.0, text=SEQUENCE[0][1])]
     assert [tuple(r) for r in conn.execute("SELECT seq, kind FROM events ORDER BY seq")] == [(0, "NOOP")]
 
@@ -282,3 +283,33 @@ def test_the_pinned_transcript_model_is_chosen_per_recording(tmp_path):
     assert default_transcript_model(conn, "gold", human) == "human"
     assert default_transcript_model(conn, "gold", synthetic) == "synthetic"  # conflict injection's recordings replay
     assert default_transcript_model(conn, "asr", synthetic) is None
+
+
+def test_the_registry_knows_both_parsers_and_their_models():
+    assert PARSER_MODELS == {"rule": ["rules"], "llm": ["claude-haiku-4-5", "claude-sonnet-5"]}
+    assert PARSER_VERSIONS == {"rule": VERSION, "llm": "p1"}
+    assert set(PARSERS) == set(PARSER_AVAILABILITY) == set(PARSER_MODELS)
+    assert PARSER_AVAILABILITY["rule"]() == (True, None)
+
+
+def test_llm_replays_resolve_the_model_only_on_a_miss_and_cache_unresolved_events(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, SEQUENCE[:2])
+    made, calls = [], []
+    table = {SEQUENCE[0][1]: [ClearToLand(callsign="csa one two three", runway="31"), Unresolved(callsign="csa one two three", raw="x")],
+             SEQUENCE[1][1]: [ReadbackObserved(callsign="csa one two three", text=SEQUENCE[1][1])]}
+
+    def factory(model):
+        made.append(model)
+        return _fake_parser(table, calls)(model)
+
+    monkeypatch.setitem(PARSERS, "llm", factory)
+    tl = build_timeline(conn, rid, parser="llm", model="claude-sonnet-5")
+    assert (tl.parser, tl.model, tl.model_version) == ("llm", "claude-sonnet-5", "p1")
+    assert made == ["claude-sonnet-5"] * 2 and len(calls) == 2
+    assert [s.dropped for s in tl.steps] == [1, 0]
+    again = build_timeline(conn, rid, parser="llm", model="claude-sonnet-5")   # all cached: no parser is even created
+    assert len(made) == 2 and [s.dropped for s in again.steps] == [1, 0]
+    assert [tuple(r) for r in conn.execute("SELECT DISTINCT parser, model, model_version FROM events")] == \
+        [("llm", "claude-sonnet-5", f"p1+engine{engine.ENGINE_VERSION}")]
+    assert build_timeline(conn, rid, parser="llm").model == "claude-haiku-4-5"   # the first model is the default
