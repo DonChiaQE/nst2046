@@ -270,3 +270,15 @@ def test_get_events_re_raises_an_integrity_error_that_left_no_rows(tmp_path, mon
     orphan = replace(txs[0], transcript_id=999_999)   # no such transcript: the foreign key fails and nobody cached anything
     with pytest.raises(sqlite3.IntegrityError):
         get_events(conn, orphan, "rule", Context(mode="role", role="controller"))
+
+
+def test_the_pinned_transcript_model_is_chosen_per_recording(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    human = _seed(conn, SEQUENCE[:1], external_id="human")
+    synthetic = _seed(conn, SEQUENCE[:1], external_id="synthetic")
+    conn.execute("UPDATE transcripts SET model = 'synthetic' WHERE transmission_id IN "
+                 "(SELECT id FROM transmissions WHERE recording_id = ?)", (synthetic,))
+    assert default_transcript_model(conn, "gold") == "human"                 # database-wide, as before
+    assert default_transcript_model(conn, "gold", human) == "human"
+    assert default_transcript_model(conn, "gold", synthetic) == "synthetic"  # conflict injection's recordings replay
+    assert default_transcript_model(conn, "asr", synthetic) is None

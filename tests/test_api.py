@@ -77,6 +77,19 @@ def test_replay_folds_the_recording_and_pins_the_human_gold_transcripts(client):
     assert client.get("/api/recordings/10/replay").json() == d   # second request is served from the events cache
 
 
+def test_replay_pins_the_transcript_model_per_recording(client, tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    conn.execute("INSERT INTO recordings (id, source_id, external_id, facility) VALUES (12, 1, 'rec-synthetic', 'Tower')")
+    conn.execute("INSERT INTO transmissions (id, recording_id, external_id, start_s, speaker_role) "
+                 "VALUES (120, 12, 's0', 0.0, 'controller')")
+    _transcript(conn, 120, "gold", "synthetic", "csa one two three runway three one cleared to land")
+    conn.commit()
+    conn.close()
+    d = client.get("/api/recordings/12/replay").json()
+    assert d["transcript_model"] == "synthetic" and [e["kind"] for s in d["steps"] for e in s["events"]] == ["LAND"]
+    assert client.get("/api/recordings/10/replay").json()["transcript_model"] == "human"
+
+
 def test_replay_with_an_explicit_transcript_model_or_asr(client):
     d = client.get("/api/recordings/10/replay", params={"transcript_model": "atco2-xml"}).json()
     assert d["transcript_model"] == "atco2-xml"

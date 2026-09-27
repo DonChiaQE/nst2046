@@ -110,11 +110,18 @@ def transcript_models(conn: sqlite3.Connection) -> dict[str, list[str]]:
     return out
 
 
-def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str) -> str | None:
+def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str, recording_id: int | None = None) -> str | None:
     """The transcript model a replay pins when none is given, so cache keys do not drift between runs: `human` for
     gold (some transmissions also carry an `atco2-xml` gold transcript), otherwise the alphabetically first model.
-    None when the DB has no transcripts of that kind."""
-    models = transcript_models(conn).get(transcript_kind, [])
+    With `recording_id`, only that recording's transcripts count, so a recording whose gold transcripts all come from
+    another model (the `synthetic` recordings conflict injection writes) still replays. None when there are no
+    transcripts of that kind."""
+    if recording_id is None:
+        models = transcript_models(conn).get(transcript_kind, [])
+    else:
+        models = [r[0] for r in conn.execute(
+            """SELECT DISTINCT t.model FROM transcripts t JOIN transmissions x ON x.id = t.transmission_id
+               WHERE x.recording_id = ? AND t.kind = ? ORDER BY t.model""", (recording_id, transcript_kind))]
     if transcript_kind == "gold" and "human" in models:
         return "human"
     return models[0] if models else None

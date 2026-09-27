@@ -63,7 +63,7 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
             recording = get_recording(conn, recording_id)
             if recording is None:
                 raise HTTPException(404, f"no recording {recording_id}")
-            model = transcript_model or default_transcript_model(conn, transcript)
+            model = transcript_model or default_transcript_model(conn, transcript, recording_id)
             tl = build_timeline(conn, recording_id, parser=parser, transcript_kind=transcript, context=context,
                                 transcript_model=model)
         return timeline_dict(tl, recording, model)

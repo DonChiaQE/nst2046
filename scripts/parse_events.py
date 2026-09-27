@@ -40,12 +40,12 @@ def main() -> None:
         n = clear_events(conn, args.parser, model, cache_version(version, args.context), args.context)
         print(f"cleared {n} cached events")
     recordings = list_recordings(conn, facility=args.facility, min_transmissions=args.min_transmissions, transcript_kind=args.transcript)
-    transcript_model = default_transcript_model(conn, args.transcript)
     if args.limit:
         recordings = recordings[:args.limit]
     kinds, conflicts, errors, n_steps = Counter(), Counter(), 0, 0
     for i, rec in enumerate(recordings, 1):
-        tl = build_timeline(conn, rec["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context, transcript_model=transcript_model)
+        tl = build_timeline(conn, rec["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context,
+                            transcript_model=default_transcript_model(conn, args.transcript, rec["id"]))
         for step in tl.steps:
             n_steps += 1
             errors += step.error is not None

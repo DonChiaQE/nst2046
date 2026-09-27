@@ -49,7 +49,7 @@ def main() -> None:
     if row is None:
         sys.exit(f"no recording {args.recording!r}")
     tl = build_timeline(conn, row["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context,
-                       transcript_model=default_transcript_model(conn, args.transcript))
+                       transcript_model=default_transcript_model(conn, args.transcript, row["id"]))
     print(f"recording {row['id']} ({row['external_id']}) — {len(tl.steps)} transmissions — {tl.parser}/{tl.context}/{tl.transcript_kind}\n")
     for k, s in enumerate(tl.steps):
         m, sec = divmod(int(s.tx.start_s), 60)
