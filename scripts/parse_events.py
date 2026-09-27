@@ -44,6 +44,8 @@ def main() -> None:
         ap.error(f"--model {model!r} is not a model of --parser {args.parser}; expected one of {PARSER_MODELS[args.parser]}")
     if args.refresh and args.dry_run:
         ap.error("--dry-run writes nothing, so it cannot --refresh")
+    if args.refresh and args.recording:
+        ap.error("--refresh clears every recording's cached parses; it cannot be combined with --recording")
 
     conn = init_db(args.db)
     if args.recording:
