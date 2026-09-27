@@ -37,7 +37,7 @@ uvicorn atcdb.api:app --reload                     # then open http://127.0.0.1:
 python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528 --dry-run   # count and cost first
 python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528             # parse and cache
 
-pytest   # 211 tests; the live smoke test skips without ANTHROPIC_API_KEY
+pytest   # 215 tests; the live smoke test skips without ANTHROPIC_API_KEY
 ```
 
 See `docs/` for the sourcing research and the database design spec.
