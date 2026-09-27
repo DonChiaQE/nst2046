@@ -1,7 +1,8 @@
 # ATC conflict engine — design
 
 **Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17; phase-3 design-pass addendum approved
-2026-09-26.** Phases 1 and 2 merged (PR #1, PR #2). Next step: the phase-2.5 plan via `superpowers:writing-plans`.
+2026-09-26.** Phases 1 and 2 merged (PR #1, PR #2); phase 2.5 in PR #3. Next step: execute the phase-3a plan,
+`docs/superpowers/plans/2026-09-27-claude-parser.md`.
 
 ## Context / pivot
 
