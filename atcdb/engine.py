@@ -106,6 +106,11 @@ class NoOp(Event):
     pass
 
 
+@dataclass(frozen=True, kw_only=True)
+class Unresolved(Event):
+    raw: str = ""        # what the parser reported, verbatim (e.g. a runway that does not normalise); never acted on
+
+
 RESERVATION_KINDS = ("LAND", "TAKEOFF", "LUAW", "CROSS")
 
 
@@ -146,10 +151,15 @@ class State:
     seq: int = 0
     runways: dict[str, tuple[Reservation, ...]] = field(default_factory=dict)
     aircraft: dict[str, Aircraft] = field(default_factory=dict)
-    ignored: int = 0     # events so far that the engine received but could not act on (unknown handoff target)
+    ignored: int = 0     # events so far that the engine received but could not act on (unknown handoff target, Unresolved)
 
 
 # --- rules ------------------------------------------------------------------------------------
+
+# Bumped by hand whenever a change to the rules below can change what the engine tracks. `window`-mode parses see the
+# engine's active runways and callsigns, so the events cache keys them by this too (spec addendum A.7.2).
+# "1" = the engine after phase 2.5.
+ENGINE_VERSION = "1"
 
 # A reservation (or hold-short) older than its kind's timeout, in transmission time, is dropped silently: we missed the
 # release call. Per kind so that 3b can shorten CROSS and LUAW against the false-alarm metric (spec addendum A.3.6).
@@ -276,6 +286,8 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
                     "READBACK", severity, missed_runway or ac.runway or ac.holding_short, (cs,), seq,
                     f"{cs} did not read back {what} (instruction: '{ac.pending}'; readback: '{event.text}')"))
             aircraft[cs] = replace(ac, pending=None, last_seq=seq)
+    elif isinstance(event, Unresolved):
+        ignored += 1   # a parser saw an instruction it could not express as an event: counted, never acted on
     elif isinstance(event, NoOp):
         pass
     return State(seq=seq, runways=runways, aircraft=aircraft, ignored=ignored), conflicts

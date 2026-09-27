@@ -1,7 +1,7 @@
 import pytest
 
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, LineUpAndWait, NoOp,
-                          ReadbackObserved, RunwayVacated)
+                          ReadbackObserved, RunwayVacated, Unresolved)
 from atcdb.parsing import CONTEXT_MODES, Context, Transmission, event_to_row, row_to_event
 
 TEXT = "csa one two three runway three one cleared to land"
@@ -18,6 +18,7 @@ TEXT = "csa one two three runway three one cleared to land"
     (Handoff(callsign="a", to="ground"), ("HANDOFF", "a", None, '{"to": "ground"}')),
     (ReadbackObserved(callsign="a", text="roger"), ("READBACK", "a", None, None)),
     (NoOp(), ("NOOP", "", None, None)),
+    (Unresolved(callsign="a", raw="CROSS three seven"), ("UNRESOLVED", "a", None, '{"raw": "CROSS three seven"}')),
 ])
 def test_event_to_row(event, row):
     assert event_to_row(event) == row
@@ -36,7 +37,8 @@ def test_row_to_event_reattaches_time_and_text():
 def test_round_trip_every_kind():
     events = [ClearToLand(callsign="a", runway="31", t=1.0, text="x"), HoldShort(callsign="b", runway="13", t=1.0, text="x"),
               RunwayVacated(callsign="a", t=1.0, text="x"), GoAround(callsign="a", t=1.0, text="x"),
-              Handoff(callsign="a", to="departure", t=1.0, text="x"), ReadbackObserved(callsign="a", text="x", t=1.0), NoOp(t=1.0, text="x")]
+              Handoff(callsign="a", to="departure", t=1.0, text="x"), ReadbackObserved(callsign="a", text="x", t=1.0), NoOp(t=1.0, text="x"),
+              Unresolved(callsign="a", raw="LAND", t=1.0, text="x")]
     for e in events:
         assert row_to_event(*event_to_row(e), t=1.0, text="x") == e
 
