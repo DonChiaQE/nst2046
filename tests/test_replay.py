@@ -1,10 +1,11 @@
 import sqlite3
+import sys
 from dataclasses import replace
 
 import pytest
 
-from atcdb import engine
-from atcdb.engine import ClearToLand, Handoff, NoOp, ReadbackObserved, State, Unresolved, fold
+from atcdb import engine, parse_llm
+from atcdb.engine import ClearTakeoff, ClearToLand, Handoff, NoOp, ReadbackObserved, State, Unresolved, fold
 from atcdb.parse_rules import VERSION
 from atcdb.parsing import Context
 from atcdb.replay import (PARSER_AVAILABILITY, PARSER_MODELS, PARSER_VERSIONS, PARSERS, Step, Timeline, build_context,
@@ -150,12 +151,46 @@ def test_build_timeline_records_a_parser_error_and_keeps_going(tmp_path, monkeyp
     table = {SEQUENCE[0][1]: [ClearToLand(callsign="csa one two three", runway="31")],
              SEQUENCE[1][1]: RuntimeError("api down"),
              SEQUENCE[2][1]: [NoOp()]}
-    monkeypatch.setitem(PARSERS, "rule", _fake_parser(table, []))
+    calls = []
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser(table, calls))
     tl = build_timeline(conn, rid, context="role")
     assert [s.error for s in tl.steps] == [None, "RuntimeError: api down", None]
     assert tl.steps[1].events == () and tl.steps[1].state == tl.steps[0].state
     assert tl.steps[2].state.seq == 2
     assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2   # the failed one was not cached
+    # a `role` replay never sees engine state, so an earlier error does not stop later transmissions from parsing
+    assert calls == [SEQUENCE[0][1], SEQUENCE[1][1], SEQUENCE[2][1]]
+
+
+def test_build_timeline_skips_later_window_transmissions_after_a_parse_fails(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, [("controller", "csa one two three runway three one cleared to land"),
+                       ("controller", "csa one two three cleared for takeoff")])
+    txs = load_recording(conn, rid)
+    landing = ClearToLand(callsign="csa one two three", runway="31")
+    takeoff = ClearTakeoff(callsign="csa one two three", runway="31")
+    tx0_attempts = []
+
+    def flaky_tx0_then_context_sensitive_tx1(tx, ctx):
+        if tx.id == txs[0].id:
+            tx0_attempts.append(1)
+            if len(tx0_attempts) == 1:
+                raise RuntimeError("api down")
+            return [landing]
+        return [takeoff] if ctx.active_runways == ("31",) else []   # only right if tx0's LAND made it into state
+
+    monkeypatch.setitem(PARSERS, "rule", lambda model: flaky_tx0_then_context_sensitive_tx1)
+
+    run1 = build_timeline(conn, rid)   # window is the default context
+    assert run1.steps[0].error == "RuntimeError: api down" and run1.steps[0].events == ()
+    assert run1.steps[1].error == "skipped: an earlier transmission failed to parse, so the window context is incomplete"
+    assert run1.steps[1].events == ()
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 0   # tx1 was never parsed or cached
+
+    run2 = build_timeline(conn, rid)   # tx0 now parses; tx1 sees the right context and is parsed for real
+    assert run2.steps[0].error is None and run2.steps[0].events == (landing,)     # a fresh parse: raw parser output
+    assert run2.steps[1].error is None and run2.steps[1].events == (takeoff,)
+    assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2
 
 
 def test_clear_events_deletes_only_the_matching_cache_entries(tmp_path, monkeypatch):

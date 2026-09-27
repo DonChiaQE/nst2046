@@ -224,13 +224,21 @@ def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "r
     txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
     state = State()
     steps: list[Step] = []
+    window_broken = False   # a `window` parse failed earlier: later context would be built on incomplete state
     for k, tx in enumerate(txs):
         ctx = build_context(context, tx, txs[:k], state)
         error = None
-        try:
-            events = get_events(conn, tx, parser, ctx, model, model_version)
-        except Exception as e:   # a flaky parser (API error) must not break the replay; nothing was cached
-            events, error = [], f"{type(e).__name__}: {e}"
+        if window_broken:
+            # do not parse against context missing an earlier transmission's events; a cache hit is still fine
+            events = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+            if not events:
+                error = "skipped: an earlier transmission failed to parse, so the window context is incomplete"
+        else:
+            try:
+                events = get_events(conn, tx, parser, ctx, model, model_version)
+            except Exception as e:   # a flaky parser (API error) must not break the replay; nothing was cached
+                events, error = [], f"{type(e).__name__}: {e}"
+                window_broken = context == "window"
         conflicts: list[Conflict] = []
         ignored_before = state.ignored
         for e in events:
