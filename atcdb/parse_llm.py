@@ -8,7 +8,8 @@ nothing for either, so the next replay retries. A reported event that cannot bec
 not normalise, a runway instruction without a runway, a handoff without a target) becomes `Unresolved`, which the engine
 counts as dropped.
 
-Bump VERSION by hand whenever SYSTEM, TOOL, `render_prompt` or the request settings change: it is part of the cache key.
+Bump VERSION by hand whenever SYSTEM, TOOL, `render_prompt`, `to_events` (it shapes the cached rows) or the request
+settings change: it is part of the cache key.
 """
 import functools
 import json
@@ -153,7 +154,9 @@ def events_from_response(response: Any, tx: Transmission) -> list[Event]:
 @functools.cache
 def _default_client() -> Any:
     import anthropic   # deferred: importing this module, or replaying from the cache, never needs the SDK
-    return anthropic.Anthropic()
+    # A bounded timeout so one hung call cannot stall a replay for the SDK's default 10-minute timeout;
+    # max_retries stays at the SDK default.
+    return anthropic.Anthropic(timeout=60.0)
 
 
 def make_parser(model: str, client: Any = None) -> Parser:
@@ -184,6 +187,8 @@ def availability() -> tuple[bool, str | None]:
         import anthropic  # noqa: F401
     except ImportError:
         return False, "anthropic not installed"
+    # The SDK can also authenticate via ANTHROPIC_AUTH_TOKEN or an `ant auth login` profile; this check only ever
+    # looks for the API key, so it can report unavailable when a call would in fact succeed.
     if not os.environ.get("ANTHROPIC_API_KEY"):
         return False, "ANTHROPIC_API_KEY not set"
     return True, None

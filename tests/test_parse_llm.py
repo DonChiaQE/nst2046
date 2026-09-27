@@ -5,11 +5,12 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import anthropic
 import pytest
 
 from atcdb import parse_llm
-from atcdb.engine import (HANDOFF_TARGETS, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, ReadbackObserved,
-                          RunwayVacated, Unresolved)
+from atcdb.engine import (HANDOFF_TARGETS, ClearTakeoff, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort,
+                          LineUpAndWait, ReadbackObserved, RunwayVacated, Unresolved)
 from atcdb.parse_llm import (EVENT_KINDS, MODELS, SYSTEM, TOOL, ParseError, estimate_cost, events_from_response, make_parser,
                              render_prompt, request, to_events)
 from atcdb.parsing import Context, Transmission
@@ -92,12 +93,13 @@ def test_request_settings_per_model():
 
 
 def test_every_kind_maps_to_its_engine_event():
-    items = [item("LAND", runway="31"), item("CROSS", callsign="Lufthansa  Four five six", runway="three one"),
+    items = [item("LAND", runway="31"), item("TAKEOFF", runway="31"), item("LUAW", runway="31"),
+             item("CROSS", callsign="Lufthansa  Four five six", runway="three one"),
              item("HOLD_SHORT", runway="04L"), item("HANDOFF", to="ground"), item("READBACK"), item("VACATED"),
              item("GO_AROUND"), item("NOOP", callsign="")]
     common = {"callsign": "csa one two three", "t": 42.0, "text": TX.text}
     assert to_events(items, TX) == [
-        ClearToLand(runway="31", **common),
+        ClearToLand(runway="31", **common), ClearTakeoff(runway="31", **common), LineUpAndWait(runway="31", **common),
         ClearToCross(runway="31", callsign="lufthansa four five six", t=42.0, text=TX.text),   # callsign normalised
         HoldShort(runway="04L", **common), Handoff(to="ground", **common),
         ReadbackObserved(callsign="csa one two three", text=TX.text, t=42.0),
@@ -140,6 +142,17 @@ def test_an_api_error_propagates_unchanged():
 def test_make_parser_rejects_an_unknown_model():
     with pytest.raises(ValueError, match="unknown Claude model"):
         make_parser("claude-opus-5")
+
+
+def test_default_client_sets_a_timeout_so_a_hung_call_cannot_stall_a_replay(monkeypatch):
+    calls = []
+    monkeypatch.setattr(anthropic, "Anthropic", lambda **kw: calls.append(kw))
+    parse_llm._default_client.cache_clear()
+    try:
+        parse_llm._default_client()
+    finally:
+        parse_llm._default_client.cache_clear()   # do not leak the fake client into later tests
+    assert calls == [{"timeout": 60.0}]
 
 
 def test_availability_reports_why_a_cold_parse_cannot_run(monkeypatch):
