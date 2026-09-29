@@ -14,9 +14,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
-from atcdb import judge, parse_llm
+from atcdb import engine, judge, parse_llm
+from atcdb.engine import State
 from atcdb.inject import synthetic_recordings
-from atcdb.parsing import CONTEXT_MODES, event_to_row
+from atcdb.parsing import CONTEXT_MODES, event_to_row, row_to_event
 from atcdb.replay import build_timeline, default_transcript_model, load_recording, real_recordings, uncached_parses
 from atcdb.schema import connect
 
@@ -334,3 +335,40 @@ def adjudication_kappa(sheet_a: Iterable[dict], sheet_b: Iterable[dict]) -> tupl
     a, b = read_verdicts(sheet_a), read_verdicts(sheet_b)
     both = sorted(set(a) & set(b))
     return cohen_kappa([a[k] for k in both], [b[k] for k in both]), len(both)
+
+
+# --- staleness sweep (spec section 9) --------------------------------------------------------------------------------
+
+SWEEP_KINDS = ("CROSS", "LUAW")
+SWEEP_VALUES = (30.0, 60.0, 90.0, 120.0, 300.0)
+
+
+def refold(row: dict, stale: dict[str, float]) -> list[dict]:
+    """The row's RUNWAY conflicts re-derived from its stored events with `engine.STALE_S` overridden by `stale`. No
+    parse is repeated, so a `window` arm keeps the context it was parsed with. READBACK conflicts are not re-derived
+    (the stored events do not carry the instruction text a readback is checked against)."""
+    saved = dict(engine.STALE_S)
+    engine.STALE_S.update(stale)
+    try:
+        state, out = State(), []
+        for k, (tx_id, t, events) in enumerate(zip(row["tx_ids"], row["t"], row["events"])):
+            for kind, callsign, runway, extra in events:
+                state, new = engine.apply(state, row_to_event(kind, callsign, runway, extra, t=t))
+                out += [{"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns),
+                         "tx_id": tx_id, "step": k} for c in new if c.type == "RUNWAY"]
+        return out
+    finally:
+        engine.STALE_S.clear()
+        engine.STALE_S.update(saved)
+
+
+def sweep(rows: list[dict], values: Iterable[float] = SWEEP_VALUES, kinds: tuple[str, ...] = SWEEP_KINDS) -> list[dict]:
+    """For each timeout value applied to `kinds`: recall on the arm's positives and the raw count of distinct RUNWAY
+    alerts on its negatives (not adjudicated: the sweep is a sensitivity finding, nothing is chosen from it)."""
+    out = []
+    for v in values:
+        refolded = [{**r, "conflicts": refold(r, {k: v for k in kinds})} for r in rows if usable(r)]
+        alerts = set().union(*[alert_keys(r, "RUNWAY") for r in refolded if r["set"] == "negatives"])
+        out.append({"stale_s": v, "recall": recall([r for r in refolded if r["set"] == "positives"]),
+                    "negative_alerts": len(alerts)})
+    return out

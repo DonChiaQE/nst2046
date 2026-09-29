@@ -5,6 +5,7 @@ Usage:
     python scripts/eval_conflicts.py run [--parser rule|llm|judge] [--model M] [--context C] [--transcript gold|asr]
                                          [--set negatives|positives] [--workers N] [--dry-run]
     python scripts/eval_conflicts.py adjudicate [--kappa]
+    python scripts/eval_conflicts.py sweep [--values 30 60 90 120 300]
 
 `run` replays every recording of the evaluation sets under each selected arm (the 18 structured arms and the two
 judge arms by default; `--parser judge` for the judge only) and writes one JSONL per arm to data/eval/conflicts/.
@@ -15,6 +16,9 @@ calls and a rough cost per arm and spends nothing.
 given are kept) and writes the second adjudicator's overlap, adjudication_B.csv. Fill `verdict` with genuine,
 parse_error (the extraction was wrong), missing_info (extraction right, the release was never spoken) or engine_rule
 (extraction right, the matrix is too strict). Re-run it after new arms have run. `--kappa` reports agreement instead.
+
+`sweep` re-folds every structured arm's stored events with the CROSS and LUAW timeouts set to each value and prints
+lenient recall and raw negative alerts per value. A finding only: engine.STALE_S is not changed.
 """
 import argparse
 import csv
@@ -24,8 +28,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, JUDGE_ARMS, adjudication_kappa, adjudication_rows,  # noqa: E402
-                            evaluation_sets, overlap_rows, read_rows, run_arm, uncached, write_rows)
+from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, JUDGE_ARMS, SWEEP_VALUES, adjudication_kappa,  # noqa: E402
+                            adjudication_rows, evaluation_sets, overlap_rows, read_rows, run_arm, sweep, uncached,
+                            write_rows)
 from atcdb.schema import init_db  # noqa: E402
 
 OUT = ROOT / "data/eval/conflicts"
@@ -93,6 +98,15 @@ def cmd_adjudicate(args: argparse.Namespace) -> None:
     print(f"wrote {args.sheet_a} ({len(sheet_a)} alerts, {todo} without a verdict) and {args.sheet_b} ({len(sheet_b)} alerts)")
 
 
+def cmd_sweep(args: argparse.Namespace) -> None:
+    print(f"  {'arm':<40} " + "  ".join(f"{v:>5.0f}s recall/alerts" for v in args.values))
+    for name, rows in arm_rows(args.out).items():
+        if name.startswith("judge-"):
+            continue   # the judge has no events to re-fold
+        cells = [f"{r['recall']['lenient']:>5}/{r['recall']['n']:<4}{r['negative_alerts']:>9}" for r in sweep(rows, args.values)]
+        print(f"  {name:<40} " + "  ".join(cells))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
@@ -112,6 +126,9 @@ def main() -> None:
     adj.add_argument("--sheet-b", type=Path, default=SHEET_B)
     adj.add_argument("--kappa", action="store_true", help="report agreement between the two sheets")
     adj.set_defaults(func=cmd_adjudicate)
+    sw = sub.add_parser("sweep", help="CROSS/LUAW staleness sensitivity (a finding, not a tuning)")
+    sw.add_argument("--values", type=float, nargs="+", default=list(SWEEP_VALUES))
+    sw.set_defaults(func=cmd_sweep)
     args = ap.parse_args()
     args.func(args)
 

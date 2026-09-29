@@ -1,9 +1,10 @@
 import pytest
 
+from atcdb import engine
 from atcdb.evaluate import (ARMS, PRIMARY, Arm, Pending, adjudication_kappa, adjudication_rows, alert_key, alert_keys,
                             bootstrap, cohen_kappa, detection, evaluation_sets, false_alarm_units, in_overlap, overlap_rows,
-                            paired_bootstrap, per_hour, rate, read_rows, read_verdicts, recall, recording_row, run_arm,
-                            uncached, usable, write_rows)
+                            paired_bootstrap, per_hour, rate, read_rows, read_verdicts, recall, recording_row, refold,
+                            run_arm, sweep, uncached, usable, write_rows)
 from atcdb.inject import apply_check, check_rows, generate, write_injection
 from atcdb.schema import init_db
 
@@ -224,3 +225,30 @@ def test_adjudication_kappa_uses_the_alerts_both_adjudicated():
     a = [{"key": "1", "verdict": "genuine"}, {"key": "2", "verdict": "parse_error"}, {"key": "3", "verdict": "parse_error"}]
     b = [{"key": "1", "verdict": "genuine"}, {"key": "2", "verdict": "parse_error"}, {"key": "3", "verdict": ""}]
     assert adjudication_kappa(a, b) == (1.0, 2)
+
+
+def test_refold_at_the_default_timeouts_reproduces_the_replay(tmp_path):
+    db = tmp_path / "t.sqlite"
+    conn = init_db(db)
+    [row] = run_arm(db, PRIMARY[0], [(_seed(conn, CONFLICT), "negatives", None)])
+    assert refold(row, {}) == [c for c in row["conflicts"] if c["type"] == "RUNWAY"] != []
+
+
+def _timed(events_by_step, t, truth=None, set_name="positives", rid=1):
+    """A row whose steps are at times `t`, with the given event rows."""
+    return {"recording_id": rid, "set": set_name, "truth": truth, "span_s": 100.0, "incomplete": False,
+            "missing_transcripts": 0, "tx_ids": list(range(1, len(t) + 1)), "t": list(t), "events": events_by_step,
+            "conflicts": []}
+
+
+def test_a_shorter_crossing_timeout_forgets_the_crossing_before_the_landing():
+    events = [[["CROSS", "lufthansa four five six", "31", None]], [], [["LAND", "csa one two three", "31", None]]]
+    row = _timed(events, [0.0, 20.0, 60.0], truth={"runway": "31", "trigger_tx": 3, "edit_kind": "splice"})
+    assert [c["step"] for c in refold(row, {})] == [2]
+    assert refold(row, {"CROSS": 30.0}) == []
+    assert engine.STALE_S["CROSS"] == 300.0                       # the override never leaks
+    negative = {**_timed(events, [0.0, 20.0, 60.0], set_name="negatives", rid=2)}
+    result = sweep([row, negative], values=(30.0, 300.0))
+    assert [r["stale_s"] for r in result] == [30.0, 300.0]
+    assert [r["recall"]["strict"] for r in result] == [0, 1]
+    assert [r["negative_alerts"] for r in result] == [0, 1]
