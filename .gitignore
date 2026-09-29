@@ -1,6 +1,9 @@
 .venv/
 data/*
 !data/labels/
+# working labelling sheets carry corpus transcripts (UWB-ATCC, CC BY-NC-ND).
+# Only the *_labels_*.csv half, produced by `make_event_sheet.py --split`, is committed.
+data/labels/event_sheet_*.csv
 __pycache__/
 *.pyc
 .DS_Store

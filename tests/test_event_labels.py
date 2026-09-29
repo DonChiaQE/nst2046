@@ -1,7 +1,8 @@
 import pytest
 
 from atcdb.engine import ClearToLand, GoAround, Handoff, HoldShort, ReadbackObserved, RunwayVacated
-from atcdb.event_labels import COLUMNS, parse_event_cell, sample_event_sheet
+from atcdb.event_labels import (COLUMNS, LABEL_COLUMNS, parse_event_cell, rehydrate, sample_event_sheet,
+                                split_labels)
 from atcdb.schema import init_db
 
 
@@ -83,3 +84,35 @@ def test_parse_event_cell_reads_every_kind():
 def test_parse_event_cell_rejects_bad_cells(cell, message):
     with pytest.raises(ValueError, match=message):
         parse_event_cell(cell)
+
+
+# --- splitting labels from corpus text (UWB-ATCC is CC BY-NC-ND: labels commit, transcripts do not) -------------------
+
+
+def test_split_labels_keeps_only_identifiers_and_labels(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    _seed(conn, TURNS)
+    rows = sample_event_sheet(conn, n=10, seed=0)
+    rows[0]["events"] = "land 31 csa one two three"
+    rows[0]["notes"] = "clipped"
+    labels = split_labels(rows)
+    assert [list(r) for r in labels] == [LABEL_COLUMNS] * len(labels)
+    assert labels[0]["events"] == "land 31 csa one two three" and labels[0]["notes"] == "clipped"
+    corpus = {text for _, text, _ in TURNS}
+    assert not [v for r in labels for v in r.values() if v in corpus], "a transcript leaked into the labels file"
+
+
+def test_rehydrate_restores_the_working_sheet_exactly(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    _seed(conn, TURNS)
+    rows = sample_event_sheet(conn, n=10, seed=0)
+    rows[0]["events"] = "readback csa one two three"
+    restored = rehydrate(conn, split_labels(rows))
+    assert restored == [{**r, "transmission_id": int(r["transmission_id"]), "row_id": str(r["row_id"])} for r in rows]
+
+
+def test_rehydrate_names_a_transmission_the_database_does_not_hold(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    _seed(conn, TURNS)
+    with pytest.raises(ValueError, match="9999 is not in this corpus database"):
+        rehydrate(conn, [{"row_id": "1", "transmission_id": "9999", "events": "noop", "notes": ""}])

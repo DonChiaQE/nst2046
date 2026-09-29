@@ -20,6 +20,10 @@ from atcdb.engine import (HANDOFF_TARGETS, ClearTakeoff, ClearToCross, ClearToLa
 from atcdb.replay import default_transcript_model, load_recording, real_recordings
 
 COLUMNS = ["row_id", "transmission_id", "recording_id", "role", "context", "text", "clip_path", "events", "notes"]
+# The committable half of a sheet. UWB-ATCC is CC BY-NC-ND, so `text` and `context` (corpus transcripts)
+# stay on each labeller's machine; only these columns go into git. `rehydrate` puts the text back from a
+# local copy of the corpus, so a labels file plus data/atc.sqlite reconstructs the working sheet exactly.
+LABEL_COLUMNS = ["row_id", "transmission_id", "events", "notes"]
 CONTEXT_LINES = 4   # previous transmissions shown on the sheet, as the `window` context mode sees them
 
 _RUNWAY_KINDS = {"land": ClearToLand, "takeoff": ClearTakeoff, "luaw": LineUpAndWait, "cross": ClearToCross,
@@ -77,3 +81,40 @@ def parse_event_cell(cell: str) -> list[Event]:
         else:
             raise ValueError(f"{line!r}: unknown kind {kind!r}")
     return events
+
+
+def split_labels(rows: list[dict]) -> list[dict]:
+    """The committable half of a filled sheet: identifiers and labels, no corpus text."""
+    return [{c: str(r.get(c, "")) for c in LABEL_COLUMNS} for r in rows]
+
+
+def rehydrate(conn: sqlite3.Connection, label_rows: list[dict]) -> list[dict]:
+    """A full working sheet rebuilt from a labels file and a local copy of the corpus.
+
+    The inverse of `split_labels`: every column `sample_event_sheet` produced is restored by joining on
+    `transmission_id`, so the text never has to travel with the labels. Raises ValueError naming any
+    transmission this database does not hold.
+    """
+    cache: dict[int, tuple] = {}
+    out = []
+    for lr in label_rows:
+        tid = int(lr["transmission_id"])
+        row = conn.execute("SELECT recording_id FROM transmissions WHERE id = ?", (tid,)).fetchone()
+        if row is None:
+            raise ValueError(f"transmission {tid} is not in this corpus database")
+        rid = row[0]
+        if rid not in cache:
+            txs = load_recording(conn, rid, "gold", default_transcript_model(conn, "gold", rid))
+            meta = {r["id"]: r for r in conn.execute(
+                "SELECT id, clip_path FROM transmissions WHERE recording_id = ?", (rid,))}
+            cache[rid] = (txs, meta)
+        txs, meta = cache[rid]
+        k = next((i for i, t in enumerate(txs) if t.id == tid), None)
+        if k is None:
+            raise ValueError(f"transmission {tid} is not replayable from recording {rid}")
+        tx = txs[k]
+        out.append({"row_id": lr["row_id"], "transmission_id": tid, "recording_id": rid, "role": tx.role,
+                    "context": "\n".join(f"[{h.role}] {h.text}" for h in txs[max(0, k - CONTEXT_LINES):k]),
+                    "text": tx.text, "clip_path": meta[tid]["clip_path"] or "",
+                    "events": lr.get("events", ""), "notes": lr.get("notes", "")})
+    return out

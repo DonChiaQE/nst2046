@@ -4,12 +4,18 @@
 Usage:
     python scripts/make_event_sheet.py [--out data/labels] [--n 200] [--overlap 50] [--seed 0] [--db data/atc.sqlite]
     python scripts/make_event_sheet.py --check data/labels/event_sheet_A.csv
+    python scripts/make_event_sheet.py --split data/labels/event_sheet_A.csv      # -> event_labels_A.csv, committable
+    python scripts/make_event_sheet.py --rehydrate data/labels/event_labels_A.csv # -> event_sheet_A.csv, from the local corpus
 
 Produces:
   <out>/event_sheet_A.csv   full sheet (annotator A)
   <out>/event_sheet_B.csv   first <overlap> rows of A (annotator B), for Cohen's kappa
 Fill `events` with one event per line (see atcdb/event_labels.py), or `noop`. `--check` reads a filled sheet back and
 lists every cell that does not parse; unfilled rows are counted, not errors.
+
+The working sheets carry corpus transcripts (UWB-ATCC, CC BY-NC-ND) and are git-ignored. `--split` writes the
+committable half, `event_labels_<A|B>.csv`: row_id, transmission_id, events, notes. `--rehydrate` rebuilds a working
+sheet from that file and a local data/atc.sqlite, so labels travel through git and the text never does.
 """
 import argparse
 import csv
@@ -19,7 +25,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.event_labels import COLUMNS, parse_event_cell, sample_event_sheet  # noqa: E402
+from atcdb.event_labels import (COLUMNS, LABEL_COLUMNS, parse_event_cell, rehydrate, sample_event_sheet,  # noqa: E402
+                                split_labels)
 from atcdb.schema import connect  # noqa: E402
 
 
@@ -40,6 +47,14 @@ def check(path: Path) -> int:
     return bad
 
 
+def _write(path: Path, columns: list[str], rows: list[dict]) -> None:
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=columns)
+        w.writeheader()
+        w.writerows(rows)
+    print(f"wrote {path} ({len(rows)} rows)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
@@ -48,21 +63,32 @@ def main() -> None:
     ap.add_argument("--overlap", type=int, default=50)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--check", type=Path, help="validate a filled sheet instead of writing new ones")
+    ap.add_argument("--split", type=Path, help="write the committable labels half of a filled sheet")
+    ap.add_argument("--rehydrate", type=Path, help="rebuild a working sheet from a labels file and the local corpus")
     args = ap.parse_args()
     if args.check:
         sys.exit(1 if check(args.check) else 0)
+    if args.split:
+        with args.split.open(newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        out = args.split.parent / args.split.name.replace("event_sheet_", "event_labels_")
+        _write(out, LABEL_COLUMNS, split_labels(rows))
+        return
+    if args.rehydrate:
+        with args.rehydrate.open(newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        out = args.rehydrate.parent / args.rehydrate.name.replace("event_labels_", "event_sheet_")
+        if out.exists():
+            sys.exit(f"{out} exists; it may hold labels. Move it away first.")
+        _write(out, COLUMNS, rehydrate(connect(args.db), rows))
+        return
     existing = [p for p in (args.out / "event_sheet_A.csv", args.out / "event_sheet_B.csv") if p.exists()]
     if existing:
         sys.exit(f"{existing[0]} exists; it may hold labels. Move it away first.")
     rows = sample_event_sheet(connect(args.db), n=args.n, seed=args.seed)
     args.out.mkdir(parents=True, exist_ok=True)
     for name, subset in (("A", rows), ("B", rows[:args.overlap])):
-        path = args.out / f"event_sheet_{name}.csv"
-        with path.open("w", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=COLUMNS)
-            w.writeheader()
-            w.writerows(subset)
-        print(f"wrote {path} ({len(subset)} rows)")
+        _write(args.out / f"event_sheet_{name}.csv", COLUMNS, subset)
 
 
 if __name__ == "__main__":
