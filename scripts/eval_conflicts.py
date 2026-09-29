@@ -2,13 +2,14 @@
 """Level 2 conflict evaluation (spec 2026-09-29-evaluation-3b1-design.md, sections 5 to 10).
 
 Usage:
-    python scripts/eval_conflicts.py run [--parser rule|llm] [--model M] [--context C] [--transcript gold|asr]
+    python scripts/eval_conflicts.py run [--parser rule|llm|judge] [--model M] [--context C] [--transcript gold|asr]
                                          [--set negatives|positives] [--workers N] [--dry-run]
     python scripts/eval_conflicts.py adjudicate [--kappa]
 
-`run` replays every recording of the evaluation sets under each selected arm (all 18 by default) and writes one JSONL
-per arm to data/eval/conflicts/. Parses come from the events cache, so a re-run is free; always `--dry-run` first, which
-prints the uncached calls and a rough cost per arm and spends nothing.
+`run` replays every recording of the evaluation sets under each selected arm (the 18 structured arms and the two
+judge arms by default; `--parser judge` for the judge only) and writes one JSONL per arm to data/eval/conflicts/.
+Parses and judgments come from their caches, so a re-run is free; always `--dry-run` first, which prints the uncached
+calls and a rough cost per arm and spends nothing.
 
 `adjudicate` pools every alert the arms raised on the negatives into data/labels/adjudication_A.csv (verdicts already
 given are kept) and writes the second adjudicator's overlap, adjudication_B.csv. Fill `verdict` with genuine,
@@ -23,8 +24,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, adjudication_kappa, adjudication_rows, evaluation_sets,  # noqa: E402
-                            overlap_rows, read_rows, run_arm, uncached, write_rows)
+from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, JUDGE_ARMS, adjudication_kappa, adjudication_rows,  # noqa: E402
+                            evaluation_sets, overlap_rows, read_rows, run_arm, uncached, write_rows)
 from atcdb.schema import init_db  # noqa: E402
 
 OUT = ROOT / "data/eval/conflicts"
@@ -53,7 +54,8 @@ def arm_rows(out: Path) -> dict[str, list[dict]]:
 
 
 def selected_arms(args: argparse.Namespace) -> list:
-    return [a for a in ARMS if all(getattr(args, f) in (None, getattr(a, f)) for f in ("parser", "model", "context", "transcript"))]
+    return [a for a in ARMS + JUDGE_ARMS
+            if all(getattr(args, f) in (None, getattr(a, f)) for f in ("parser", "model", "context", "transcript"))]
 
 
 def cmd_run(args: argparse.Namespace) -> None:
@@ -97,9 +99,9 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=OUT)
     sub = ap.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run", help="replay the evaluation sets under each arm")
-    run.add_argument("--parser", choices=["rule", "llm"])
+    run.add_argument("--parser", choices=["rule", "llm", "judge"])
     run.add_argument("--model")
-    run.add_argument("--context", choices=["none", "role", "window"])
+    run.add_argument("--context", choices=["none", "role", "window", "sequence"])
     run.add_argument("--transcript", choices=["gold", "asr"])
     run.add_argument("--set", choices=["negatives", "positives"])
     run.add_argument("--workers", type=int, default=4)

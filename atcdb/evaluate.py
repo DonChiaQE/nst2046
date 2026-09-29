@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
-from atcdb import parse_llm
+from atcdb import judge, parse_llm
 from atcdb.inject import synthetic_recordings
 from atcdb.parsing import CONTEXT_MODES, event_to_row
 from atcdb.replay import build_timeline, default_transcript_model, load_recording, real_recordings, uncached_parses
@@ -25,9 +25,9 @@ TRANSCRIPTS = ("gold", "asr")
 
 @dataclass(frozen=True)
 class Arm:
-    parser: str       # rule | llm
+    parser: str       # rule | llm | judge
     model: str        # "rules", or a Claude model id
-    context: str      # none | role | window
+    context: str      # none | role | window; "sequence" for the judge, which sees the whole recording at once
     transcript: str   # gold | asr
 
     @property
@@ -37,6 +37,8 @@ class Arm:
 
 ARMS: tuple[Arm, ...] = tuple(Arm(p, m, c, t) for p, models in (("rule", ("rules",)), ("llm", parse_llm.MODELS))
                               for m in models for c in CONTEXT_MODES for t in TRANSCRIPTS)
+# the ablation (spec section 7): the whole transcript to Claude, conflicts out, no parser and no engine
+JUDGE_ARMS: tuple[Arm, ...] = tuple(Arm("judge", m, "sequence", t) for m in judge.MODELS for t in TRANSCRIPTS)
 # the pre-registered primary comparison (spec addendum A.5): rules vs Sonnet, window context, human transcripts
 PRIMARY = (Arm("rule", "rules", "window", "gold"), Arm("llm", "claude-sonnet-5", "window", "gold"))
 
@@ -54,26 +56,45 @@ def evaluation_sets(conn: sqlite3.Connection) -> list[tuple[int, str, dict | Non
     return out
 
 
+def _judge_steps(conn: sqlite3.Connection, arm: Arm, recording_id: int) -> dict:
+    """The judge arm's part of a row: the transmissions it saw and the conflicts it reported, each an alert (the judge
+    has no severities) placed at its trigger transmission. A failed call marks the row incomplete."""
+    model = default_transcript_model(conn, arm.transcript, recording_id)
+    txs = load_recording(conn, recording_id, arm.transcript, model)
+    try:
+        found, dropped = judge.judge(conn, recording_id, txs, arm.transcript, model or "", arm.model)
+        error = False
+    except Exception:   # an API error must not stop the run; nothing was cached, the next run retries
+        found, dropped, error = [], 0, True
+    return {"incomplete": error, "dropped": dropped, "tx_ids": [tx.id for tx in txs], "t": [tx.start_s for tx in txs],
+            "events": [[] for _ in txs],
+            "conflicts": [{"type": c["type"], "severity": "alert", "runway": c["runway"], "callsigns": c["callsigns"],
+                           "tx_id": txs[c["step"]].id, "step": c["step"]} for c in found]}
+
+
 def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_name: str, truth: dict | None) -> dict:
     """Replay one recording under one arm and keep what scoring needs: per step the transmission, its time and events,
-    and every conflict with the step that raised it. `span_s` covers all the recording's transmissions (first start to
-    last end), whatever the transcript kind, so both transcript arms share a denominator. `missing_transcripts` counts
-    transmissions with a gold transcript but none of the arm's kind (an ASR run that has not reached them); such a row
-    is not scored. `all_test` says whether every transmission is in the ASR model's `test` split (spec section 3: the
-    clean ASR headline)."""
-    tl = build_timeline(conn, recording_id, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context,
-                        model=arm.model, transcript_model=default_transcript_model(conn, arm.transcript, recording_id))
+    and every conflict with the step that raised it (for the judge arm, what the judge reported). `span_s` covers all
+    the recording's transmissions (first start to last end), whatever the transcript kind, so both transcript arms
+    share a denominator. `missing_transcripts` counts transmissions with a gold transcript but none of the arm's kind
+    (an ASR run that has not reached them); such a row is not scored. `all_test` says whether every transmission is in
+    the ASR model's `test` split (spec section 3: the clean ASR headline)."""
+    if arm.parser == "judge":
+        steps = _judge_steps(conn, arm, recording_id)
+    else:
+        tl = build_timeline(conn, recording_id, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context,
+                            model=arm.model, transcript_model=default_transcript_model(conn, arm.transcript, recording_id))
+        steps = {"incomplete": any(s.error for s in tl.steps), "dropped": tl.dropped,
+                 "tx_ids": [s.tx.id for s in tl.steps], "t": [s.tx.start_s for s in tl.steps],
+                 "events": [[list(event_to_row(e)) for e in s.events] for s in tl.steps],
+                 "conflicts": [{"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns),
+                                "tx_id": s.tx.id, "step": k} for k, s in enumerate(tl.steps) for c in s.conflicts]}
     span, all_test = conn.execute(
         """SELECT MAX(end_s) - MIN(start_s), MIN(CASE WHEN split = 'test' THEN 1 ELSE 0 END)
            FROM transmissions WHERE recording_id = ?""", (recording_id,)).fetchone()
     gold = {tx.id for tx in load_recording(conn, recording_id, "gold", default_transcript_model(conn, "gold", recording_id))}
     return {"recording_id": recording_id, "set": set_name, "truth": truth, "span_s": span or 0.0,
-            "all_test": bool(all_test), "missing_transcripts": len(gold - {s.tx.id for s in tl.steps}),
-            "incomplete": any(s.error for s in tl.steps), "dropped": tl.dropped,
-            "tx_ids": [s.tx.id for s in tl.steps], "t": [s.tx.start_s for s in tl.steps],
-            "events": [[list(event_to_row(e)) for e in s.events] for s in tl.steps],
-            "conflicts": [{"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns),
-                           "tx_id": s.tx.id, "step": k} for k, s in enumerate(tl.steps) for c in s.conflicts]}
+            "all_test": bool(all_test), "missing_transcripts": len(gold - set(steps["tx_ids"])), **steps}
 
 
 def run_arm(db: Path, arm: Arm, recordings: list[tuple[int, str, dict | None]], workers: int = 1) -> list[dict]:
@@ -94,7 +115,16 @@ def run_arm(db: Path, arm: Arm, recordings: list[tuple[int, str, dict | None]], 
 
 
 def uncached(conn: sqlite3.Connection, arm: Arm, recording_ids: Iterable[int]) -> tuple[int, float]:
-    """(transmissions still to parse, rough USD) for one arm over the given recordings; parses and stores nothing."""
+    """(calls still to make, rough USD) for one arm over the given recordings: transmissions to parse, or for the judge
+    recordings to judge. Calls and stores nothing."""
+    if arm.parser == "judge":
+        prompts = []
+        for rid in recording_ids:
+            model = default_transcript_model(conn, arm.transcript, rid)
+            txs = load_recording(conn, rid, arm.transcript, model)
+            if txs and not judge.is_cached(conn, rid, arm.transcript, model or "", arm.model):
+                prompts.append(judge.render_sequence(txs))
+        return len(prompts), judge.estimate_cost(arm.model, prompts)
     misses = [m for rid in recording_ids for m in uncached_parses(
         conn, rid, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context, model=arm.model,
         transcript_model=default_transcript_model(conn, arm.transcript, rid))]
