@@ -31,7 +31,9 @@ ASR, and about $2 for the judge. Every paid run is dry-run first.
   held-out split is needed. This replaces A.3.6's and A.5's "tuned on a held-out split".
 - **ASR coverage and leakage.** ASR transcripts existed only for the jacktol `test` split. That split is per clip,
   not per recording: of the 2,016 transmissions in the 309 recordings, 405 are `test` and 1,611 are `train` (almost
-  certainly seen when the Whisper model was fine-tuned). Only 12 recordings are entirely `test` (about 0.23 h).
+  certainly seen when the Whisper model was fine-tuned). None of the 309 recordings is entirely `test` (every
+  recording mixes both splits); an earlier "12 recordings, about 0.23 h" figure named recordings replayable from the
+  ASR that existed at the time, not recordings entirely in the `test` split.
 - **Audio hours.** The 309 recordings span 2.65 h (first transmission start to last end, summed); speech is 1.73 h.
 - **Few clips hold two clearances (planning).** Only 34 of the 309 recordings contain two runway clearances, so the
   four text edits of section 4 find about ten candidates in the whole corpus. Splicing (section 4) supplies the rest.
@@ -44,15 +46,18 @@ ASR, and about $2 for the judge. Every paid run is dry-run first.
 `python scripts/run_asr.py --split train` transcribes the missing clips (about 2 h CPU). No code change; it is an
 operational step documented in the plan, run after the plan's tasks.
 
-- **Level 2 ASR headline:** the 12 fully-`test` recordings, with its (wide) CIs stated. *(final review)* No synthetic
-  recording is fully `test`, so the headline filters on a row flag `clean_asr` instead: a negative counts when every
-  transmission is `test` split (as `all_test`), a positive when its anchor and trigger transmissions are both `test`
-  split. The headline table shows the human-transcript arms beside the ASR arms on those same rows, so the ASR
-  degradation is measured against a matched gold baseline, and its text states the leakage share (test-split
-  transmissions over all transmissions, summed over one arm's negatives) and how headline positives are chosen.
-  Observed when this was fixed: on the current database none of the 309 negatives is fully `test` either (405 of
-  their 2,016 transmissions are `test` split, and the splits are mixed within every recording), so the headline's
-  negative side is empty and only positives whose anchor and trigger both fall in `test` are left.
+- **Level 2 ASR headline.** *(follow-up)* No real recording in the corpus is entirely in the ASR model's `test`
+  split (the split is per clip, not per recording, and every one of the 309 recordings mixes `test` and `train`), so
+  the headline reports recall only; it has no usable negative. The headline filters on a row flag `clean_asr`: a
+  negative counts when every transmission is `test` split (`all_test`), which the negatives never satisfy on this
+  corpus; a positive counts when its **trigger** transmission is `test` split (the anchor may still be `train`, so a
+  splice's earlier clearance can still be leaked audio), which about 4% of positives satisfy. The headline table
+  shows the human-transcript arms beside the ASR arms on those same rows, so the ASR recall is measured against a
+  matched gold baseline; its text states the leakage share (test-split transmissions over all transmissions, summed
+  over one arm's negatives) and how headline positives are chosen. ASR false alarms are reported only in the
+  all-recordings table, where the leakage makes the degradation a lower bound. (An earlier version of this bullet
+  said "the 12 fully-`test` recordings, with its (wide) CIs stated"; no recording is fully `test`, so that claim was
+  wrong. Those 12 were recordings replayable from the ASR that existed when that estimate was made.)
 - **Level 2 ASR secondary:** all 309, reported with the share of probably-leaked transmissions (80%); the ASR
   degradation it shows is a lower bound.
 - **Level 1:** the event sheet samples only `test`-split transmissions (section 8), so its ASR factor is clean.

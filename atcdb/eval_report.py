@@ -79,7 +79,8 @@ def summarize(rows_by_arm: dict[str, list[dict]], verdicts: dict[str, str], inje
     .synthetic_recordings); a positive row whose injection is no longer accepted (`valid` not yes) is dropped and
     counted per arm. `kappa` is the adjudication agreement, or None before a second adjudicator has started. The ASR
     headline keeps the `clean_asr` rows of every arm whose rows carry the flag, human-transcript arms included, and
-    `leakage` is (test-split transmissions, transmissions) over the first such arm's negatives."""
+    `leakage` is (test-split transmissions, transmissions) over the negatives of the first such arm that has any
+    (an arm run on positives only is skipped, not treated as having none)."""
     valid = {i["recording_id"] for i in injections if i.get("valid") == "yes"}
     stale = {name: sum(r["set"] == "positives" and r["recording_id"] not in valid for r in rows)
              for name, rows in sorted(rows_by_arm.items())}
@@ -88,7 +89,7 @@ def summarize(rows_by_arm: dict[str, list[dict]], verdicts: dict[str, str], inje
     arms = {name: arm_summary(rows, verdicts) for name, rows in sorted(rows_by_arm.items())}
     flagged = {name: rows for name, rows in sorted(rows_by_arm.items()) if rows and all("clean_asr" in r for r in rows)}
     headline = {name: arm_summary([r for r in rows if r["clean_asr"]], verdicts) for name, rows in flagged.items()}
-    negatives = next(([r for r in rows if r["set"] == "negatives"] for rows in flagged.values()), [])
+    negatives = next((ns for rows in flagged.values() if (ns := [r for r in rows if r["set"] == "negatives"])), [])
     leakage = (sum(r["n_test"] for r in negatives), sum(r["n_tx"] for r in negatives)) if negatives else None
     primary = [a.name for a in PRIMARY]
     checks = {k: Counter(i.get("valid") or "unchecked" for i in injections if i["edit_kind"] == k) for k in EDIT_KINDS}
@@ -168,12 +169,24 @@ def render(summary: dict, date: str) -> str:
     share = (f"In the real recordings, {leakage[0]} of the {leakage[1]} transmissions ({_pct(leakage[0] / leakage[1])}) "
              f"are test split; the other {_pct(1 - leakage[0] / leakage[1])} were in its training data. "
              if leakage and leakage[1] else "")
+    positives_note = ("the positives whose trigger transmission is test split (the anchor may still be train split, "
+                       "so a splice's earlier clearance can still be leaked audio)")
+    headline_hours = sum(s["hours"] for s in summary["asr_headline"].values())
+    if summary["asr_headline"] and not headline_hours:
+        headline_text = ("No real recording is entirely in the test split, so the headline reports recall only: it "
+                          "keeps " + positives_note + ", for the human-transcript arms and the ASR arms alike. ASR "
+                          "false alarms appear only in the all-recordings table above, where the leakage makes the "
+                          "reported degradation a lower bound.")
+    elif summary["asr_headline"]:
+        headline_text = ("These rows keep the negatives whose every transmission is test split and " + positives_note +
+                          ", for the human-transcript arms and the ASR arms alike, so each ASR arm can be compared "
+                          "with its human-transcript twin on the same recordings. The ASR rows above use all "
+                          "recordings and their degradation is a lower bound.")
+    else:
+        headline_text = ""
     out += ["## ASR headline: recordings in the ASR model's test split", "",
             "The Whisper model was fine-tuned on the corpus's train split, so ASR over train-split clips is optimistic. "
-            + share + "These rows keep the negatives whose every transmission is test split and the positives whose "
-            "anchor and trigger transmissions are both test split, for the human-transcript arms and the ASR arms alike, "
-            "so each ASR arm can be compared with its human-transcript twin on the same recordings. The ASR rows above "
-            "use all recordings and their degradation is a lower bound.", ""]
+            + share + headline_text, ""]
     out += _arm_table(summary["asr_headline"]) + [""] if summary["asr_headline"] else ["No arm has run yet.", ""]
     out += ["## Recall by injection kind (lenient hits / scored)", "",
             "| Arm | " + " | ".join(EDIT_KINDS) + " |", "|---|" + "---:|" * len(EDIT_KINDS)]

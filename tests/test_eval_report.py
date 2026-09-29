@@ -57,21 +57,26 @@ def test_the_report_covers_every_section_and_uses_no_em_dash():
         assert heading in text
     assert "Cohen's kappa 0.80 over 12 alerts" in text and "-50 pts" in text
     assert "\u2014" not in text
+    assert "trigger transmission is test split" in text and "reports recall only" not in text   # a usable headline negative is present
     pending = render(summarize(rows, {}, VALID, None), "29 Sep 2026")
     assert "pending" in pending and "no alert has been labelled by both" in pending
     no_asr = summarize({"rule-rules-window-asr": [{**r, "missing_transcripts": 1} for r in RULES]}, {}, VALID, None)
-    assert no_asr["arms"]["rule-rules-window-asr"]["hours"] == 0 and "| n/a | 0 | n/a | n/a | 0.00 |" in render(no_asr, "x")
+    no_asr_text = render(no_asr, "x")
+    assert no_asr["arms"]["rule-rules-window-asr"]["hours"] == 0 and "| n/a | 0 | n/a | n/a | 0.00 |" in no_asr_text
+    assert "reports recall only" in no_asr_text and "trigger transmission is test split" in no_asr_text
     assert "Not run yet" in render(summarize({"rule-rules-none-gold": RULES}, VERDICTS, VALID, None), "29 Sep 2026")
 
 
 def test_the_headline_states_the_leakage_share_and_the_doc_its_caveats():
     rows = {PRIMARY[0].name: RULES, PRIMARY[1].name: SONNET, "rule-rules-window-asr": RULES,
-            "old-arm": [{k: v for k, v in r.items() if k not in ("clean_asr", "n_tx", "n_test")} for r in RULES]}
+            "old-arm": [{k: v for k, v in r.items() if k not in ("clean_asr", "n_tx", "n_test")} for r in RULES],
+            "aaa-positives-only": [RULES[0], RULES[1]]}   # alphabetically first flagged arm, no negatives at all
     summary = summarize(rows, VERDICTS, VALID, None)
     assert "old-arm" not in summary["asr_headline"] and summary["leakage"] == (5, 8)
     assert summary["asr_headline"][PRIMARY[0].name]["hours"] == 0.5
     text = render(summary, "29 Sep 2026")
-    assert "5 of the 8 transmissions (62%)" in text and "anchor and trigger transmissions are both test split" in text
+    assert "5 of the 8 transmissions (62%)" in text and "trigger transmission is test split" in text
+    assert "anchor may still be train split" in text
     assert "over 2 negatives" in text                                  # the n behind the false-alarm difference
     assert "on the real recordings" in text and "280 s" in text and "parsed with at 300 s" in text
     for caveat in ("not what an ASR arm heard", "every arm that raised the same alert",

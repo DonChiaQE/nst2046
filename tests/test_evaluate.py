@@ -88,11 +88,12 @@ def test_rows_say_whether_the_clean_asr_headline_can_use_them(tmp_path):
     conn.execute("UPDATE transmissions SET split = 'train' WHERE recording_id = ? AND external_id = 'x3'", (mixed,))
     neg = recording_row(conn, PRIMARY[0], mixed, "negatives", None)
     assert neg["all_test"] is False and neg["clean_asr"] is False and (neg["n_tx"], neg["n_test"]) == (4, 3)
-    ids = neg["tx_ids"]
-    truth = {"runway": "31", "anchor_tx": ids[0], "trigger_tx": ids[2], "edit_kind": "splice"}
+    ids = neg["tx_ids"]   # ids[3] is train split (x3 above); ids[0..2] are test
+    truth = {"runway": "31", "anchor_tx": ids[3], "trigger_tx": ids[0], "edit_kind": "splice"}
     pos = recording_row(conn, PRIMARY[0], mixed, "positives", truth)
-    assert pos["all_test"] is False and pos["clean_asr"] is True       # anchor and trigger are both test split
-    assert recording_row(conn, PRIMARY[0], mixed, "positives", {**truth, "trigger_tx": ids[3]})["clean_asr"] is False
+    assert pos["all_test"] is False and pos["clean_asr"] is True   # trigger is test split; the anchor is train
+    stale_trigger = recording_row(conn, PRIMARY[0], mixed, "positives", {**truth, "anchor_tx": ids[0], "trigger_tx": ids[3]})
+    assert stale_trigger["clean_asr"] is False                     # trigger is train split
 
 
 def test_merge_rows_replaces_only_the_set_that_ran():

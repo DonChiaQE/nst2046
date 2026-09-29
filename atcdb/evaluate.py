@@ -87,8 +87,9 @@ def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_nam
     (an ASR run that has not reached them); such a row is not scored, and is returned empty without replaying or judging
     anything, so no cache ever holds a parse or judgment made from a partial sequence. `all_test` says whether every
     transmission is in the ASR model's `test` split; `clean_asr` whether the row belongs in the clean ASR headline (spec
-    section 3): for a negative, `all_test`; for a positive, whether its anchor and trigger transmissions are both test
-    split. `n_tx` and `n_test` count the recording's transmissions and those in the test split."""
+    section 3): for a negative, `all_test`; for a positive, whether its trigger transmission is test split (the anchor
+    may still be train split, so a splice's earlier clearance can still be leaked audio). `n_tx` and `n_test` count the
+    recording's transmissions and those in the test split."""
     txs, missing = _arm_transmissions(conn, arm, recording_id)
     if missing:
         steps = {"incomplete": False, "dropped": 0, "tx_ids": [tx.id for tx in txs], "t": [tx.start_s for tx in txs],
@@ -110,9 +111,8 @@ def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_nam
     if truth is None:
         clean_asr = all_test
     else:
-        ends = (truth["anchor_tx"], truth["trigger_tx"])
-        clean_asr = conn.execute("SELECT COUNT(*) FROM transmissions WHERE split = 'test' AND id IN (?, ?)",
-                                 ends).fetchone()[0] == len(set(ends))
+        clean_asr = conn.execute("SELECT split FROM transmissions WHERE id = ?",
+                                 (truth["trigger_tx"],)).fetchone()[0] == "test"
     return {"recording_id": recording_id, "set": set_name, "truth": truth, "span_s": span or 0.0,
             "all_test": all_test, "clean_asr": clean_asr, "n_tx": n_tx, "n_test": n_test,
             "missing_transcripts": missing, **steps}
