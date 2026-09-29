@@ -111,8 +111,8 @@ def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_nam
     if truth is None:
         clean_asr = all_test
     else:
-        clean_asr = conn.execute("SELECT split FROM transmissions WHERE id = ?",
-                                 (truth["trigger_tx"],)).fetchone()[0] == "test"
+        clean_asr = conn.execute("SELECT COUNT(*) FROM transmissions WHERE id = ? AND split = 'test'",
+                                 (truth["trigger_tx"],)).fetchone()[0] > 0
     return {"recording_id": recording_id, "set": set_name, "truth": truth, "span_s": span or 0.0,
             "all_test": all_test, "clean_asr": clean_asr, "n_tx": n_tx, "n_test": n_test,
             "missing_transcripts": missing, **steps}
