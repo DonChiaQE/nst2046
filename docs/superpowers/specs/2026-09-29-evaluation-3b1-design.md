@@ -1,7 +1,9 @@
 # Phase 3b-1: Level 2 synthetic evaluation and LLM judge, design
 
-**Status: design approved 2026-09-29; spec awaiting review.** Amends `2026-09-12-conflict-engine-design.md`
-(Section 4 and Addendum A.5). Where this file and A.5 disagree, this file wins for the parts it covers.
+**Status: design approved 2026-09-29; amended while planning the same day (splicing, section 4; the others are marked
+"planning").** Plan: `docs/superpowers/plans/2026-09-29-evaluation-3b1.md`. Amends
+`2026-09-12-conflict-engine-design.md` (Section 4 and Addendum A.5). Where this file and A.5 disagree, this file wins
+for the parts it covers.
 
 ## 1. Decomposition of 3b
 
@@ -17,8 +19,9 @@ Labelling will come from the team, but not for weeks, so 3b is split and ordered
 structured arms, plus the Sonnet judge on each transcript kind. **Primary comparison** (pre-registered, A.5): rule vs
 Sonnet, `window`, human transcripts.
 
-**Cost.** About $130 for all 18 arms over the 309 negatives (A.4's $66 for gold, doubled for ASR), plus about $15 for
-the injected positives and the judge. Every paid run is dry-run first.
+**Cost (planning, measured by the dry run).** About $53 for the twelve Claude arms on human transcripts, over the 309
+negatives and 100 positives (the positives are new transcripts, so they are parsed afresh), about the same again on
+ASR, and about $2 for the judge. Every paid run is dry-run first.
 
 ## 2. Findings that shaped this design
 
@@ -30,6 +33,11 @@ the injected positives and the judge. Every paid run is dry-run first.
   not per recording: of the 2,016 transmissions in the 309 recordings, 405 are `test` and 1,611 are `train` (almost
   certainly seen when the Whisper model was fine-tuned). Only 12 recordings are entirely `test` (about 0.23 h).
 - **Audio hours.** The 309 recordings span 2.65 h (first transmission start to last end, summed); speech is 1.73 h.
+- **Few clips hold two clearances (planning).** Only 34 of the 309 recordings contain two runway clearances, so the
+  four text edits of section 4 find about ten candidates in the whole corpus. Splicing (section 4) supplies the rest.
+- **One strip, two designators (planning).** Almost all traffic uses 31 and 13, the two ends of the same runway. The
+  engine treats designators as separate runways, so a clearance for 13 and one for 31 never conflict. Reported as a
+  caveat, not changed.
 
 ## 3. ASR over the replayable recordings
 
@@ -51,7 +59,7 @@ not in `parse_rules` (which stays frozen at v1), and are deliberately broader th
 single-digit designators accepted.
 
 **Edit kinds.** Each takes an earlier anchor A (a reservation of kind K on runway R) and a later transmission B,
-and edits B's text only (or, for kind 4, deletes one transmission):
+and edits B's text only (or, for kind 4, deletes one transmission; kind 5 edits nothing):
 
 1. **`runway_swap`**: B is a clearance to a runway other than R; its runway designator becomes R (spoken form, e.g.
    `one three`).
@@ -60,17 +68,23 @@ and edits B's text only (or, for kind 4, deletes one transmission):
    verb becomes `cleared for takeoff`.
 4. **`release_delete`**: a release transmission lies between A and a later clearance C on R whose kind is
    incompatible with K; the release is removed from the synthetic copy, and C plays the role of B.
+5. **`splice`** (planning): recording X ends holding A (no release of A's kind follows it in X) and a different real
+   recording Y, from the same airport, contains a clearance B on R that conflicts with A. The synthetic recording is X
+   followed by Y, Y's times shifted to start 5 s after X ends; only splices whose B falls within A's staleness timeout
+   are kept. Nothing is edited, so every transcript, ASR included, is real. On the corpus copy: 1, 6, 1, 2 and 8,141
+   candidates for kinds 1 to 5.
 
-One edit per synthetic recording. The generator targets `--n 100`, stratified across kinds as far as candidates
-allow (kind 4 will be rare; its count is reported). `--seed` fixes every choice. A recording with no candidate for a
-kind yields no injection of that kind.
+One edit (or splice) per synthetic recording. The generator targets `--n 100`, stratified across kinds by round robin
+(a kind that runs out leaves its share to the others), at most one per original recording and kind; splices fill what
+the text edits cannot. `--seed` fixes every choice.
 
-**Storage.** Source `synthetic-conflicts` (`kind='corpus'`), one new recording per injection, with `airport_icao`
-and `facility` copied from the original. `recordings.notes` holds JSON:
-`{"original_recording_id", "edit_kind", "anchor_tx", "trigger_tx", "runway", "seed", "before", "after"}`, where the
-transmission ids are the synthetic copy's. Transmissions are copied with the same `start_s`, `end_s`, role and
-`clip_path`, and `pcm_sha1` NULL. Gold transcripts are `kind='gold', model='synthetic'`; only B differs from the
-original's `human` text. 3a's per-recording transcript pinning already replays these.
+**Storage.** Source `synthetic-conflicts` (`kind='corpus'`), one new recording per injection, with `airport_icao` and
+`facility` copied from the original. `recordings.notes` holds JSON: `{"original_recording_id", "second_recording_id",
+"edit_kind", "anchor_tx", "trigger_tx", "splice_tx", "runway", "seed", "before", "after", "deleted"}`, where the
+transmission ids are the synthetic copy's (`second_recording_id` and `splice_tx`, the first transmission from Y, are set
+for splices only). Transmissions are copied with the same `start_s`, `end_s`, role and `clip_path`, and `pcm_sha1` NULL.
+Gold transcripts are `kind='gold', model='synthetic'`; only B differs from the original's `human` text. 3a's
+per-recording transcript pinning already replays these.
 
 **ASR for synthetic recordings.** Unedited transmissions copy the original's Whisper transcript row (same model and
 version). B's audio does not contain the edit, so B's ASR row holds B's edited gold text, same model, with
@@ -78,15 +92,18 @@ version). B's audio does not contain the edit, so B's ASR row holds B's edited g
 The report states this.
 
 **Human check.** `inject_conflicts.py --sheet data/labels/injection_check.csv` writes one row per injection: the
-recording's lines around A and B (A and B marked), B before and after, and empty `valid` and `notes` columns. `valid`
-is `yes` when B is addressed to a different aircraft from A, A is not released before B, and the phraseology is
-plausible; otherwise `no`. `inject_conflicts.py --apply-sheet` reads it back. Only `valid=yes` injections form the
-positive set; rejection rates per kind are reported as the generator's precision. Re-running the generator with the
-same seed is idempotent (existing synthetic recordings are matched by `external_id = "<original>-<kind>-<seed>-<n>"`).
+recording's lines around A and B (A and B marked), B before and after, and empty `valid` and `notes` columns. `valid` is
+`yes` when B is addressed to a different aircraft from A, A is not released or cancelled before B (for `release_delete`,
+the deleted transmission was A's own release; for a splice, nothing at the end of X lets A's aircraft off the runway),
+and the phraseology is plausible; otherwise `no`. `inject_conflicts.py --apply-sheet` reads it back. Only `valid=yes`
+injections form the positive set; rejection rates per kind are reported as the generator's precision. Re-running the
+generator with the same seed is idempotent (existing synthetic recordings are matched by `external_id =
+"<original>-<kind>-<seed>-<n>"`).
 
 ## 5. Runner and scoring (`atcdb/evaluate.py`, `scripts/eval_conflicts.py`)
 
-**Sets.** `negatives`: the 309 replayable real tower recordings (`list_recordings`). `positives`: synthetic
+**Sets.** `negatives`: the 309 replayable real tower recordings (`replay.real_recordings`, planning: `list_recordings`
+without the `synthetic-conflicts` source). `positives`: synthetic
 recordings with `valid=yes`.
 
 **Runner.** For each arm and recording, call `build_timeline` and keep the conflicts. Parses use the `events` cache,
@@ -94,6 +111,10 @@ so re-runs are free. `none` and `role` recordings run on a small thread pool; `w
 recording and in parallel across recordings. `--dry-run` prints uncached calls and estimated cost per arm (via
 `uncached_parses`). A `window` replay that hits a parse failure is marked `incomplete`, excluded from that arm's
 denominators, and counted in the report.
+
+**Driver (planning).** `eval_conflicts.py` has subcommands `run`, `adjudicate`, `sweep` and `report` in place of the
+flags named in sections 6, 9 and 10. A row counts only when its replay finished and every transmission with a gold
+transcript also has one of the arm's kind (`missing_transcripts == 0`), so a partial ASR run is never scored.
 
 **Output.** One JSONL per arm at `data/eval/conflicts/<extractor>-<model>-<context>-<transcript>.jsonl` (git-ignored
 with the rest of `data/`). Row: `recording_id`, `set`, `span_s`, `incomplete`, `dropped`, and `conflicts` (type,
@@ -125,9 +146,10 @@ each reported, and an empty `verdict`:
 - `missing_info`: extraction right, the release was never spoken (the recording 528 type).
 - `engine_rule`: extraction right, the matrix is too strict.
 
-Sheet A has every row; sheet B is a seeded 30% sample for a second person. Cohen's κ on the overlap. Non-`genuine`
-verdicts are false alarms; the four verdicts are the failure taxonomy. Re-generating the sheet keeps existing
-verdicts (rows matched on the dedup key) and appends new alerts.
+Sheet A (`data/labels/adjudication_A.csv`) has every row; sheet B (`adjudication_B.csv`) holds a fixed 30% of keys for a
+second person, chosen per key from a seeded hash so the overlap stays the same as more arms add alerts. Cohen's κ on the
+overlap. Non-`genuine` verdicts are false alarms; the four verdicts are the failure taxonomy. Re-generating the sheet
+keeps existing verdicts (rows matched on the dedup key) and appends new alerts.
 
 ## 7. LLM judge (`atcdb/judge.py`)
 
@@ -147,11 +169,11 @@ adjudication. Runs on both transcript kinds.
 Samples 200 transmissions uniformly (seeded) from the `test`-split transmissions of the 309 replayable recordings,
 independent of every parser. Writes `data/labels/event_sheet_A.csv` (200 rows) and `event_sheet_B.csv` (the first 50,
 for κ). Columns: `row_id`, `transmission_id`, `recording_id`, `role`, `context` (previous 4 lines with roles), `text`,
-`clip_path`, `events`, `notes`. The labeller writes `events` as one event per line: `<kind> <callsign> <runway>` for
-runway instructions, `vacated <callsign>`, `go_around <callsign>`, `handoff <callsign> <to>`, `readback <callsign>`, or
-`noop`. No parser output appears on the sheet. A `parse_event_cell` function validates the syntax (kinds, handoff
-targets, runways through `normalize_runway`) so bad cells are found when the sheet is read, not at scoring time.
-Scoring is 3b-2.
+`clip_path`, `events`, `notes`. The labeller writes `events` as one event per line: `<kind> <runway> <callsign>` for
+runway instructions (planning: runway first, since callsigns are several words), `handoff <to> <callsign>`, `vacated
+<callsign>`, `go_around <callsign>`, `readback <callsign>`, or `noop`. No parser output appears on the sheet. A
+`parse_event_cell` function validates the syntax (kinds, handoff targets, runways through `normalize_runway`) so bad
+cells are found when the sheet is read, not at scoring time. Scoring is 3b-2.
 
 ## 9. Staleness sweep
 
@@ -174,8 +196,8 @@ leakage caveat, the incomplete counts, the judge column and the sweep. No em das
   exclusion, "pending" when unadjudicated, the per-hour denominator, bootstrap on toy data with a fixed seed, paired
   difference).
 - Runner: fake parsers, as in the existing replay tests.
-- `judge.py`: injected fake client (the `parse_llm` pattern), one recorded Sonnet fixture on invented text (never
-  UWB-ATCC text), one live smoke test that skips without a key.
+- `judge.py`: injected fake client (the `parse_llm` pattern), two recorded Sonnet replies to invented sequences (never
+  UWB-ATCC text; `scripts/record_judge_fixtures.py` re-records them), one live smoke test that skips without a key.
 - `make_event_sheet.py`: sampling only from `test` transmissions, no parser output in columns, `parse_event_cell`
   accept and reject cases.
 - Real-corpus checks (injection on recording 528) skip when `data/atc.sqlite` is absent.
