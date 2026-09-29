@@ -6,6 +6,7 @@ Usage:
                                          [--set negatives|positives] [--workers N] [--dry-run]
     python scripts/eval_conflicts.py adjudicate [--kappa]
     python scripts/eval_conflicts.py sweep [--values 30 60 90 120 300]
+    python scripts/eval_conflicts.py report [--doc docs/results/conflict-eval.md]
 
 `run` replays every recording of the evaluation sets under each selected arm (the 18 structured arms and the two
 judge arms by default; `--parser judge` for the judge only) and writes one JSONL per arm to data/eval/conflicts/.
@@ -19,18 +20,24 @@ parse_error (the extraction was wrong), missing_info (extraction right, the rele
 
 `sweep` re-folds every structured arm's stored events with the CROSS and LUAW timeouts set to each value and prints
 lenient recall and raw negative alerts per value. A finding only: engine.STALE_S is not changed.
+
+`report` writes the results doc from the arms' rows, the adjudication sheets and the injection check verdicts. False
+alarm rates show as pending until every alert has a verdict on sheet A.
 """
 import argparse
 import csv
+import datetime
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from atcdb.eval_report import render, summarize  # noqa: E402
 from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, JUDGE_ARMS, SWEEP_VALUES, adjudication_kappa,  # noqa: E402
-                            adjudication_rows, evaluation_sets, overlap_rows, read_rows, run_arm, sweep, uncached,
-                            write_rows)
+                            adjudication_rows, evaluation_sets, overlap_rows, read_rows, read_verdicts, run_arm, sweep,
+                            uncached, write_rows)
+from atcdb.inject import synthetic_recordings  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
 OUT = ROOT / "data/eval/conflicts"
@@ -107,6 +114,16 @@ def cmd_sweep(args: argparse.Namespace) -> None:
         print(f"  {name:<40} " + "  ".join(cells))
 
 
+def cmd_report(args: argparse.Namespace) -> None:
+    sheet_a, sheet_b = read_sheet(args.sheet_a), read_sheet(args.sheet_b)
+    both = set(read_verdicts(sheet_a)) & set(read_verdicts(sheet_b))
+    kappa = adjudication_kappa(sheet_a, sheet_b) if both else None
+    summary = summarize(arm_rows(args.out), read_verdicts(sheet_a), synthetic_recordings(init_db(args.db)), kappa)
+    args.doc.parent.mkdir(parents=True, exist_ok=True)
+    args.doc.write_text(render(summary, datetime.date.today().strftime("%d %b %Y")))
+    print(f"wrote {args.doc}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
@@ -129,6 +146,11 @@ def main() -> None:
     sw = sub.add_parser("sweep", help="CROSS/LUAW staleness sensitivity (a finding, not a tuning)")
     sw.add_argument("--values", type=float, nargs="+", default=list(SWEEP_VALUES))
     sw.set_defaults(func=cmd_sweep)
+    rep = sub.add_parser("report", help="write the results doc")
+    rep.add_argument("--sheet-a", type=Path, default=SHEET_A)
+    rep.add_argument("--sheet-b", type=Path, default=SHEET_B)
+    rep.add_argument("--doc", type=Path, default=ROOT / "docs/results/conflict-eval.md")
+    rep.set_defaults(func=cmd_report)
     args = ap.parse_args()
     args.func(args)
 
