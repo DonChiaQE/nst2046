@@ -73,11 +73,11 @@ def test_foreign_keys_are_enforced(tmp_path):
 def test_judgments_are_unique_per_recording_transcript_and_judge(tmp_path):
     conn = init_db(tmp_path / "t.sqlite")
     _seed_transcript(conn)
-    row = (1, "gold", "human", "claude-sonnet-5", "j1", "[]")
+    row = (1, "gold", "human", "claude-sonnet-5", "j1", "[]", "sha")
     sql = ("INSERT INTO judgments (recording_id, transcript_kind, transcript_model, judge_model, judge_version, "
-           "conflicts_json) VALUES (?,?,?,?,?,?)")
+           "conflicts_json, sequence_sha1) VALUES (?,?,?,?,?,?,?)")
     conn.execute(sql, row)
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute(sql, row)
     with pytest.raises(sqlite3.IntegrityError):
-        conn.execute(sql, (1, "llm", "human", "claude-sonnet-5", "j1", "[]"))
+        conn.execute(sql, (1, "llm", "human", "claude-sonnet-5", "j1", "[]", "sha"))

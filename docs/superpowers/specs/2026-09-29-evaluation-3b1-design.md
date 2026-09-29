@@ -44,7 +44,15 @@ ASR, and about $2 for the judge. Every paid run is dry-run first.
 `python scripts/run_asr.py --split train` transcribes the missing clips (about 2 h CPU). No code change; it is an
 operational step documented in the plan, run after the plan's tasks.
 
-- **Level 2 ASR headline:** the 12 fully-`test` recordings, with its (wide) CIs stated.
+- **Level 2 ASR headline:** the 12 fully-`test` recordings, with its (wide) CIs stated. *(final review)* No synthetic
+  recording is fully `test`, so the headline filters on a row flag `clean_asr` instead: a negative counts when every
+  transmission is `test` split (as `all_test`), a positive when its anchor and trigger transmissions are both `test`
+  split. The headline table shows the human-transcript arms beside the ASR arms on those same rows, so the ASR
+  degradation is measured against a matched gold baseline, and its text states the leakage share (test-split
+  transmissions over all transmissions, summed over one arm's negatives) and how headline positives are chosen.
+  Observed when this was fixed: on the current database none of the 309 negatives is fully `test` either (405 of
+  their 2,016 transmissions are `test` split, and the splits are mixed within every recording), so the headline's
+  negative side is empty and only positives whose anchor and trigger both fall in `test` are left.
 - **Level 2 ASR secondary:** all 309, reported with the share of probably-leaked transmissions (80%); the ASR
   degradation it shows is a lower bound.
 - **Level 1:** the event sheet samples only `test`-split transmissions (section 8), so its ASR factor is clean.
@@ -119,7 +127,13 @@ transcript also has one of the arm's kind (`missing_transcripts == 0`), so a par
 **Output.** One JSONL per arm at `data/eval/conflicts/<extractor>-<model>-<context>-<transcript>.jsonl` (git-ignored
 with the rest of `data/`). Row: `recording_id`, `set`, `span_s`, `incomplete`, `dropped`, and `conflicts` (type,
 severity, runway, callsigns, trigger transmission id, step index). Scoring reads only these files and the
-adjudication sheets, so it is pure.
+adjudication sheets, so it is pure. *(final review)* Rows also carry `truth` (a positive's runway, anchor and trigger
+transmission ids and kind), `missing_transcripts`, `all_test`, `clean_asr` (section 3), `n_tx` and `n_test` (the
+recording's transmissions and those in the `test` split). A recording with missing transcripts is returned unusable
+and empty without replaying or judging it, and `--dry-run` skips it, so no cache holds a parse or judgment made from a
+partial sequence; each judgment is also stored with the sha1 of the sequence it judged, and one of another sequence is
+judged again. `run --set` replaces only that set's rows in an existing JSONL. The report drops positive rows whose
+injection is no longer accepted and counts them per arm.
 
 **Positives.** Hit = a `RUNWAY` conflict of severity `alert` on runway R triggered by the trigger transmission
 (**strict**) or by it or any later transmission (**lenient**, which catches Austin-style late firing at a

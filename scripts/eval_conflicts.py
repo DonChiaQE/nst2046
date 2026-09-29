@@ -10,6 +10,7 @@ Usage:
 
 `run` replays every recording of the evaluation sets under each selected arm (the 18 structured arms and the two
 judge arms by default; `--parser judge` for the judge only) and writes one JSONL per arm to data/eval/conflicts/.
+With `--set`, only that set's rows in an existing JSONL are replaced; the other set's are kept.
 Parses and judgments come from their caches, so a re-run is free; always `--dry-run` first, which prints the uncached
 calls and a rough cost per arm and spends nothing.
 
@@ -35,8 +36,8 @@ sys.path.insert(0, str(ROOT))
 
 from atcdb.eval_report import render, summarize  # noqa: E402
 from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, JUDGE_ARMS, SWEEP_VALUES, adjudication_kappa,  # noqa: E402
-                            adjudication_rows, evaluation_sets, overlap_rows, read_rows, read_verdicts, run_arm, sweep,
-                            uncached, write_rows)
+                            adjudication_rows, evaluation_sets, merge_rows, overlap_rows, read_rows, read_verdicts, run_arm,
+                            sweep, uncached, write_rows)
 from atcdb.inject import synthetic_recordings  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
@@ -86,7 +87,10 @@ def cmd_run(args: argparse.Namespace) -> None:
         return
     for arm in arms:
         rows = run_arm(args.db, arm, items, workers=args.workers)
-        write_rows(args.out / f"{arm.name}.jsonl", rows)
+        path = args.out / f"{arm.name}.jsonl"
+        if args.set and path.exists():   # keep the other set's rows
+            rows = merge_rows(read_rows(path), rows, args.set)
+        write_rows(path, rows)
         incomplete = sum(r["incomplete"] for r in rows)
         print(f"  {arm.name:<40} {len(rows)} recordings, {incomplete} incomplete", flush=True)
 

@@ -2,7 +2,8 @@ import pytest
 
 from atcdb import engine
 from atcdb.evaluate import (ARMS, PRIMARY, Arm, Pending, adjudication_kappa, adjudication_rows, alert_key, alert_keys,
-                            bootstrap, cohen_kappa, detection, evaluation_sets, false_alarm_units, in_overlap, overlap_rows,
+                            bootstrap, cohen_kappa, detection, evaluation_sets, false_alarm_units, in_overlap, merge_rows,
+                            overlap_rows,
                             paired_bootstrap, per_hour, rate, read_rows, read_verdicts, recall, recording_row, refold,
                             run_arm, sweep, uncached, usable, write_rows)
 from atcdb.inject import apply_check, check_rows, generate, write_injection
@@ -56,7 +57,7 @@ def test_evaluation_sets_are_real_recordings_plus_valid_injections(tmp_path):
     sets = evaluation_sets(conn)
     assert sets[0] == (rid, "negatives", None) and len(sets) == 2
     sid, name, truth = sets[1]
-    assert name == "positives" and set(truth) == {"runway", "trigger_tx", "edit_kind"}
+    assert name == "positives" and set(truth) == {"runway", "anchor_tx", "trigger_tx", "edit_kind"}
 
 
 def test_recording_row_keeps_steps_conflicts_and_span(tmp_path):
@@ -77,6 +78,30 @@ def test_recording_row_keeps_steps_conflicts_and_span(tmp_path):
                     VALUES (?, 'asr', 'whisper', 'x', 'x')""", (row["tx_ids"][0],))
     partial = recording_row(conn, asr_arm, rid, "negatives", None)
     assert partial["missing_transcripts"] == 3 and not usable(partial)        # an ASR run that has not finished
+
+
+def test_rows_say_whether_the_clean_asr_headline_can_use_them(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    clean = recording_row(conn, PRIMARY[0], _seed(conn, CONFLICT), "negatives", None)
+    assert clean["all_test"] is True and clean["clean_asr"] is True and (clean["n_tx"], clean["n_test"]) == (4, 4)
+    mixed = _seed(conn, CONFLICT, external_id="mixed")
+    conn.execute("UPDATE transmissions SET split = 'train' WHERE recording_id = ? AND external_id = 'x3'", (mixed,))
+    neg = recording_row(conn, PRIMARY[0], mixed, "negatives", None)
+    assert neg["all_test"] is False and neg["clean_asr"] is False and (neg["n_tx"], neg["n_test"]) == (4, 3)
+    ids = neg["tx_ids"]
+    truth = {"runway": "31", "anchor_tx": ids[0], "trigger_tx": ids[2], "edit_kind": "splice"}
+    pos = recording_row(conn, PRIMARY[0], mixed, "positives", truth)
+    assert pos["all_test"] is False and pos["clean_asr"] is True       # anchor and trigger are both test split
+    assert recording_row(conn, PRIMARY[0], mixed, "positives", {**truth, "trigger_tx": ids[3]})["clean_asr"] is False
+
+
+def test_merge_rows_replaces_only_the_set_that_ran():
+    old = [{"recording_id": 1, "set": "negatives", "v": "old"}, {"recording_id": 2, "set": "positives", "v": "old"}]
+    positives = [{"recording_id": 3, "set": "positives", "v": "new"}]
+    negatives = [{"recording_id": 4, "set": "negatives", "v": "new"}]
+    assert merge_rows(old, positives, "positives") == [old[0], positives[0]]
+    assert merge_rows(old, negatives, "negatives") == [negatives[0], old[1]]
+    assert merge_rows([], positives, "positives") == positives
 
 
 def test_run_arm_is_the_same_serial_and_threaded_and_round_trips_through_jsonl(tmp_path):

@@ -17,7 +17,7 @@ from typing import Callable, Iterable
 from atcdb import engine, judge, parse_llm
 from atcdb.engine import State
 from atcdb.inject import synthetic_recordings
-from atcdb.parsing import CONTEXT_MODES, event_to_row, row_to_event
+from atcdb.parsing import CONTEXT_MODES, Transmission, event_to_row, row_to_event
 from atcdb.replay import build_timeline, default_transcript_model, load_recording, real_recordings, uncached_parses
 from atcdb.schema import connect
 
@@ -52,16 +52,22 @@ def evaluation_sets(conn: sqlite3.Connection) -> list[tuple[int, str, dict | Non
     marked valid, each with its truth (runway, trigger transmission, kind)."""
     out: list[tuple[int, str, dict | None]] = [(r["id"], "negatives", None) for r in real_recordings(conn)]
     for inj in synthetic_recordings(conn, valid_only=True):
-        out.append((inj["recording_id"], "positives", {"runway": inj["runway"], "trigger_tx": inj["trigger_tx"],
-                                                       "edit_kind": inj["edit_kind"]}))
+        out.append((inj["recording_id"], "positives", {"runway": inj["runway"], "anchor_tx": inj["anchor_tx"],
+                                                       "trigger_tx": inj["trigger_tx"], "edit_kind": inj["edit_kind"]}))
     return out
 
 
-def _judge_steps(conn: sqlite3.Connection, arm: Arm, recording_id: int) -> dict:
+def _arm_transmissions(conn: sqlite3.Connection, arm: Arm, recording_id: int) -> tuple[list[Transmission], int]:
+    """(the transmissions the arm sees, how many gold-transcribed transmissions lack a transcript of the arm's kind)."""
+    txs = load_recording(conn, recording_id, arm.transcript, default_transcript_model(conn, arm.transcript, recording_id))
+    gold = {tx.id for tx in load_recording(conn, recording_id, "gold", default_transcript_model(conn, "gold", recording_id))}
+    return txs, len(gold - {tx.id for tx in txs})
+
+
+def _judge_steps(conn: sqlite3.Connection, arm: Arm, recording_id: int, txs: list[Transmission]) -> dict:
     """The judge arm's part of a row: the transmissions it saw and the conflicts it reported, each an alert (the judge
     has no severities) placed at its trigger transmission. A failed call marks the row incomplete."""
     model = default_transcript_model(conn, arm.transcript, recording_id)
-    txs = load_recording(conn, recording_id, arm.transcript, model)
     try:
         found, dropped = judge.judge(conn, recording_id, txs, arm.transcript, model or "", arm.model)
         error = False
@@ -78,10 +84,17 @@ def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_nam
     and every conflict with the step that raised it (for the judge arm, what the judge reported). `span_s` covers all
     the recording's transmissions (first start to last end), whatever the transcript kind, so both transcript arms
     share a denominator. `missing_transcripts` counts transmissions with a gold transcript but none of the arm's kind
-    (an ASR run that has not reached them); such a row is not scored. `all_test` says whether every transmission is in
-    the ASR model's `test` split (spec section 3: the clean ASR headline)."""
-    if arm.parser == "judge":
-        steps = _judge_steps(conn, arm, recording_id)
+    (an ASR run that has not reached them); such a row is not scored, and is returned empty without replaying or judging
+    anything, so no cache ever holds a parse or judgment made from a partial sequence. `all_test` says whether every
+    transmission is in the ASR model's `test` split; `clean_asr` whether the row belongs in the clean ASR headline (spec
+    section 3): for a negative, `all_test`; for a positive, whether its anchor and trigger transmissions are both test
+    split. `n_tx` and `n_test` count the recording's transmissions and those in the test split."""
+    txs, missing = _arm_transmissions(conn, arm, recording_id)
+    if missing:
+        steps = {"incomplete": False, "dropped": 0, "tx_ids": [tx.id for tx in txs], "t": [tx.start_s for tx in txs],
+                 "events": [[] for _ in txs], "conflicts": []}
+    elif arm.parser == "judge":
+        steps = _judge_steps(conn, arm, recording_id, txs)
     else:
         tl = build_timeline(conn, recording_id, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context,
                             model=arm.model, transcript_model=default_transcript_model(conn, arm.transcript, recording_id))
@@ -90,12 +103,19 @@ def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_nam
                  "events": [[list(event_to_row(e)) for e in s.events] for s in tl.steps],
                  "conflicts": [{"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns),
                                 "tx_id": s.tx.id, "step": k} for k, s in enumerate(tl.steps) for c in s.conflicts]}
-    span, all_test = conn.execute(
-        """SELECT MAX(end_s) - MIN(start_s), MIN(CASE WHEN split = 'test' THEN 1 ELSE 0 END)
+    span, n_tx, n_test = conn.execute(
+        """SELECT MAX(end_s) - MIN(start_s), COUNT(*), COALESCE(SUM(split = 'test'), 0)
            FROM transmissions WHERE recording_id = ?""", (recording_id,)).fetchone()
-    gold = {tx.id for tx in load_recording(conn, recording_id, "gold", default_transcript_model(conn, "gold", recording_id))}
+    all_test = n_tx > 0 and n_test == n_tx
+    if truth is None:
+        clean_asr = all_test
+    else:
+        ends = (truth["anchor_tx"], truth["trigger_tx"])
+        clean_asr = conn.execute("SELECT COUNT(*) FROM transmissions WHERE split = 'test' AND id IN (?, ?)",
+                                 ends).fetchone()[0] == len(set(ends))
     return {"recording_id": recording_id, "set": set_name, "truth": truth, "span_s": span or 0.0,
-            "all_test": bool(all_test), "missing_transcripts": len(gold - set(steps["tx_ids"])), **steps}
+            "all_test": all_test, "clean_asr": clean_asr, "n_tx": n_tx, "n_test": n_test,
+            "missing_transcripts": missing, **steps}
 
 
 def run_arm(db: Path, arm: Arm, recordings: list[tuple[int, str, dict | None]], workers: int = 1) -> list[dict]:
@@ -104,6 +124,7 @@ def run_arm(db: Path, arm: Arm, recordings: list[tuple[int, str, dict | None]], 
     racing to cache the same transcript)."""
     def one(item: tuple[int, str, dict | None]) -> dict:
         conn = connect(db)
+        conn.execute("PRAGMA busy_timeout = 30000")   # several workers writing the caches must not lose paid parses
         try:
             return recording_row(conn, arm, *item)
         finally:
@@ -117,16 +138,17 @@ def run_arm(db: Path, arm: Arm, recordings: list[tuple[int, str, dict | None]], 
 
 def uncached(conn: sqlite3.Connection, arm: Arm, recording_ids: Iterable[int]) -> tuple[int, float]:
     """(calls still to make, rough USD) for one arm over the given recordings: transmissions to parse, or for the judge
-    recordings to judge. Calls and stores nothing."""
+    recordings to judge. Calls and stores nothing. A recording with missing transcripts is skipped, as `recording_row`
+    skips it."""
+    ready = {rid: txs for rid in recording_ids for txs, missing in [_arm_transmissions(conn, arm, rid)] if not missing}
     if arm.parser == "judge":
         prompts = []
-        for rid in recording_ids:
+        for rid, txs in ready.items():
             model = default_transcript_model(conn, arm.transcript, rid)
-            txs = load_recording(conn, rid, arm.transcript, model)
-            if txs and not judge.is_cached(conn, rid, arm.transcript, model or "", arm.model):
+            if txs and not judge.is_cached(conn, rid, arm.transcript, model or "", arm.model, txs=txs):
                 prompts.append(judge.render_sequence(txs))
         return len(prompts), judge.estimate_cost(arm.model, prompts)
-    misses = [m for rid in recording_ids for m in uncached_parses(
+    misses = [m for rid in ready for m in uncached_parses(
         conn, rid, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context, model=arm.model,
         transcript_model=default_transcript_model(conn, arm.transcript, rid))]
     cost = parse_llm.estimate_cost(arm.model, [parse_llm.render_prompt(tx, ctx) for tx, ctx in misses]) \
@@ -144,6 +166,16 @@ def write_rows(path: Path, rows: list[dict]) -> None:
 def read_rows(path: Path) -> list[dict]:
     with path.open() as fh:
         return [json.loads(line) for line in fh if line.strip()]
+
+
+SETS = ("negatives", "positives")   # the order of evaluation_sets
+
+
+def merge_rows(existing: list[dict], new: list[dict], set_name: str) -> list[dict]:
+    """An arm's rows after a run over one set: `existing` rows of the other set kept, this set's replaced by `new`,
+    negatives before positives."""
+    kept = [r for r in existing if r["set"] != set_name]
+    return sorted(kept + new, key=lambda r: SETS.index(r["set"]))
 
 
 # --- positives ------------------------------------------------------------------------------------------------------
@@ -346,7 +378,10 @@ SWEEP_VALUES = (30.0, 60.0, 90.0, 120.0, 300.0)
 def refold(row: dict, stale: dict[str, float]) -> list[dict]:
     """The row's RUNWAY conflicts re-derived from its stored events with `engine.STALE_S` overridden by `stale`. No
     parse is repeated, so a `window` arm keeps the context it was parsed with. READBACK conflicts are not re-derived
-    (the stored events do not carry the instruction text a readback is checked against)."""
+    (the stored events do not carry the instruction text a readback is checked against).
+
+    This mutates the shared `engine.STALE_S` for the duration of the fold, so it must stay single-threaded: never call
+    it from `run_arm`'s workers or alongside a replay."""
     saved = dict(engine.STALE_S)
     engine.STALE_S.update(stale)
     try:

@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from atcdb import judge
-from atcdb.evaluate import JUDGE_ARMS, detection, recording_row, uncached
+from atcdb import judge, parse_llm
+from atcdb.evaluate import JUDGE_ARMS, Arm, detection, recording_row, uncached, usable
 from atcdb.judge import (MODELS, SYSTEM, TOOL, JudgeError, conflicts_from_response, estimate_cost, is_cached, render_sequence,
                          request)
 from atcdb.parse_llm import MODEL_SETTINGS
@@ -110,6 +110,37 @@ def test_judgments_are_cached_and_failures_are_not(tmp_path):
         judge.judge(conn, rid, TXS, "gold", "human", model="claude-haiku-4-5")
 
 
+def test_a_judgment_of_another_sequence_is_judged_again(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn)
+    judge.judge(conn, rid, TXS[:2], "gold", "human", client=FakeClient(reply([])))   # e.g. before the ASR run finished
+    assert is_cached(conn, rid, "gold", "human", txs=TXS[:2]) and not is_cached(conn, rid, "gold", "human", txs=TXS)
+    client = FakeClient(reply([item()]))
+    found, dropped = judge.judge(conn, rid, TXS, "gold", "human", client=client)
+    assert len(client.messages.calls) == 1 and [c["step"] for c in found] == [2] and dropped == 0
+    assert conn.execute("SELECT COUNT(*) FROM judgments").fetchone()[0] == 1
+    assert judge.judge(conn, rid, TXS, "gold", "human", client=FakeClient()) == (found, 0)
+
+
+def test_a_partial_asr_recording_is_not_replayed_judged_or_counted(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn)
+    conn.execute("""INSERT INTO transcripts (transmission_id, kind, model, raw_text, normalized_text)
+                    VALUES (1, 'asr', 'whisper', ?, ?)""", (TURNS[0][1], TURNS[0][1]))   # an ASR run that has not finished
+    conn.commit()
+    client = FakeClient()   # no replies: any call fails the test
+    monkeypatch.setattr(judge, "_default_client", lambda: client)
+    monkeypatch.setattr(parse_llm, "_default_client", lambda: client)
+    for arm in (JUDGE_ARMS[1], Arm("llm", "claude-sonnet-5", "window", "asr")):
+        assert arm.transcript == "asr"
+        row = recording_row(conn, arm, rid, "negatives", None)
+        assert row["missing_transcripts"] == 2 and row["incomplete"] is False and not usable(row)
+        assert row["conflicts"] == [] and all(e == [] for e in row["events"])
+        assert uncached(conn, arm, [rid]) == (0, 0.0)
+    assert client.messages.calls == []
+    assert conn.execute("SELECT (SELECT COUNT(*) FROM judgments) + (SELECT COUNT(*) FROM events)").fetchone()[0] == 0
+
+
 def test_the_judge_arm_row_places_conflicts_at_their_trigger(tmp_path, monkeypatch):
     conn = init_db(tmp_path / "t.sqlite")
     rid = _seed(conn)
@@ -117,7 +148,7 @@ def test_the_judge_arm_row_places_conflicts_at_their_trigger(tmp_path, monkeypat
     assert (arm.parser, arm.model, arm.context, arm.transcript) == ("judge", "claude-sonnet-5", "sequence", "gold")
     assert uncached(conn, arm, [rid])[0] == 1
     monkeypatch.setattr(judge, "_default_client", lambda: FakeClient(reply([item()])))
-    row = recording_row(conn, arm, rid, "positives", {"runway": "31", "trigger_tx": 3, "edit_kind": "splice"})
+    row = recording_row(conn, arm, rid, "positives", {"runway": "31", "anchor_tx": 1, "trigger_tx": 3, "edit_kind": "splice"})
     assert row["incomplete"] is False and row["tx_ids"] == [1, 2, 3] and row["events"] == [[], [], []]
     assert row["conflicts"] == [{"type": "RUNWAY", "severity": "alert", "runway": "31",
                                  "callsigns": ["lufthansa four five six"], "tx_id": 3, "step": 2}]

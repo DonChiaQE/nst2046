@@ -4,10 +4,13 @@ The whole transcript of one recording goes to Claude in one call, and a forced, 
 incompatible clearances it sees. No parser, no engine: this is the "raw LLM over the transcript" baseline that the
 structured system is compared with. The model and request settings match the parser's Sonnet arm (`parse_llm`), so the
 comparison is about structure, not reasoning budget. Judgments are cached in the `judgments` table, one per (recording,
-transcript kind and model, judge model, VERSION); API errors and unusable replies raise and cache nothing.
+transcript kind and model, judge model, VERSION), stored with the sha1 of the sequence judged: a judgment of another
+sequence (say, a partial ASR run since completed) is a miss, deleted and judged again. API errors and unusable replies
+raise and cache nothing.
 
 Bump VERSION by hand whenever SYSTEM, TOOL, `render_sequence`, `conflicts_from_response` or the request settings change.
 """
+import hashlib
 import json
 import sqlite3
 from typing import Any
@@ -102,11 +105,18 @@ def conflicts_from_response(response: Any, n: int) -> tuple[list[dict], int]:
     return out, dropped
 
 
-def _cached(conn: sqlite3.Connection, key: tuple) -> tuple[list[dict], int] | None:
-    row = conn.execute(
-        """SELECT conflicts_json, dropped FROM judgments WHERE recording_id = ? AND transcript_kind = ?
-           AND transcript_model = ? AND judge_model = ? AND judge_version = ?""", key).fetchone()
-    return (json.loads(row["conflicts_json"]), row["dropped"]) if row else None
+_KEY_SQL = "recording_id = ? AND transcript_kind = ? AND transcript_model = ? AND judge_model = ? AND judge_version = ?"
+
+
+def sequence_sha1(txs: list[Transmission]) -> str:
+    """The fingerprint of the sequence a judgment was made from."""
+    return hashlib.sha1(render_sequence(txs).encode()).hexdigest()
+
+
+def _cached(conn: sqlite3.Connection, key: tuple, sha: str) -> tuple[list[dict], int] | None:
+    """The stored judgment for `key`, if it was made from the sequence with fingerprint `sha`."""
+    row = conn.execute(f"SELECT conflicts_json, dropped, sequence_sha1 FROM judgments WHERE {_KEY_SQL}", key).fetchone()
+    return (json.loads(row["conflicts_json"]), row["dropped"]) if row and row["sequence_sha1"] == sha else None
 
 
 def judge(conn: sqlite3.Connection, recording_id: int, txs: list[Transmission], transcript_kind: str,
@@ -118,17 +128,19 @@ def judge(conn: sqlite3.Connection, recording_id: int, txs: list[Transmission], 
         raise ValueError(f"unknown judge model {model!r}; expected one of {MODELS}")
     if not txs:
         return [], 0
-    key = (recording_id, transcript_kind, transcript_model, model, VERSION)
-    cached = _cached(conn, key)
+    key, sha = (recording_id, transcript_kind, transcript_model, model, VERSION), sequence_sha1(txs)
+    cached = _cached(conn, key, sha)
     if cached is not None:
         return cached
     response = (client or _default_client()).messages.create(**request(model, txs))
     conflicts, dropped = conflicts_from_response(response, len(txs))
+    # a judgment of another sequence under the same key is stale: replace it
+    conn.execute(f"DELETE FROM judgments WHERE {_KEY_SQL} AND sequence_sha1 != ?", (*key, sha))
     conn.execute("""INSERT OR IGNORE INTO judgments (recording_id, transcript_kind, transcript_model, judge_model,
-                    judge_version, conflicts_json, dropped) VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                 (*key, json.dumps(conflicts), dropped))
+                    judge_version, conflicts_json, dropped, sequence_sha1) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                 (*key, json.dumps(conflicts), dropped, sha))
     conn.commit()
-    return _cached(conn, key)
+    return _cached(conn, key, sha)
 
 
 def estimate_cost(model: str, prompts: list[str]) -> float:
@@ -140,5 +152,9 @@ def estimate_cost(model: str, prompts: list[str]) -> float:
 
 
 def is_cached(conn: sqlite3.Connection, recording_id: int, transcript_kind: str, transcript_model: str,
-              model: str = MODELS[0]) -> bool:
-    return _cached(conn, (recording_id, transcript_kind, transcript_model, model, VERSION)) is not None
+              model: str = MODELS[0], txs: list[Transmission] | None = None) -> bool:
+    """Whether a judgment is stored for the key; with `txs`, only one made from that very sequence counts."""
+    key = (recording_id, transcript_kind, transcript_model, model, VERSION)
+    if txs is not None:
+        return _cached(conn, key, sequence_sha1(txs)) is not None
+    return conn.execute(f"SELECT 1 FROM judgments WHERE {_KEY_SQL}", key).fetchone() is not None

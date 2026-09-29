@@ -227,6 +227,19 @@ def generate(conn: sqlite3.Connection, recording_ids: list[int], n: int = 100, s
     return select(pool(conn, recording_ids), n, seed)
 
 
+def missing_asr(conn: sqlite3.Connection, injections: list[Injection]) -> list[int]:
+    """The original recordings among `injections` (a splice's second recording included) that have a gold-transcribed
+    transmission with no ASR transcript. An injection copies the ASR transcripts that exist when it is stored, and a
+    later ASR run would transcribe the synthetic copies too (they keep the split), giving an edited trigger Whisper's
+    text of the unedited audio; so ASR must be complete on these before injecting."""
+    originals = sorted({rid for inj in injections for rid in (inj.recording_id, inj.second) if rid is not None})
+    return [rid for rid in originals if conn.execute(
+        """SELECT 1 FROM transmissions x WHERE x.recording_id = ?
+           AND EXISTS (SELECT 1 FROM transcripts WHERE transmission_id = x.id AND kind = 'gold')
+           AND NOT EXISTS (SELECT 1 FROM transcripts WHERE transmission_id = x.id AND kind = 'asr') LIMIT 1""",
+        (rid,)).fetchone()]
+
+
 def _source_id(conn: sqlite3.Connection) -> int:
     conn.execute("INSERT OR IGNORE INTO sources (name, kind, notes) VALUES (?, 'corpus', ?)",
                  (SOURCE, "conflicts injected into real gold transcripts by atcdb/inject.py; same licence as the originals"))

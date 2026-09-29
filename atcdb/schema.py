@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS judgments (
     judge_version     TEXT NOT NULL,
     conflicts_json    TEXT NOT NULL,
     dropped           INTEGER NOT NULL DEFAULT 0,
+    sequence_sha1     TEXT NOT NULL,   -- sha1 of judge.render_sequence of the transmissions judged
     created_at_utc    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     UNIQUE (recording_id, transcript_kind, transcript_model, judge_model, judge_version)
 );

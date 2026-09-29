@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from atcdb.inject import (EDIT_KINDS, SPLICE_GAP_S, Injection, apply_check, candidates, check_rows, generate, pool, scan,
-                          select, splice_anchor, splice_candidate, synthetic_recordings, write_injection)
+from atcdb.inject import (EDIT_KINDS, SPLICE_GAP_S, Injection, apply_check, candidates, check_rows, generate, missing_asr,
+                          pool, scan, select, splice_anchor, splice_candidate, synthetic_recordings, write_injection)
 from atcdb.parsing import Transmission
 from atcdb.replay import build_timeline, default_transcript_model, load_recording
 from atcdb.schema import init_db
@@ -225,3 +225,16 @@ def test_recording_528_yields_injections_on_the_real_corpus():
     # aircraft's handoff, which is exactly what the human check must reject
     assert sorted((c.edit_kind, c.anchor, c.trigger) for c in pool) == [
         ("holdshort_to_cross", 16, 18), ("release_delete", 11, 16), ("release_delete", 13, 16)]
+
+
+def test_missing_asr_names_the_originals_whose_gold_transmissions_lack_asr(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    full = _seed(conn, [LAND_31, LINEUP_13], external_id="full", asr=True)
+    bare = _seed(conn, [LAND_31, LINEUP_13], external_id="bare")
+    part = _seed(conn, [LAND_31, LINEUP_13], external_id="part", asr=True)
+    conn.execute("""DELETE FROM transcripts WHERE kind = 'asr' AND transmission_id =
+                    (SELECT MAX(id) FROM transmissions WHERE recording_id = ?)""", (part,))
+    chosen = [Injection(full, "runway_swap", 0, 1, "31", "x"), Injection(full, "splice", 0, 2, "31", "x", second=bare),
+              Injection(part, "verb_upgrade", 0, 1, "31", "x")]
+    assert missing_asr(conn, chosen) == [bare, part]   # a splice's second recording counts too
+    assert missing_asr(conn, chosen[:1]) == []

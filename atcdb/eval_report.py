@@ -76,14 +76,25 @@ def taxonomy(rows: list[dict], verdicts: dict[str, str]) -> Counter:
 def summarize(rows_by_arm: dict[str, list[dict]], verdicts: dict[str, str], injections: list[dict],
               kappa: tuple[float, int] | None) -> dict:
     """Everything the results doc reports. `injections` are the stored injections with their check verdicts (atcdb.inject
-    .synthetic_recordings); `kappa` is the adjudication agreement, or None before a second adjudicator has started."""
+    .synthetic_recordings); a positive row whose injection is no longer accepted (`valid` not yes) is dropped and
+    counted per arm. `kappa` is the adjudication agreement, or None before a second adjudicator has started. The ASR
+    headline keeps the `clean_asr` rows of every arm whose rows carry the flag, human-transcript arms included, and
+    `leakage` is (test-split transmissions, transmissions) over the first such arm's negatives."""
+    valid = {i["recording_id"] for i in injections if i.get("valid") == "yes"}
+    stale = {name: sum(r["set"] == "positives" and r["recording_id"] not in valid for r in rows)
+             for name, rows in sorted(rows_by_arm.items())}
+    rows_by_arm = {name: [r for r in rows if r["set"] != "positives" or r["recording_id"] in valid]
+                   for name, rows in rows_by_arm.items()}
     arms = {name: arm_summary(rows, verdicts) for name, rows in sorted(rows_by_arm.items())}
-    headline = {name: arm_summary([r for r in rows if r["all_test"]], verdicts)
-                for name, rows in sorted(rows_by_arm.items()) if name.endswith("-asr")}
+    flagged = {name: rows for name, rows in sorted(rows_by_arm.items()) if rows and all("clean_asr" in r for r in rows)}
+    headline = {name: arm_summary([r for r in rows if r["clean_asr"]], verdicts) for name, rows in flagged.items()}
+    negatives = next(([r for r in rows if r["set"] == "negatives"] for rows in flagged.values()), [])
+    leakage = (sum(r["n_test"] for r in negatives), sum(r["n_tx"] for r in negatives)) if negatives else None
     primary = [a.name for a in PRIMARY]
     checks = {k: Counter(i.get("valid") or "unchecked" for i in injections if i["edit_kind"] == k) for k in EDIT_KINDS}
     return {
-        "arms": arms, "asr_headline": headline, "kappa": kappa, "checks": checks,
+        "arms": arms, "asr_headline": headline, "leakage": leakage, "stale_positives": stale, "kappa": kappa,
+        "checks": checks,
         "primary": primary if all(p in rows_by_arm for p in primary) else None,
         "primary_diff": primary_differences(rows_by_arm[primary[0]], rows_by_arm[primary[1]], verdicts)
         if all(p in rows_by_arm for p in primary) else None,
@@ -146,15 +157,24 @@ def render(summary: dict, date: str) -> str:
                 "| | " + a + " | " + b + " | Difference, first minus second (95% CI) |", "|---|---|---|---|",
                 f"| Lenient recall | {_recall_cell(sa)} | {_recall_cell(sb)} | {_diff_cell(d['recall'], True)} "
                 f"over {d['recall_n']} positives |",
-                f"| RUNWAY false alarms / h | {_fa_cell(sa)} | {_fa_cell(sb)} | {_diff_cell(d['fa'], False)} |", ""]
+                f"| RUNWAY false alarms / h | {_fa_cell(sa)} | {_fa_cell(sb)} | {_diff_cell(d['fa'], False)} "
+                f"over {d['fa_n']} negatives |", ""]
     else:
         out += ["## Primary comparison (pre-registered)", "", "Not run yet: both primary arms are needed.", ""]
+    stale = ", ".join(f"{name} {n}" for name, n in summary["stale_positives"].items() if n) or "none"
     out += ["## All arms, human and ASR transcripts", ""] + _arm_table(summary["arms"]) + [""]
-    out += ["## ASR headline: recordings entirely in the ASR model's test split", "",
+    out += [f"Positives whose injection the check no longer accepts, not scored: {stale}.", ""]
+    leakage = summary["leakage"]
+    share = (f"In the real recordings, {leakage[0]} of the {leakage[1]} transmissions ({_pct(leakage[0] / leakage[1])}) "
+             f"are test split; the other {_pct(1 - leakage[0] / leakage[1])} were in its training data. "
+             if leakage and leakage[1] else "")
+    out += ["## ASR headline: recordings in the ASR model's test split", "",
             "The Whisper model was fine-tuned on the corpus's train split, so ASR over train-split clips is optimistic. "
-            "These rows keep only recordings whose every transmission is test split; the ASR rows above use all "
-            "recordings and their degradation is a lower bound.", ""]
-    out += _arm_table(summary["asr_headline"]) + [""] if summary["asr_headline"] else ["No ASR arm has run yet.", ""]
+            + share + "These rows keep the negatives whose every transmission is test split and the positives whose "
+            "anchor and trigger transmissions are both test split, for the human-transcript arms and the ASR arms alike, "
+            "so each ASR arm can be compared with its human-transcript twin on the same recordings. The ASR rows above "
+            "use all recordings and their degradation is a lower bound.", ""]
+    out += _arm_table(summary["asr_headline"]) + [""] if summary["asr_headline"] else ["No arm has run yet.", ""]
     out += ["## Recall by injection kind (lenient hits / scored)", "",
             "| Arm | " + " | ".join(EDIT_KINDS) + " |", "|---|" + "---:|" * len(EDIT_KINDS)]
     for name, s in summary["arms"].items():
@@ -172,9 +192,10 @@ def render(summary: dict, date: str) -> str:
     for k, c in summary["checks"].items():
         out.append(f"| {k} | {c.get('yes', 0)} | {c.get('no', 0)} | {c.get('unchecked', 0)} |")
     out += ["", "## CROSS and LUAW staleness sensitivity (a finding, not a tuning)", "",
-            "The longest replayable recording spans 139 s, so no timeout of 139 s or more can change anything on this "
-            "corpus; values below it are shown for sensitivity only, re-folding the stored events without new parses. "
-            "`engine.STALE_S` stays at 300 s.", ""]
+            "The longest real recording spans 139 s, so on the real recordings no timeout of 139 s or more can change "
+            "anything; spliced positives can span up to about 280 s, so longer values can still change recall. Values "
+            "are shown for sensitivity only, re-folding the stored events without new parses, so window arms keep the "
+            "context they were parsed with at 300 s. `engine.STALE_S` stays at 300 s.", ""]
     for arm, rows in summary["sweep"].items():
         out += [f"{arm}:", "", "| CROSS and LUAW timeout | Lenient recall | RUNWAY alerts on negatives (raw) |",
                 "|---:|---|---:|"]
@@ -190,5 +211,13 @@ def render(summary: dict, date: str) -> str:
             "the edited gold text; the ASR arms test noise on the rest of the sequence only.",
             "- The engine treats runway designators as separate runways, so a clearance for 13 and one for 31 (the two "
             "ends of one strip) never conflict.",
-            "- The judge reports no severity; every conflict it reports is scored as an alert.", ""]
+            "- The judge reports no severity; every conflict it reports is scored as an alert.",
+            "- Adjudicators see the human transcript, not what an ASR arm heard, so an ASR arm's alert is judged against "
+            "what was said.",
+            "- One verdict is applied to every arm that raised the same alert (same recording, type, runway and "
+            "trigger transmission), whatever callsigns each arm extracted.",
+            "- A judge READBACK report without a normalisable runway is dropped, which shapes the judge's READBACK "
+            "numbers.",
+            "- Lenient recall credits any later alert on the injected runway, which favours noisier arms; compare it "
+            "with strict recall.", ""]
     return "\n".join(out)
