@@ -7,7 +7,7 @@ still hold and are repeated below.
 
 | Piece | State |
 |---|---|
-| Phases 1, 2, 2.5, 3a, 3b-1 | **All on `main`** (`abf53ee`, PR #6). 292 tests (290 + 2 skipped without a key) |
+| Phases 1, 2, 2.5, 3a, 3b-1 | **All on `main`** (`abf53ee`, PR #6). 293 tests (291 + 2 skipped without a key) |
 | Phase 3b-1 spec | `docs/superpowers/specs/2026-09-29-evaluation-3b1-design.md` (amends Section 4 and A.5 of the engine spec) |
 | Phase 3b-1 plan | `docs/superpowers/plans/2026-09-29-evaluation-3b1.md`; its last section lists the operational steps |
 | Level 2 evaluation | **Code done, nothing run on the real data yet.** This is the next step |
@@ -67,7 +67,8 @@ python scripts/eval_conflicts.py --help        # run | adjudicate | sweep | repo
 
 ## Next: the operational run (on `data/atc.sqlite`, in this order)
 
-1. `python scripts/run_asr.py --split train` (about 2 h CPU, free). Must precede injection.
+1. `python scripts/run_asr.py --split train --replayable` (about 2 h CPU, free; Ctrl-C pauses, re-run resumes).
+   Must precede injection. Without `--replayable` it transcribes the whole train split (12 h or more).
 2. `python scripts/inject_conflicts.py --dry-run`, then without it; `--sheet data/labels/injection_check.csv`; a
    person fills `valid`; `--apply-sheet data/labels/injection_check.csv`.
 3. `python scripts/eval_conflicts.py run --parser rule` (free); `run --dry-run`; then the Claude arms and the judge,

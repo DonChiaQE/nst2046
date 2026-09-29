@@ -48,3 +48,14 @@ def test_run_asr_limit(tmp_path, fixture_csv):
     conn = init_db(tmp_path / "t.sqlite")
     load_enriched_csv(conn, fixture_csv, project_root=tmp_path)
     assert run_asr(conn, "fake", "v1", fake_transcriber, project_root=tmp_path, split="train", limit=3) == 3
+
+
+def test_run_asr_can_be_limited_to_some_recordings(tmp_path, fixture_csv):
+    conn = init_db(tmp_path / "t.sqlite")
+    load_enriched_csv(conn, fixture_csv, project_root=tmp_path)
+    [rid] = [r[0] for r in conn.execute("SELECT id FROM recordings WHERE external_id LIKE '%TWR-Cs5J1G%'")]
+    assert run_asr(conn, "fake", "v1", fake_transcriber, project_root=tmp_path, split="train", recording_ids=[rid]) == 2
+    done = {r[0] for r in conn.execute("SELECT DISTINCT x.recording_id FROM transcripts t "
+                                       "JOIN transmissions x ON x.id = t.transmission_id WHERE t.kind = 'asr'")}
+    assert done == {rid}
+    assert run_asr(conn, "fake", "v1", fake_transcriber, project_root=tmp_path, split="train", recording_ids=[]) == 0

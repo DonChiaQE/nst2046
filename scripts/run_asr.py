@@ -2,11 +2,12 @@
 """Transcribe transmissions with a faster-whisper model and store `kind='asr'` transcripts.
 
 Usage:
-    python scripts/run_asr.py [--split test] [--limit N] [--model-dir data/models/whisper-medium.en-atc-ct2]
+    python scripts/run_asr.py [--split test] [--replayable] [--limit N] [--model-dir data/models/whisper-medium.en-atc-ct2]
                               [--model-name whisper-medium.en-atc] [--model-version jacktol-ct2]
                               [--device cpu] [--compute-type int8] [--db data/atc.sqlite]
 
-Idempotent per (model-name, model-version): re-running only transcribes what is missing.
+Idempotent per (model-name, model-version): re-running only transcribes what is missing, so Ctrl-C and re-run to
+pause. `--replayable` limits it to the real tower recordings the evaluation replays (about 1,600 train-split clips).
 """
 import argparse
 import sys
@@ -17,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from atcdb.asr import make_faster_whisper_transcriber, run_asr  # noqa: E402
+from atcdb.replay import real_recordings  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
 
@@ -28,6 +30,8 @@ def main() -> None:
     ap.add_argument("--model-version", default="jacktol-ct2")
     ap.add_argument("--split", default="test")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--replayable", action="store_true",
+                    help="only the real tower recordings the evaluation replays (replay.real_recordings)")
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--compute-type", default="int8")
     ap.add_argument("--cpu-threads", type=int, default=0, help="0 = let CTranslate2 choose")
@@ -43,7 +47,9 @@ def main() -> None:
         rate = done / (time.time() - t0)
         print(f"  {done}/{total} clips  ({rate:.1f} clips/s, ~{(total - done) / rate / 60:.0f} min left)", flush=True)
 
-    n = run_asr(conn, args.model_name, args.model_version, transcriber, ROOT, split=args.split, limit=args.limit, progress=progress)
+    recording_ids = [r["id"] for r in real_recordings(conn)] if args.replayable else None
+    n = run_asr(conn, args.model_name, args.model_version, transcriber, ROOT, split=args.split, limit=args.limit,
+                progress=progress, recording_ids=recording_ids)
     print(f"wrote {n} asr transcripts for {args.model_name}/{args.model_version} in {time.time() - t0:.0f}s")
 
 

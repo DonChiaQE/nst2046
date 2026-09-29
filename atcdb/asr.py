@@ -28,9 +28,9 @@ def normalize_asr_text(text: str) -> str:
 
 def run_asr(conn: sqlite3.Connection, model_name: str, model_version: str, transcriber: Transcriber,
             project_root: Path, split: str | None = None, limit: int | None = None,
-            progress: Callable[[int, int], None] | None = None) -> int:
-    """Transcribe every transmission (optionally one split) lacking an asr transcript for this
-    model+version. Returns the number of transcripts written."""
+            progress: Callable[[int, int], None] | None = None, recording_ids: list[int] | None = None) -> int:
+    """Transcribe every transmission (optionally one split, optionally only the given recordings) lacking an asr
+    transcript for this model+version. Returns the number of transcripts written."""
     sql = """SELECT x.id, x.clip_path FROM transmissions x
              WHERE NOT EXISTS (SELECT 1 FROM transcripts t WHERE t.transmission_id = x.id
                                AND t.kind = 'asr' AND t.model = ? AND t.model_version = ?)"""
@@ -38,6 +38,9 @@ def run_asr(conn: sqlite3.Connection, model_name: str, model_version: str, trans
     if split is not None:
         sql += " AND x.split = ?"
         params.append(split)
+    if recording_ids is not None:
+        sql += f" AND x.recording_id IN ({','.join('?' * len(recording_ids)) or 'NULL'})"
+        params.extend(recording_ids)
     sql += " ORDER BY x.id"
     if limit is not None:
         sql += " LIMIT ?"
