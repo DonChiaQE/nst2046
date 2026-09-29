@@ -3,7 +3,8 @@
 board after it. The phase-1 demo, before the web UI exists.
 
 Usage:
-    python scripts/show_replay.py RECORDING [--parser rule] [--context window] [--transcript gold] [--db data/atc.sqlite]
+    python scripts/show_replay.py RECORDING [--parser rule|llm] [--model MODEL] [--context window] [--transcript gold]
+                                            [--db data/atc.sqlite]
 
 RECORDING is a recordings.id or a recordings.external_id (e.g. uwb-atcc_TWR-DM7AI0).
 """
@@ -16,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from atcdb.engine import RunwayInstruction  # noqa: E402
 from atcdb.parsing import CONTEXT_MODES  # noqa: E402
-from atcdb.replay import PARSERS, build_timeline, default_transcript_model  # noqa: E402
+from atcdb.replay import PARSER_MODELS, PARSERS, build_timeline, default_transcript_model  # noqa: E402
 from atcdb.schema import init_db  # noqa: E402
 
 ROLE = {"controller": "CTL", "pilot": "PLT", "mixed": "MIX", "unknown": "???"}
@@ -39,18 +40,22 @@ def main() -> None:
     ap.add_argument("recording")
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
     ap.add_argument("--parser", choices=sorted(PARSERS), default="rule")
+    ap.add_argument("--model", help="one of the parser's models (default: its first)")
     ap.add_argument("--context", choices=CONTEXT_MODES, default="window")
     ap.add_argument("--transcript", choices=["gold", "asr"], default="gold")
     args = ap.parse_args()
+    if args.model and args.model not in PARSER_MODELS[args.parser]:
+        ap.error(f"--model {args.model!r} is not a model of --parser {args.parser}; expected one of {PARSER_MODELS[args.parser]}")
 
     conn = init_db(args.db)
     row = conn.execute("SELECT id, external_id FROM recordings WHERE id = ? OR external_id = ?",
                        (args.recording if args.recording.isdigit() else -1, args.recording)).fetchone()
     if row is None:
         sys.exit(f"no recording {args.recording!r}")
-    tl = build_timeline(conn, row["id"], parser=args.parser, transcript_kind=args.transcript, context=args.context,
-                       transcript_model=default_transcript_model(conn, args.transcript))
-    print(f"recording {row['id']} ({row['external_id']}) — {len(tl.steps)} transmissions — {tl.parser}/{tl.context}/{tl.transcript_kind}\n")
+    tl = build_timeline(conn, row["id"], parser=args.parser, model=args.model, transcript_kind=args.transcript,
+                        context=args.context, transcript_model=default_transcript_model(conn, args.transcript, row["id"]))
+    print(f"recording {row['id']} ({row['external_id']}) — {len(tl.steps)} transmissions — "
+          f"{tl.parser}/{tl.model}/{tl.context}/{tl.transcript_kind}\n")
     for k, s in enumerate(tl.steps):
         m, sec = divmod(int(s.tx.start_s), 60)
         print(f"[{k:2d}] {m:02d}:{sec:02d} {ROLE.get(s.tx.role, '???')}  {s.tx.text}")

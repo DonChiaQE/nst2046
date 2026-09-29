@@ -32,7 +32,12 @@ python scripts/show_replay.py uwb-atcc_TWR-DM7AI0  # step through one recording:
 # 5. replay UI: step through a recording in the browser (runway board, transmissions, conflicts, audio)
 uvicorn atcdb.api:app --reload                     # then open http://127.0.0.1:8000/?recording=528
 
-pytest   # 183 tests
+# 6. Claude parser (phase 3a): Haiku 4.5 and Sonnet 5 through one forced tool call; needs ANTHROPIC_API_KEY.
+#    Without a key the page lists it disabled, and replays already in the cache still work.
+python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528 --dry-run   # count and cost first
+python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528             # parse and cache
+
+pytest   # 215 tests; the live smoke test skips without ANTHROPIC_API_KEY
 ```
 
 See `docs/` for the sourcing research and the database design spec.

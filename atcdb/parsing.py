@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HoldShort, LineUpAndWait,
-                          NoOp, ReadbackObserved, RunwayInstruction, RunwayVacated)
+                          NoOp, ReadbackObserved, RunwayInstruction, RunwayVacated, Unresolved)
 
 CONTEXT_MODES = ("none", "role", "window")
 WINDOW = 4   # how many previous transmissions `window` mode carries
@@ -37,14 +37,18 @@ Parser = Callable[[Transmission, Context], list[Event]]
 
 KINDS: dict[type, str] = {ClearToLand: "LAND", ClearTakeoff: "TAKEOFF", LineUpAndWait: "LUAW", ClearToCross: "CROSS",
                           HoldShort: "HOLD_SHORT", RunwayVacated: "VACATED", GoAround: "GO_AROUND", Handoff: "HANDOFF",
-                          ReadbackObserved: "READBACK", NoOp: "NOOP"}
+                          ReadbackObserved: "READBACK", NoOp: "NOOP", Unresolved: "UNRESOLVED"}
 _BY_KIND = {v: k for k, v in KINDS.items()}
 
 
 def event_to_row(e: Event) -> tuple[str, str, str | None, str | None]:
     """(kind, callsign, runway, extra_json). `t` and `text` are not stored: they are re-attached from the transcript."""
     runway = e.runway if isinstance(e, RunwayInstruction) else None
-    extra = json.dumps({"to": e.to}) if isinstance(e, Handoff) else None
+    extra = None
+    if isinstance(e, Handoff):
+        extra = json.dumps({"to": e.to})
+    elif isinstance(e, Unresolved):
+        extra = json.dumps({"raw": e.raw})
     return KINDS[type(e)], e.callsign, runway, extra
 
 
@@ -55,6 +59,8 @@ def row_to_event(kind: str, callsign: str, runway: str | None, extra_json: str |
         return cls(callsign=callsign, runway=runway, t=t, text=text)
     if cls is Handoff:
         return Handoff(callsign=callsign, to=extra["to"], t=t, text=text)
+    if cls is Unresolved:
+        return Unresolved(callsign=callsign, raw=extra.get("raw", ""), t=t, text=text)
     if cls is ReadbackObserved:
         return ReadbackObserved(callsign=callsign, text=text, t=t)
     return cls(callsign=callsign, t=t, text=text)

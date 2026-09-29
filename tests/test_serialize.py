@@ -1,6 +1,7 @@
 import json
 
-from atcdb.engine import (ClearToLand, Handoff, HoldShort, LineUpAndWait, NoOp, ReadbackObserved, State, apply, fold)
+from atcdb.engine import (ClearToLand, Handoff, HoldShort, LineUpAndWait, NoOp, ReadbackObserved, State, Unresolved, apply,
+                          fold)
 from atcdb.parsing import Transmission
 from atcdb.replay import Step, Timeline
 from atcdb.serialize import event_dict, step_dict, timeline_dict
@@ -14,6 +15,7 @@ def test_event_dict_has_the_same_keys_for_every_kind():
     assert event_dict(Handoff(callsign="a", to="ground")) == {"kind": "HANDOFF", "callsign": "a", "runway": None, "to": "ground"}
     assert event_dict(ReadbackObserved(callsign="a", text="roger")) == {"kind": "READBACK", "callsign": "a", "runway": None, "to": None}
     assert event_dict(NoOp()) == {"kind": "NOOP", "callsign": "", "runway": None, "to": None}
+    assert event_dict(Unresolved(callsign="a", raw="LAND")) == {"kind": "UNRESOLVED", "callsign": "a", "runway": None, "to": None}
 
 
 def test_step_dict_carries_transmission_events_conflicts_board_and_aircraft():

@@ -14,8 +14,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from atcdb.parsing import CONTEXT_MODES
-from atcdb.replay import (PARSER_MODELS, PARSERS, build_timeline, default_transcript_model, get_recording,
-                          list_recordings, transcript_models)
+from atcdb.replay import (PARSER_AVAILABILITY, PARSER_MODELS, PARSER_VERSIONS, build_timeline, default_transcript_model,
+                          get_recording, list_recordings, transcript_models)
 from atcdb.schema import init_db
 from atcdb.serialize import timeline_dict
 
@@ -42,7 +42,12 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
     def capabilities():
         with db() as conn:
             models = transcript_models(conn)
-        return {"parsers": [{"name": p, "model": m, "model_version": v} for p, (m, v) in sorted(PARSER_MODELS.items())],
+        parsers = []
+        for name in sorted(PARSER_MODELS):
+            available, reason = PARSER_AVAILABILITY[name]()   # whether a cold parse can run; cached replays always can
+            parsers += [{"name": name, "model": m, "model_version": PARSER_VERSIONS[name], "available": available,
+                         "reason": reason} for m in PARSER_MODELS[name]]
+        return {"parsers": parsers,
                 "contexts": list(CONTEXT_MODES),
                 "transcripts": {k: models[k] for k in TRANSCRIPT_KINDS if k in models},
                 "live": False}
@@ -54,19 +59,21 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
             return list_recordings(conn, facility=facility, min_transmissions=min_transmissions, transcript_kind=transcript)
 
     @app.get("/api/recordings/{recording_id}/replay")
-    def replay(recording_id: int, parser: str = "rule", context: str = "window", transcript: str = "gold",
-               transcript_model: str | None = None):
-        _require("parser", parser, PARSERS)
+    def replay(recording_id: int, parser: str = "rule", model: str | None = None, context: str = "window",
+               transcript: str = "gold", transcript_model: str | None = None):
+        _require("parser", parser, PARSER_MODELS)
+        model = model or PARSER_MODELS[parser][0]
+        _require("model", model, PARSER_MODELS[parser])
         _require("context mode", context, CONTEXT_MODES)
         _require("transcript kind", transcript, TRANSCRIPT_KINDS)
         with db() as conn:
             recording = get_recording(conn, recording_id)
             if recording is None:
                 raise HTTPException(404, f"no recording {recording_id}")
-            model = transcript_model or default_transcript_model(conn, transcript)
-            tl = build_timeline(conn, recording_id, parser=parser, transcript_kind=transcript, context=context,
-                                transcript_model=model)
-        return timeline_dict(tl, recording, model)
+            pinned = transcript_model or default_transcript_model(conn, transcript, recording_id)
+            tl = build_timeline(conn, recording_id, parser=parser, model=model, transcript_kind=transcript, context=context,
+                                transcript_model=pinned)
+        return timeline_dict(tl, recording, pinned)
 
     @app.get("/api/clips/{transmission_id}")
     def clip(transmission_id: int):

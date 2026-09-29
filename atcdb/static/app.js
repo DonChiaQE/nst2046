@@ -5,7 +5,8 @@
 const PLAY_MS = 2000;
 const ROLE = { controller: "CTL", pilot: "PLT", mixed: "MIX", unknown: "???" };
 const $ = (id) => document.getElementById(id);
-const ui = { timeline: null, k: 0, timer: null, wanted: new URLSearchParams(location.search).get("recording") };
+// `request` numbers replay loads: a reply is used only if no newer load started while it was in flight.
+const ui = { timeline: null, k: 0, timer: null, request: 0, wanted: new URLSearchParams(location.search).get("recording") };
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -40,9 +41,15 @@ async function getJSON(url) {
 
 async function init() {
   const caps = await getJSON("/api/capabilities");
-  for (const p of caps.parsers) $("parser").append(option(p.name, `${p.name} (${p.model} ${p.model_version})`));
+  for (const p of caps.parsers) {
+    const o = option(`${p.name}|${p.model}`, `${p.name} · ${p.model} (${p.model_version})`);
+    o.disabled = !p.available;   // e.g. no API key: cold parses cannot run here
+    if (p.reason) o.title = p.reason;
+    $("parser").append(o);
+  }
   for (const c of caps.contexts) $("context").append(option(c, c));
   for (const kind of Object.keys(caps.transcripts)) $("transcript").append(option(kind, kind));
+  $("parser").value = "rule|rules";
   $("context").value = "window";
   $("transcript").value = "gold";
 
@@ -88,18 +95,23 @@ async function loadRecordings() {
 
 async function loadReplay() {
   stop();
+  const token = ++ui.request;
   const id = $("recording").value;
   ui.timeline = null;
   ui.k = 0;
   render();   // clear the previous recording and disable the transport while the new one loads
   if (id) {
-    const query = new URLSearchParams({ parser: $("parser").value, context: $("context").value, transcript: $("transcript").value });
-    setStatus("Loading…");
+    const [parser, model] = $("parser").value.split("|");
+    const query = new URLSearchParams({ parser, model, context: $("context").value, transcript: $("transcript").value });
+    setStatus(parser === "rule" ? "Loading…" : "Loading… (a first Claude replay parses every transmission; this can take a minute)");
     try {
-      ui.timeline = await getJSON(`/api/recordings/${id}/replay?${query}`);
-      setStatus(ui.timeline.steps.length ? "" : "This recording has no transcripts of that kind.");
+      const timeline = await getJSON(`/api/recordings/${id}/replay?${query}`);
+      if (token !== ui.request) return;   // superseded: a newer selection is loading
+      ui.timeline = timeline;
+      setStatus(timeline.steps.length ? "" : "This recording has no transcripts of that kind.");
       history.replaceState(null, "", `?recording=${id}`);
     } catch (error) {
+      if (token !== ui.request) return;
       setStatus(`Could not load the replay: ${error.message}`);
     }
   }
@@ -201,8 +213,11 @@ function renderFeed(steps) {
       el("span", "text", s.transmission.text), clip);
     item.append(head);
     const chips = el("div", "chips");
-    for (const e of s.events) if (e.kind !== "NOOP") chips.append(el("span", `chip ${e.kind.toLowerCase()}`, eventLabel(e)));
+    for (const e of s.events) {
+      if (e.kind !== "NOOP" && e.kind !== "UNRESOLVED") chips.append(el("span", `chip ${e.kind.toLowerCase()}`, eventLabel(e)));
+    }
     for (const c of s.conflicts) chips.append(el("span", `chip flag ${c.severity}`, `${c.severity} · ${c.type.toLowerCase()}`));
+    if (s.dropped) chips.append(el("span", "chip dropped", `${s.dropped} dropped`));   // includes UNRESOLVED events
     if (s.error) chips.append(el("span", "chip failed", `parse error: ${s.error}`));
     if (chips.children.length) item.append(chips);
     item.addEventListener("click", () => jump(i));
@@ -217,6 +232,7 @@ function renderConflicts(steps) {
   steps.slice(0, ui.k + 1).forEach((s, i) => {
     for (const c of s.conflicts) {
       const item = el("li", `conflict ${c.severity}`);
+      if (c.basis) item.title = `Basis: ${c.basis}`;
       item.append(el("span", "time", mmss(s.transmission.start_s)), el("span", "sev", c.severity), el("span", null, c.explanation));
       item.addEventListener("click", () => jump(i));
       items.push(item);

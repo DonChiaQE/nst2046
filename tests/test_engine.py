@@ -1,9 +1,9 @@
 import pytest
 
 from atcdb import engine
-from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HANDOFF_TARGETS, HoldShort,
-                          LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
-                          STALE_S, State, apply, fold, normalize_runway)
+from atcdb.engine import (ENGINE_VERSION, ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HANDOFF_TARGETS,
+                          HoldShort, LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
+                          STALE_S, State, Unresolved, apply, fold, normalize_runway)
 
 
 @pytest.mark.parametrize("text,expected", [
@@ -335,3 +335,13 @@ def test_runway_conflicts_carry_their_doctrine_basis():
     assert [x.basis for x in c] == ["icao-4444-7.10.1"]
     _, c = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="31")])
     assert [x.basis for x in c] == [None]   # no verified citation for this cell yet
+
+
+# --- phase 3a (spec addendum A.4, A.7.2) -------------------------------------------------------
+
+def test_unresolved_is_counted_and_changes_nothing_else():
+    state, _ = fold([ClearToLand(callsign="a", runway="31")])
+    after, c = fold([Unresolved(callsign="b", raw='{"kind": "CROSS", "runway": "three seven"}')], state)
+    assert c == [] and after.ignored == 1
+    assert (after.runways, after.aircraft) == (state.runways, state.aircraft)
+    assert isinstance(ENGINE_VERSION, str) and ENGINE_VERSION
