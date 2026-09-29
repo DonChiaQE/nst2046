@@ -22,6 +22,8 @@ PARSER_VERSIONS: dict[str, str] = {"rule": parse_rules.VERSION, "llm": parse_llm
 # parser -> (can a cold parse run here, and if not why); served by the capabilities route
 PARSER_AVAILABILITY: dict[str, Callable[[], tuple[bool, str | None]]] = {"rule": lambda: (True, None),
                                                                           "llm": parse_llm.availability}
+# the source atcdb/inject.py stores synthetic-conflict recordings under; they replay like any other recording
+SYNTHETIC_SOURCE = "synthetic-conflicts"
 # parser -> instructions it recognised but could not place on a runway, for one transmission (spec addendum A.3.5)
 DROP_COUNTERS: dict[str, Callable[[Transmission, Context], int]] = {"rule": parse_rules.count_unresolved}
 
@@ -96,6 +98,12 @@ def list_recordings(conn: sqlite3.Connection, facility: str = "Tower", min_trans
            HAVING n_transmissions >= ? AND n_runway_mentions >= 1
            ORDER BY n_transmissions DESC, r.id""", (transcript_kind, facility, min_transmissions)).fetchall()
     return [dict(r) for r in rows]
+
+
+def real_recordings(conn: sqlite3.Connection, **kwargs) -> list[dict]:
+    """`list_recordings` without the recordings conflict injection wrote (atcdb/inject.py): the real corpus, which the
+    evaluation's negatives, the labelling sheet and the injector itself draw from."""
+    return [r for r in list_recordings(conn, **kwargs) if r["source"] != SYNTHETIC_SOURCE]
 
 
 def get_recording(conn: sqlite3.Connection, recording_id: int) -> dict | None:
