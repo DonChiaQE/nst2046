@@ -1,0 +1,228 @@
+"""Level 2 evaluation: run arms over recordings, then score (spec 2026-09-29-evaluation-3b1-design.md, sections 5 to 9).
+
+An *arm* is one (parser, model, context, transcript) configuration. `run_arm` replays every recording of a set through
+`build_timeline` (so parses come from, and go to, the `events` cache exactly as in the app) and returns one row per
+recording; `write_rows`/`read_rows` keep them as JSONL. Everything below `read_rows` is pure: scoring reads rows, the
+injection truth carried on positive rows, and the adjudication verdicts, and never touches the database.
+"""
+import json
+import random
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable, Iterable
+
+from atcdb import parse_llm
+from atcdb.inject import synthetic_recordings
+from atcdb.parsing import CONTEXT_MODES, event_to_row
+from atcdb.replay import build_timeline, default_transcript_model, load_recording, real_recordings, uncached_parses
+from atcdb.schema import connect
+
+TRANSCRIPTS = ("gold", "asr")
+
+
+@dataclass(frozen=True)
+class Arm:
+    parser: str       # rule | llm
+    model: str        # "rules", or a Claude model id
+    context: str      # none | role | window
+    transcript: str   # gold | asr
+
+    @property
+    def name(self) -> str:
+        return f"{self.parser}-{self.model}-{self.context}-{self.transcript}"
+
+
+ARMS: tuple[Arm, ...] = tuple(Arm(p, m, c, t) for p, models in (("rule", ("rules",)), ("llm", parse_llm.MODELS))
+                              for m in models for c in CONTEXT_MODES for t in TRANSCRIPTS)
+# the pre-registered primary comparison (spec addendum A.5): rules vs Sonnet, window context, human transcripts
+PRIMARY = (Arm("rule", "rules", "window", "gold"), Arm("llm", "claude-sonnet-5", "window", "gold"))
+
+
+# --- sets and running ---------------------------------------------------------------------------------------------
+
+def evaluation_sets(conn: sqlite3.Connection) -> list[tuple[int, str, dict | None]]:
+    """(recording_id, set, truth) for every recording scored: `negatives` are the real replayable tower recordings (by
+    their gold transcripts, so both transcript arms score the same recordings); `positives` are the injections a human
+    marked valid, each with its truth (runway, trigger transmission, kind)."""
+    out: list[tuple[int, str, dict | None]] = [(r["id"], "negatives", None) for r in real_recordings(conn)]
+    for inj in synthetic_recordings(conn, valid_only=True):
+        out.append((inj["recording_id"], "positives", {"runway": inj["runway"], "trigger_tx": inj["trigger_tx"],
+                                                       "edit_kind": inj["edit_kind"]}))
+    return out
+
+
+def recording_row(conn: sqlite3.Connection, arm: Arm, recording_id: int, set_name: str, truth: dict | None) -> dict:
+    """Replay one recording under one arm and keep what scoring needs: per step the transmission, its time and events,
+    and every conflict with the step that raised it. `span_s` covers all the recording's transmissions (first start to
+    last end), whatever the transcript kind, so both transcript arms share a denominator. `missing_transcripts` counts
+    transmissions with a gold transcript but none of the arm's kind (an ASR run that has not reached them); such a row
+    is not scored. `all_test` says whether every transmission is in the ASR model's `test` split (spec section 3: the
+    clean ASR headline)."""
+    tl = build_timeline(conn, recording_id, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context,
+                        model=arm.model, transcript_model=default_transcript_model(conn, arm.transcript, recording_id))
+    span, all_test = conn.execute(
+        """SELECT MAX(end_s) - MIN(start_s), MIN(CASE WHEN split = 'test' THEN 1 ELSE 0 END)
+           FROM transmissions WHERE recording_id = ?""", (recording_id,)).fetchone()
+    gold = {tx.id for tx in load_recording(conn, recording_id, "gold", default_transcript_model(conn, "gold", recording_id))}
+    return {"recording_id": recording_id, "set": set_name, "truth": truth, "span_s": span or 0.0,
+            "all_test": bool(all_test), "missing_transcripts": len(gold - {s.tx.id for s in tl.steps}),
+            "incomplete": any(s.error for s in tl.steps), "dropped": tl.dropped,
+            "tx_ids": [s.tx.id for s in tl.steps], "t": [s.tx.start_s for s in tl.steps],
+            "events": [[list(event_to_row(e)) for e in s.events] for s in tl.steps],
+            "conflicts": [{"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns),
+                           "tx_id": s.tx.id, "step": k} for k, s in enumerate(tl.steps) for c in s.conflicts]}
+
+
+def run_arm(db: Path, arm: Arm, recordings: list[tuple[int, str, dict | None]], workers: int = 1) -> list[dict]:
+    """`recording_row` for every recording, in order. With `workers` > 1, recordings run on a thread pool, each thread
+    with its own connection (a `window` replay stays sequential inside its recording; `get_events` settles two threads
+    racing to cache the same transcript)."""
+    def one(item: tuple[int, str, dict | None]) -> dict:
+        conn = connect(db)
+        try:
+            return recording_row(conn, arm, *item)
+        finally:
+            conn.close()
+
+    if workers <= 1:
+        return [one(item) for item in recordings]
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(one, recordings))
+
+
+def uncached(conn: sqlite3.Connection, arm: Arm, recording_ids: Iterable[int]) -> tuple[int, float]:
+    """(transmissions still to parse, rough USD) for one arm over the given recordings; parses and stores nothing."""
+    misses = [m for rid in recording_ids for m in uncached_parses(
+        conn, rid, parser=arm.parser, transcript_kind=arm.transcript, context=arm.context, model=arm.model,
+        transcript_model=default_transcript_model(conn, arm.transcript, rid))]
+    cost = parse_llm.estimate_cost(arm.model, [parse_llm.render_prompt(tx, ctx) for tx, ctx in misses]) \
+        if arm.parser == "llm" else 0.0
+    return len(misses), cost
+
+
+def write_rows(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as fh:
+        for r in rows:
+            fh.write(json.dumps(r) + "\n")
+
+
+def read_rows(path: Path) -> list[dict]:
+    with path.open() as fh:
+        return [json.loads(line) for line in fh if line.strip()]
+
+
+# --- positives ------------------------------------------------------------------------------------------------------
+
+def usable(row: dict) -> bool:
+    """A row that can be scored: its replay finished (no parse failure) and every transmission had a transcript of the
+    arm's kind."""
+    return not row["incomplete"] and bool(row["tx_ids"]) and not row["missing_transcripts"]
+
+
+def detection(row: dict) -> str:
+    """How an arm did on one positive: `strict` (an alert on the injected runway raised by the trigger transmission),
+    `lenient` (an alert on that runway at or after the trigger, but not at it), `partial` (only a warning there),
+    `miss`, or `unscorable` (the trigger has no transcript of this arm's kind)."""
+    truth = row["truth"]
+    if truth["trigger_tx"] not in row["tx_ids"]:
+        return "unscorable"
+    k = row["tx_ids"].index(truth["trigger_tx"])
+    hits = [c for c in row["conflicts"] if c["type"] == "RUNWAY" and c["runway"] == truth["runway"] and c["step"] >= k]
+    alerts = [c for c in hits if c["severity"] == "alert"]
+    if any(c["step"] == k for c in alerts):
+        return "strict"
+    if alerts:
+        return "lenient"
+    return "partial" if hits else "miss"
+
+
+def recall(rows: list[dict]) -> dict[str, int]:
+    """Counts over usable, scorable positives: `n`, `strict`, `lenient` (strict included), `partial`, `miss`."""
+    out = {"n": 0, "strict": 0, "lenient": 0, "partial": 0, "miss": 0}
+    for row in rows:
+        d = detection(row) if usable(row) else "unscorable"
+        if d == "unscorable":
+            continue
+        out["n"] += 1
+        out[d] += 1
+        if d == "strict":
+            out["lenient"] += 1
+    return out
+
+
+# --- negatives -------------------------------------------------------------------------------------------------------
+
+class Pending(Exception):
+    """A false-alarm rate was asked for while some of its alerts have no adjudication verdict yet."""
+
+
+def alert_key(recording_id: int, conflict: dict) -> str:
+    """The adjudication key: one alert per (recording, type, runway, triggering transmission), whichever arm raised it
+    and whichever callsigns it extracted (the rules parser often extracts none)."""
+    return f"{recording_id}:{conflict['type']}:{conflict['runway'] or '-'}:{conflict['tx_id']}"
+
+
+def alert_keys(row: dict, conflict_type: str | None = None) -> set[str]:
+    """The distinct alert-severity conflicts in one row (optionally of one type), as adjudication keys."""
+    return {alert_key(row["recording_id"], c) for c in row["conflicts"]
+            if c["severity"] == "alert" and conflict_type in (None, c["type"])}
+
+
+def false_alarm_units(rows: list[dict], verdicts: dict[str, str], conflict_type: str = "RUNWAY") -> list[tuple[float, float]]:
+    """(false alarms, span_s) per usable negative row; a false alarm is an alert whose verdict is not `genuine`. Raises
+    Pending if any alert has no verdict."""
+    units, missing = [], 0
+    for row in rows:
+        if not usable(row):
+            continue
+        keys = alert_keys(row, conflict_type)
+        missing += sum(k not in verdicts for k in keys)
+        units.append((float(sum(verdicts.get(k) != "genuine" for k in keys)), row["span_s"]))
+    if missing:
+        raise Pending(f"{missing} alerts have no adjudication verdict")
+    return units
+
+
+def per_hour(units: list[tuple[float, float]]) -> float:
+    """Sum of counts over hours of span."""
+    hours = sum(span for _, span in units) / 3600
+    return sum(n for n, _ in units) / hours if hours else 0.0
+
+
+# --- statistics ------------------------------------------------------------------------------------------------------
+
+def bootstrap(units: list, stat: Callable[[list], float], n: int = 2000, seed: int = 0) -> tuple[float, float]:
+    """95% percentile interval of `stat` over `n` resamples (with replacement) of `units`."""
+    if not units:
+        return (0.0, 0.0)
+    rng = random.Random(seed)
+    values = sorted(stat([units[rng.randrange(len(units))] for _ in units]) for _ in range(n))
+    return values[int(0.025 * n)], values[int(0.975 * n) - 1]
+
+
+def paired_bootstrap(pairs: list[tuple], stat: Callable[[list], float], n: int = 2000,
+                     seed: int = 0) -> tuple[float, float, float]:
+    """(point, low, high) of stat(first) - stat(second) over `pairs` of units, both arms resampled with the same draws."""
+    def diff(sample: list[tuple]) -> float:
+        return stat([a for a, _ in sample]) - stat([b for _, b in sample])
+    lo, hi = bootstrap(pairs, diff, n, seed)
+    return diff(pairs), lo, hi
+
+
+def rate(units: list[float]) -> float:
+    """Mean of 0/1 units: a recall."""
+    return sum(units) / len(units) if units else 0.0
+
+
+def cohen_kappa(a: list[str], b: list[str]) -> float:
+    """Cohen's kappa for two raters' labels of the same items, in order. 1.0 when both agree and use one label."""
+    if len(a) != len(b) or not a:
+        raise ValueError("kappa needs two equally long, non-empty label lists")
+    labels = sorted(set(a) | set(b))
+    n = len(a)
+    observed = sum(x == y for x, y in zip(a, b)) / n
+    expected = sum((a.count(lab) / n) * (b.count(lab) / n) for lab in labels)
+    return 1.0 if expected == 1 else (observed - expected) / (1 - expected)
