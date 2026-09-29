@@ -10,7 +10,7 @@ from atcdb.parse_rules import VERSION
 from atcdb.parsing import Context
 from atcdb.replay import (PARSER_AVAILABILITY, PARSER_MODELS, PARSER_VERSIONS, PARSERS, Step, Timeline, build_context,
                           build_timeline, cache_version, clear_events, default_transcript_model, get_events, get_recording,
-                          list_recordings, load_recording, transcript_models, uncached_parses)
+                          list_recordings, load_recording, real_recordings, transcript_models, uncached_parses)
 from atcdb.schema import init_db
 
 
@@ -399,3 +399,14 @@ def test_uncached_parses_lists_what_a_replay_would_still_have_to_parse(tmp_path)
     assert tx == txs[2] and ctx.active_runways == ("31",)       # the cached LAND on 31 is folded into the context
     assert ctx.history == tuple((r, t) for r, t in SEQUENCE[:2])
     assert conn.execute("SELECT count(*) FROM events").fetchone()[0] == 2   # counting parsed and stored nothing
+
+
+def test_real_recordings_leaves_out_the_synthetic_conflicts(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    real = _seed(conn, SEQUENCE, external_id="real")
+    fake = _seed(conn, SEQUENCE, external_id="fake")
+    conn.execute("INSERT INTO sources (id, name, kind) VALUES (2, 'synthetic-conflicts', 'corpus')")
+    conn.execute("UPDATE recordings SET source_id = 2 WHERE id = ?", (fake,))
+    assert {r["id"] for r in list_recordings(conn)} == {real, fake}   # both replay in the app
+    assert [r["id"] for r in real_recordings(conn)] == [real]
+    assert real_recordings(conn, min_transmissions=99) == []
