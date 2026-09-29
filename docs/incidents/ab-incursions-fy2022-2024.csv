@@ -1,0 +1,48 @@
+date,airport,state,primary_commercial,category,type
+2021-10-13,Chicago Midway International,IL,Y,A,OI
+2021-11-29,Orlando Sanford International,FL,Y,A,OI
+2022-02-07,Pueblo Memorial,CO,N,A,OI
+2022-03-04,Gulfport-Biloxi International,MS,Y,A,OI
+2022-06-02,St Paul Downtown Holman Field,MN,N,A,OI
+2022-06-23,John Wayne Airport,CA,Y,A,OI
+2022-11-02,San Luis Obispo County Regional,CA,Y,A,OI
+2022-11-18,North Las Vegas,NV,N,A,PD
+2022-11-22,San Diego Brown Field Municipal,CA,N,A,PD
+2023-01-19,Ft. Pierce Treasure Coast International,FL,N,A,VPD
+2023-02-04,Austin-Bergstrom International,TX,Y,A,OI
+2023-04-20,Dekalb-Peachtree,GA,N,A,OTH
+2023-06-09,Montgomery-Gibbs Executive,CA,N,A,PD
+2023-07-17,Torrance Zamperini Field,CA,N,A,OI
+2023-08-11,San Diego International,CA,Y,A,OI
+2023-10-24,Houston William P Hobby,TX,Y,A,PD
+2024-03-08,Fargo Hector International,ND,N,A,PD
+2021-12-13,Long Beach-Daugherty Field,CA,Y,B,OI
+2022-02-06,Long Beach-Daugherty Field,CA,Y,B,OI
+2022-02-28,George Bush Intercontinental/Houston,TX,Y,B,VPD
+2022-03-20,Portland-Hillsboro,OR,N,B,OI
+2022-04-05,San Diego Montgomery-Gibbs Executive,CA,N,B,OI
+2022-04-30,Bradley International,CT,Y,B,VPD
+2022-05-26,Westchester County,NY,Y,B,PD
+2022-08-15,Billings-Logan International,MT,Y,B,PD
+2022-09-08,San Marcos Regional,TX,N,B,OI
+2022-09-27,San Diego Montgomery-Gibbs Executive,CA,N,B,OI
+2022-10-08,Long Beach-Daugherty Field,CA,Y,B,OTH
+2022-10-16,Northwest Arkansas Regional,AR,Y,B,PD
+2023-01-09,Santa Barbara Muni.,CA,Y,B,OI
+2023-01-12,Baltimore/Washington International Thurgood Marshall,MD,Y,B,OI
+2023-01-13,John F Kennedy International,NY,Y,B,PD
+2023-02-27,Boston Logan International,MA,Y,B,PD
+2023-04-03,Wichita Dwight D Eisenhower National,KS,Y,B,OI
+2023-04-27,Van Nuys,CA,N,B,PD
+2023-07-11,San Francisco International,CA,Y,B,OI
+2023-07-11,San Francisco International,CA,Y,B,PD
+2023-07-11,San Francisco International,CA,Y,B,OI
+2023-08-02,Memphis International,TN,Y,B,OI
+2023-08-08,Boston Logan International,MA,Y,B,PD
+2023-11-14,Prescott Regional,AZ,Y,B,OI
+2023-11-19,Lexington Blue Grass,KY,Y,B,OI
+2023-12-11,Tulsa Riverside,OK,N,B,PD
+2024-01-01,Salt Lake City International,UT,Y,B,VPD
+2024-02-13,Centennial,CO,N,B,OI
+2024-06-15,Centennial,CO,N,B,PD
+2024-08-10,Ft. Lauderdale/Hollywood International,FL,Y,B,VPD
