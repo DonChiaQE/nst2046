@@ -14,7 +14,7 @@ def event_dict(e: Event) -> dict:
 
 def conflict_dict(c: Conflict) -> dict:
     return {"type": c.type, "severity": c.severity, "runway": c.runway, "callsigns": list(c.callsigns), "seq": c.seq,
-            "explanation": c.explanation}
+            "explanation": c.explanation, "basis": c.basis}
 
 
 def transmission_dict(tx: Transmission) -> dict:
@@ -34,7 +34,7 @@ def aircraft_list(state: State) -> list[dict]:
 
 def step_dict(index: int, step: Step) -> dict:
     return {"index": index, "transmission": transmission_dict(step.tx), "events": [event_dict(e) for e in step.events],
-            "conflicts": [conflict_dict(c) for c in step.conflicts], "error": step.error,
+            "conflicts": [conflict_dict(c) for c in step.conflicts], "error": step.error, "dropped": step.dropped,
             "board": board_dict(step.state), "aircraft": aircraft_list(step.state)}
 
 
@@ -46,4 +46,4 @@ def runways_named(tl: Timeline) -> list[str]:
 def timeline_dict(tl: Timeline, recording: dict, transcript_model: str | None) -> dict:
     return {"recording": recording, "parser": tl.parser, "model": tl.model, "model_version": tl.model_version,
             "context": tl.context, "transcript_kind": tl.transcript_kind, "transcript_model": transcript_model,
-            "runways": runways_named(tl), "steps": [step_dict(i, s) for i, s in enumerate(tl.steps)]}
+            "runways": runways_named(tl), "dropped": tl.dropped, "steps": [step_dict(i, s) for i, s in enumerate(tl.steps)]}

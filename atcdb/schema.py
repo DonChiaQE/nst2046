@@ -2,6 +2,8 @@
 import sqlite3
 from pathlib import Path
 
+from atcdb import doctrine
+
 TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs", "events"]
 
 SCHEMA_SQL = """
@@ -141,4 +143,5 @@ def init_db(path: Path | str) -> sqlite3.Connection:
     conn = connect(path)
     conn.executescript(SCHEMA_SQL)
     conn.commit()
+    doctrine.seed(conn)
     return conn

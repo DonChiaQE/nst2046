@@ -1,6 +1,6 @@
 import pytest
 
-from atcdb.engine import ClearToLand, NoOp, ReadbackObserved, State, fold
+from atcdb.engine import ClearToLand, Handoff, NoOp, ReadbackObserved, State, fold
 from atcdb.parsing import Context
 from atcdb.replay import (PARSER_MODELS, PARSERS, Step, Timeline, build_context, build_timeline, clear_events,
                           default_transcript_model, get_events, get_recording, list_recordings, load_recording,
@@ -223,3 +223,19 @@ def test_get_events_never_mixes_two_different_racing_parses(tmp_path, monkeypatc
     monkeypatch.setitem(PARSERS, "rule", racing_parser)
     assert get_events(conn, txs[0], "rule", Context(mode="role", role="controller")) == [NoOp(t=0.0, text=SEQUENCE[0][1])]
     assert [tuple(r) for r in conn.execute("SELECT seq, kind FROM events ORDER BY seq")] == [(0, "NOOP")]
+
+
+def test_build_timeline_counts_dropped_instructions(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, [("controller", "csa one two three cleared to land"),                  # no runway anywhere: dropped
+                       ("controller", "lufthansa four five six runway three one cleared for takeoff")])
+    tl = build_timeline(conn, rid, context="role")
+    assert [s.dropped for s in tl.steps] == [1, 0] and tl.dropped == 1
+
+
+def test_build_timeline_counts_events_the_engine_ignored(tmp_path, monkeypatch):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, [("controller", "a contact grund one two one nine")])
+    monkeypatch.setitem(PARSERS, "rule", _fake_parser({"a contact grund one two one nine": [Handoff(callsign="a", to="grund")]}, []))
+    tl = build_timeline(conn, rid, context="role")
+    assert tl.steps[0].dropped == 1

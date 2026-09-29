@@ -1,6 +1,7 @@
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, LineUpAndWait, NoOp,
                           ReadbackObserved, RunwayInstruction, RunwayVacated)
-from atcdb.parse_rules import VERSION, blank_values, parse, pilot_callsign, snap_callsign, take_prefix, take_suffix
+from atcdb.parse_rules import (VERSION, blank_values, count_unresolved, parse, pilot_callsign, snap_callsign, take_prefix,
+                               take_suffix)
 from atcdb.parsing import Context, Transmission
 
 CTL = Context(mode="role", role="controller")
@@ -162,3 +163,21 @@ def test_window_mode_snaps_pilot_callsign_but_role_mode_does_not():
 def test_none_mode_turns_a_pilot_readback_into_a_reservation():
     text = "cleared for takeoff runway three one csa two mike zulu"
     assert _kinds(parse(_tx(text, role="pilot"), Context(mode="none"))) == [("ClearTakeoff", "csa two mike zulu", "31")]
+
+
+def test_count_unresolved_counts_instructions_with_no_runway():
+    # Austin 2023, 0634:14: the landing clearance carries no "runway" token, so v1 cannot place it.
+    austin = _tx("fedex fourteen thirty-two heavy austin tower one eight left cleared to land")
+    assert parse(austin, CTL) == [NoOp(t=0.0, text=austin.text)]
+    assert count_unresolved(austin, CTL) == 1
+    assert count_unresolved(_tx("csa one two three runway three one cleared to land"), CTL) == 0
+    assert count_unresolved(_tx("csa one two three cleared to land"), PLT) == 0              # pilots issue no instructions
+    assert count_unresolved(_tx("csa one two three line up and wait cleared for takeoff"), CTL) == 2
+
+
+def test_count_unresolved_follows_window_snapping():
+    # With exactly one active runway, window mode places the clearance, so nothing is dropped.
+    tx = _tx("fedex fourteen thirty-two heavy one eight left cleared to land")
+    window = Context(mode="window", role="controller", active_runways=("18L",))
+    assert _kinds(parse(tx, window)) == [("ClearToLand", "", "18L")]   # placed; the US callsign is a known v1 gap
+    assert count_unresolved(tx, window) == 0

@@ -1,6 +1,7 @@
 import pytest
 
-from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HoldShort,
+from atcdb import engine
+from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HANDOFF_TARGETS, HoldShort,
                           LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
                           STALE_S, State, apply, fold, normalize_runway)
 
@@ -15,8 +16,13 @@ from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoArou
     ("31", "31"),
     ("16r", "16R"),
     ("", None),
-    ("three", None),
+    ("three", "03"),       # US phraseology drops the leading zero: "runway three"
+    ("four left", "04L"),
+    ("nine", "09"),
+    ("4l", "04L"),
+    ("zero", None),        # no runway 00
     ("four zero", None),   # no such runway: heading 01-36 only
+    ("left", None),
 ])
 def test_normalize_runway(text, expected):
     assert normalize_runway(text) == expected
@@ -157,11 +163,11 @@ def test_go_around_cancels_landing_only():
 
 
 def test_stale_reservation_is_dropped_silently():
-    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=STALE_S + 1)])
+    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=STALE_S["LAND"] + 1)])
     assert c == []
     state, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=100.0)])
     assert [x.severity for x in c] == ["alert"]
-    state, _ = fold([NoOp(t=STALE_S + 101)], state)   # both the t=0 LAND and the t=100 CROSS are now stale
+    state, _ = fold([NoOp(t=100 + max(STALE_S.values()) + 1)], state)   # both the t=0 LAND and the t=100 CROSS are now stale
     assert state.runways == {} and state.aircraft["a"].runway is None
 
 
@@ -243,5 +249,89 @@ def test_unknown_callsign_instruction_reserves_but_only_warns():
     # Nothing can release an unknown reservation except staleness.
     state, _ = fold([ClearToLand(callsign="", runway="31", t=0.0), RunwayVacated(callsign="", t=5.0)])
     assert _kinds(state, "31") == [("", "LAND")]
-    state, _ = fold([NoOp(t=STALE_S + 1)], state)
+    state, _ = fold([NoOp(t=STALE_S["LAND"] + 1)], state)
     assert state.runways == {}
+
+
+# --- phase 2.5 (spec addendum A.3) -------------------------------------------------------------
+
+def test_staleness_is_per_kind(monkeypatch):
+    assert set(STALE_S) == set(RESERVATION_KINDS) | {"HOLD_SHORT"}
+    monkeypatch.setitem(engine.STALE_S, "CROSS", 30.0)
+    _, c = fold([ClearToCross(callsign="a", runway="31", t=0.0), ClearToLand(callsign="b", runway="31", t=31.0)])
+    assert c == []                                     # the crossing timed out after 30 s
+    _, c = fold([ClearToLand(callsign="a", runway="31", t=0.0), ClearToCross(callsign="b", runway="31", t=31.0)])
+    assert [x.severity for x in c] == ["alert"]        # the landing clearance did not
+
+
+def test_landing_clearance_outlives_the_austin_gap():
+    # Austin 2023: FedEx cleared to land 18L at 0634:14, Southwest cleared for takeoff on 18L at 0638:58, 284 s later.
+    assert STALE_S["LAND"] >= 284
+    _, c = fold([ClearToLand(callsign="fedex", runway="18L", t=0.0), ClearTakeoff(callsign="southwest", runway="18L", t=284.0)])
+    assert [(x.type, x.severity, x.runway) for x in c] == [("RUNWAY", "alert", "18L")]
+
+
+def test_hold_short_expires():
+    state, _ = fold([HoldShort(callsign="b", runway="13", t=0.0)])
+    assert state.aircraft["b"].holding_short == "13"
+    state, _ = fold([NoOp(t=STALE_S["HOLD_SHORT"] - 1)], state)
+    assert state.aircraft["b"].holding_short == "13"
+    state, _ = fold([NoOp(t=STALE_S["HOLD_SHORT"] + 1)], state)
+    assert (state.aircraft["b"].holding_short, state.aircraft["b"].holding_short_t) == (None, None)
+
+
+def test_vacating_or_leaving_the_frequency_ends_a_hold_short():
+    for release in (RunwayVacated(callsign="b"), Handoff(callsign="b", to="ground"), Handoff(callsign="b", to="departure")):
+        state, _ = fold([HoldShort(callsign="b", runway="13"), release])
+        assert state.aircraft["b"].holding_short is None, release
+    state, _ = fold([HoldShort(callsign="b", runway="13"), Handoff(callsign="b", to="tower")])
+    assert state.aircraft["b"].holding_short == "13"
+
+
+def test_hold_short_cancels_the_aircrafts_clearance_for_that_runway():
+    state, _ = fold([ClearToCross(callsign="b", runway="13"), HoldShort(callsign="b", runway="13")])
+    assert _kinds(state, "13") == []
+    assert (state.aircraft["b"].runway, state.aircraft["b"].kind, state.aircraft["b"].holding_short) == (None, None, "13")
+    _, c = fold([ClearToCross(callsign="b", runway="13"), HoldShort(callsign="b", runway="13"), ClearToLand(callsign="a", runway="13")])
+    assert c == []
+
+
+def test_hold_short_of_another_runway_keeps_the_crossing():
+    # Recording 528: "air france one nine eight romeo ... cross runway one three continue via delta to hold short of runway
+    # two four" parses to a CROSS on 13 followed by a HOLD_SHORT of 24. The crossing must survive the second event.
+    state, c = fold([ClearToCross(callsign="af", runway="13"), HoldShort(callsign="af", runway="24"),
+                     ClearToLand(callsign="csa", runway="13")])
+    assert _kinds(state, "13") == [("af", "CROSS"), ("csa", "LAND")]
+    assert [(x.type, x.severity, x.runway) for x in c] == [("RUNWAY", "alert", "13")]
+
+
+def test_readback_conflict_names_the_runway_that_was_missed():
+    hold = HoldShort(callsign="b", runway="13", text="b hold short of runway one three")
+    _, c = fold([hold, ReadbackObserved(callsign="b", text="holding short runway three one b")])
+    assert [(x.type, x.severity, x.runway) for x in c] == [("READBACK", "alert", "13")]   # was None before phase 2.5
+
+
+def test_readback_conflict_falls_back_to_the_hold_short_runway():
+    # The missed item is a "contact tower" frequency, not a ground handoff: a handoff to ground (or departure) would
+    # release the hold-short (see heuristic-handoff-release in atcdb/doctrine.py), which the real rules parser would
+    # also emit from that text, making this scenario impossible. A handoff to tower releases nothing.
+    hold = HoldShort(callsign="b", runway="13", text="b hold short of runway one three contact tower one one nine decimal seven")
+    _, c = fold([hold, ReadbackObserved(callsign="b", text="holding short runway one three b")])
+    assert [(x.type, x.severity, x.runway) for x in c] == [("READBACK", "warning", "13")]
+
+
+def test_unknown_handoff_target_releases_nothing_and_is_counted():
+    assert HANDOFF_TARGETS == ("ground", "departure", "tower", "approach")
+    state, c = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="grund"), ClearToCross(callsign="b", runway="31")])
+    assert [x.severity for x in c] == ["alert"] and state.ignored == 1
+    state, _ = fold([ClearToLand(callsign="a", runway="31"), Handoff(callsign="a", to="ground")])
+    assert state.ignored == 0
+
+
+def test_runway_conflicts_carry_their_doctrine_basis():
+    _, c = fold([ClearToLand(callsign="fedex", runway="18L"), ClearTakeoff(callsign="southwest", runway="18L")])
+    assert [x.basis for x in c] == ["icao-4444-7.9.2"]
+    _, c = fold([ClearTakeoff(callsign="southwest", runway="18L"), ClearToLand(callsign="fedex", runway="18L")])
+    assert [x.basis for x in c] == ["icao-4444-7.10.1"]
+    _, c = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="31")])
+    assert [x.basis for x in c] == [None]   # no verified citation for this cell yet
