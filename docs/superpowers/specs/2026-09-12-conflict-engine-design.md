@@ -387,6 +387,11 @@ The written report (section 4, "Technical Investigation Plan") is now the commit
   labelling logistics. **Risk:** Level 1 has no gold until someone labels ~250 rows, and the readback sheets are
   still 0/250. Labelling can run in parallel with 2.5 and 3a and should start now.
 
+- **3b design pass (2026-09-29).** 3b is split into 3b-1 (Level 2 synthetic, LLM judge, event sheet generator),
+  3b-2 (Level 1 extraction) and 3b-3 (ASRS and NTSB positives). 3b-1 is specified in
+  `2026-09-29-evaluation-3b1-design.md`, which also records that CROSS/LUAW staleness cannot be tuned on this corpus
+  (clips are shorter than any plausible timeout) and the ASR train/test leakage.
+
 ### A.6 Phase 4 — case studies (amends Section 4)
 
 LiveATC keeps archives for 30 days, so case-study audio and text come from NTSB dockets. Only major (`FA`/`MA`)
