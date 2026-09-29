@@ -5,6 +5,7 @@ An *arm* is one (parser, model, context, transcript) configuration. `run_arm` re
 recording; `write_rows`/`read_rows` keep them as JSONL. Everything below `read_rows` is pure: scoring reads rows, the
 injection truth carried on positive rows, and the adjudication verdicts, and never touches the database.
 """
+import hashlib
 import json
 import random
 import sqlite3
@@ -226,3 +227,80 @@ def cohen_kappa(a: list[str], b: list[str]) -> float:
     observed = sum(x == y for x, y in zip(a, b)) / n
     expected = sum((a.count(lab) / n) * (b.count(lab) / n) for lab in labels)
     return 1.0 if expected == 1 else (observed - expected) / (1 - expected)
+
+
+# --- adjudication (spec section 6) -----------------------------------------------------------------------------------
+
+VERDICTS = ("genuine", "parse_error", "missing_info", "engine_rule")
+ADJUDICATION_COLUMNS = ["key", "recording_id", "type", "runway", "tx_id", "arms", "callsigns", "context", "verdict", "notes"]
+CONTEXT_LINES = 6   # transmissions shown up to and including the trigger
+
+
+def adjudication_rows(conn: sqlite3.Connection, rows_by_arm: dict[str, list[dict]],
+                      existing: Iterable[dict] = ()) -> list[dict]:
+    """The adjudication sheet: every alert raised on a usable negative by any arm, pooled on `alert_key`, with the arms
+    that raised it, the callsigns each extracted and the human transcript up to the trigger. Verdicts and notes already
+    in `existing` are kept, and existing rows no longer raised by any arm stay on the sheet. Sorted by recording, then
+    transmission."""
+    pooled: dict[str, dict] = {}
+    for arm_name, rows in sorted(rows_by_arm.items()):
+        for row in rows:
+            if row["set"] != "negatives" or not usable(row):
+                continue
+            for c in row["conflicts"]:
+                if c["severity"] != "alert":
+                    continue
+                key = alert_key(row["recording_id"], c)
+                entry = pooled.setdefault(key, {"key": key, "recording_id": row["recording_id"], "type": c["type"],
+                                                "runway": c["runway"] or "", "tx_id": c["tx_id"], "arms": [], "callsigns": []})
+                if arm_name not in entry["arms"]:
+                    entry["arms"].append(arm_name)
+                names = " / ".join(cs or "?" for cs in c["callsigns"])
+                if names not in entry["callsigns"]:
+                    entry["callsigns"].append(names)
+    old = {r["key"]: r for r in existing}
+    out = []
+    for key, entry in pooled.items():
+        txs = load_recording(conn, entry["recording_id"], "gold", default_transcript_model(conn, "gold", entry["recording_id"]))
+        k = next(i for i, tx in enumerate(txs) if tx.id == entry["tx_id"])
+        context = "\n".join(f"{'>>' if i == k else '  '} [{tx.role}] {tx.text}"
+                            for i, tx in enumerate(txs) if k - CONTEXT_LINES < i <= k)
+        out.append({**entry, "arms": "; ".join(entry["arms"]), "callsigns": "; ".join(entry["callsigns"]),
+                    "context": context, "verdict": old.get(key, {}).get("verdict", ""),
+                    "notes": old.get(key, {}).get("notes", "")})
+    out += [r for key, r in old.items() if key not in pooled]
+    return sorted(out, key=lambda r: (int(r["recording_id"]), int(r["tx_id"]), r["key"]))
+
+
+def in_overlap(key: str, fraction: float = 0.3, seed: int = 0) -> bool:
+    """Whether an alert belongs on the second adjudicator's sheet: a fixed pseudo-random share of keys, decided per key,
+    so the overlap stays the same as more arms add alerts."""
+    digest = hashlib.sha1(f"{seed}:{key}".encode()).digest()
+    return int.from_bytes(digest[:8], "big") / 2 ** 64 < fraction
+
+
+def overlap_rows(sheet_a: list[dict], existing_b: Iterable[dict] = (), fraction: float = 0.3, seed: int = 0) -> list[dict]:
+    """Sheet B: the overlap share of sheet A's rows with A's verdicts removed, keeping B's own verdicts already given."""
+    old = {r["key"]: r for r in existing_b}
+    return [{**r, "verdict": old.get(r["key"], {}).get("verdict", ""), "notes": old.get(r["key"], {}).get("notes", "")}
+            for r in sheet_a if in_overlap(r["key"], fraction, seed)]
+
+
+def read_verdicts(sheet: Iterable[dict]) -> dict[str, str]:
+    """key -> verdict for every row with a verdict. Raises ValueError on a verdict outside VERDICTS."""
+    out = {}
+    for r in sheet:
+        v = (r.get("verdict") or "").strip().lower()
+        if not v:
+            continue
+        if v not in VERDICTS:
+            raise ValueError(f"{r['key']}: verdict must be one of {', '.join(VERDICTS)}, not {r['verdict']!r}")
+        out[r["key"]] = v
+    return out
+
+
+def adjudication_kappa(sheet_a: Iterable[dict], sheet_b: Iterable[dict]) -> tuple[float, int]:
+    """(Cohen's kappa, items) over the alerts both adjudicators gave a verdict."""
+    a, b = read_verdicts(sheet_a), read_verdicts(sheet_b)
+    both = sorted(set(a) & set(b))
+    return cohen_kappa([a[k] for k in both], [b[k] for k in both]), len(both)

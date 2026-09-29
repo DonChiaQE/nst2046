@@ -4,22 +4,52 @@
 Usage:
     python scripts/eval_conflicts.py run [--parser rule|llm] [--model M] [--context C] [--transcript gold|asr]
                                          [--set negatives|positives] [--workers N] [--dry-run]
+    python scripts/eval_conflicts.py adjudicate [--kappa]
 
 `run` replays every recording of the evaluation sets under each selected arm (all 18 by default) and writes one JSONL
 per arm to data/eval/conflicts/. Parses come from the events cache, so a re-run is free; always `--dry-run` first, which
 prints the uncached calls and a rough cost per arm and spends nothing.
+
+`adjudicate` pools every alert the arms raised on the negatives into data/labels/adjudication_A.csv (verdicts already
+given are kept) and writes the second adjudicator's overlap, adjudication_B.csv. Fill `verdict` with genuine,
+parse_error (the extraction was wrong), missing_info (extraction right, the release was never spoken) or engine_rule
+(extraction right, the matrix is too strict). Re-run it after new arms have run. `--kappa` reports agreement instead.
 """
 import argparse
+import csv
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.evaluate import ARMS, evaluation_sets, run_arm, uncached, write_rows  # noqa: E402
+from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, adjudication_kappa, adjudication_rows, evaluation_sets,  # noqa: E402
+                            overlap_rows, read_rows, run_arm, uncached, write_rows)
 from atcdb.schema import init_db  # noqa: E402
 
 OUT = ROOT / "data/eval/conflicts"
+SHEET_A = ROOT / "data/labels/adjudication_A.csv"
+SHEET_B = ROOT / "data/labels/adjudication_B.csv"
+
+
+def read_sheet(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    with path.open(newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def write_sheet(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=ADJUDICATION_COLUMNS)
+        w.writeheader()
+        w.writerows(rows)
+
+
+def arm_rows(out: Path) -> dict[str, list[dict]]:
+    """Every arm's rows that `run` (or the judge) has written, by arm name."""
+    return {p.stem: read_rows(p) for p in sorted(out.glob("*.jsonl"))}
 
 
 def selected_arms(args: argparse.Namespace) -> list:
@@ -47,6 +77,20 @@ def cmd_run(args: argparse.Namespace) -> None:
         print(f"  {arm.name:<40} {len(rows)} recordings, {incomplete} incomplete", flush=True)
 
 
+def cmd_adjudicate(args: argparse.Namespace) -> None:
+    sheet_a, sheet_b = read_sheet(args.sheet_a), read_sheet(args.sheet_b)
+    if args.kappa:
+        kappa, n = adjudication_kappa(sheet_a, sheet_b)
+        print(f"Cohen's kappa {kappa:.2f} over {n} alerts both adjudicators labelled")
+        return
+    sheet_a = adjudication_rows(init_db(args.db), arm_rows(args.out), existing=sheet_a)
+    sheet_b = overlap_rows(sheet_a, existing_b=sheet_b)
+    write_sheet(args.sheet_a, sheet_a)
+    write_sheet(args.sheet_b, sheet_b)
+    todo = sum(not r["verdict"] for r in sheet_a)
+    print(f"wrote {args.sheet_a} ({len(sheet_a)} alerts, {todo} without a verdict) and {args.sheet_b} ({len(sheet_b)} alerts)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
@@ -61,6 +105,11 @@ def main() -> None:
     run.add_argument("--workers", type=int, default=4)
     run.add_argument("--dry-run", action="store_true")
     run.set_defaults(func=cmd_run)
+    adj = sub.add_parser("adjudicate", help="write or update the alert adjudication sheets")
+    adj.add_argument("--sheet-a", type=Path, default=SHEET_A)
+    adj.add_argument("--sheet-b", type=Path, default=SHEET_B)
+    adj.add_argument("--kappa", action="store_true", help="report agreement between the two sheets")
+    adj.set_defaults(func=cmd_adjudicate)
     args = ap.parse_args()
     args.func(args)
 

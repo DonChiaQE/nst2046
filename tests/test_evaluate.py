@@ -1,8 +1,9 @@
 import pytest
 
-from atcdb.evaluate import (ARMS, PRIMARY, Arm, Pending, alert_key, alert_keys, bootstrap, cohen_kappa, detection,
-                            evaluation_sets, false_alarm_units, paired_bootstrap, per_hour, rate, read_rows, recall,
-                            recording_row, run_arm, uncached, usable, write_rows)
+from atcdb.evaluate import (ARMS, PRIMARY, Arm, Pending, adjudication_kappa, adjudication_rows, alert_key, alert_keys,
+                            bootstrap, cohen_kappa, detection, evaluation_sets, false_alarm_units, in_overlap, overlap_rows,
+                            paired_bootstrap, per_hour, rate, read_rows, read_verdicts, recall, recording_row, run_arm,
+                            uncached, usable, write_rows)
 from atcdb.inject import apply_check, check_rows, generate, write_injection
 from atcdb.schema import init_db
 
@@ -178,3 +179,48 @@ def test_cohen_kappa():
     assert cohen_kappa(["a", "a", "a", "b"], ["a", "a", "b", "b"]) == pytest.approx(0.5)
     with pytest.raises(ValueError):
         cohen_kappa(["a"], [])
+
+
+def test_the_adjudication_sheet_pools_alerts_across_arms_and_keeps_verdicts(tmp_path):
+    db = tmp_path / "t.sqlite"
+    conn = init_db(db)
+    rid = _seed(conn, CONFLICT)
+    quiet = _seed(conn, QUIET, external_id="quiet")
+    rules = run_arm(db, PRIMARY[0], [(rid, "negatives", None), (quiet, "negatives", None)])
+    other = [{**r, "conflicts": [{**c, "callsigns": ["", c["callsigns"][1]]} for c in r["conflicts"]]} for r in rules]
+    positive = [{**rules[0], "set": "positives"}]
+    sheet = adjudication_rows(conn, {"rule-a": rules, "rule-b": other, "rule-c": positive})
+    [row] = sheet
+    tx = rules[0]["tx_ids"][2]
+    assert row["key"] == f"{rid}:RUNWAY:31:{tx}" and row["arms"] == "rule-a; rule-b"
+    assert row["callsigns"] == "lufthansa four five six / csa one two three; ? / csa one two three"
+    assert row["context"].splitlines()[-1] == f">> [controller] {CONFLICT[2][1]}"
+    assert len(row["context"].splitlines()) == 3 and row["verdict"] == ""
+    row["verdict"], row["notes"] = "parse_error", "x"
+    stale = {**row, "key": "999:RUNWAY:31:1", "recording_id": "999", "tx_id": "1", "verdict": "genuine"}
+    again = adjudication_rows(conn, {"rule-a": rules}, existing=[row, stale])
+    assert [(r["key"], r["verdict"]) for r in again] == [(row["key"], "parse_error"), (stale["key"], "genuine")]
+    assert read_verdicts(again) == {row["key"]: "parse_error", stale["key"]: "genuine"}
+
+
+def test_read_verdicts_rejects_unknown_labels():
+    assert read_verdicts([{"key": "k", "verdict": " Genuine "}, {"key": "j", "verdict": ""}]) == {"k": "genuine"}
+    with pytest.raises(ValueError, match="verdict must be one of"):
+        read_verdicts([{"key": "k", "verdict": "false"}])
+
+
+def test_the_overlap_sheet_is_a_stable_share_that_hides_the_first_verdicts():
+    keys = [f"{i}:RUNWAY:31:{i}" for i in range(1000)]
+    share = sum(in_overlap(k) for k in keys) / len(keys)
+    assert 0.25 < share < 0.35 and in_overlap(keys[0]) == in_overlap(keys[0])
+    sheet_a = [{"key": k, "verdict": "genuine", "notes": "a"} for k in keys[:20]]
+    b = overlap_rows(sheet_a)
+    assert [r["key"] for r in b] == [k for k in keys[:20] if in_overlap(k)] and all(r["verdict"] == "" for r in b)
+    b[0]["verdict"] = "engine_rule"
+    assert overlap_rows(sheet_a + [{"key": "new", "verdict": ""}], existing_b=b)[0]["verdict"] == "engine_rule"
+
+
+def test_adjudication_kappa_uses_the_alerts_both_adjudicated():
+    a = [{"key": "1", "verdict": "genuine"}, {"key": "2", "verdict": "parse_error"}, {"key": "3", "verdict": "parse_error"}]
+    b = [{"key": "1", "verdict": "genuine"}, {"key": "2", "verdict": "parse_error"}, {"key": "3", "verdict": ""}]
+    assert adjudication_kappa(a, b) == (1.0, 2)
