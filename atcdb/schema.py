@@ -4,7 +4,8 @@ from pathlib import Path
 
 from atcdb import doctrine
 
-TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs", "events"]
+TABLES = ["sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules", "readback_pairs", "events",
+          "judgments"]
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS sources (
@@ -128,6 +129,22 @@ CREATE TABLE IF NOT EXISTS events (
     UNIQUE (transcript_id, parser, model, model_version, context, seq)
 );
 CREATE INDEX IF NOT EXISTS ix_events_transcript ON events (transcript_id, parser, model);
+
+-- LLM-judge verdicts per recording (see atcdb/judge.py): the conflicts Claude reported over the whole transcript,
+-- one row per (recording, transcript kind and model, judge model, judge version). Failed calls are not stored.
+CREATE TABLE IF NOT EXISTS judgments (
+    id                INTEGER PRIMARY KEY,
+    recording_id      INTEGER NOT NULL REFERENCES recordings(id),
+    transcript_kind   TEXT NOT NULL CHECK (transcript_kind IN ('gold', 'asr')),
+    transcript_model  TEXT NOT NULL,
+    judge_model       TEXT NOT NULL,
+    judge_version     TEXT NOT NULL,
+    conflicts_json    TEXT NOT NULL,
+    dropped           INTEGER NOT NULL DEFAULT 0,
+    sequence_sha1     TEXT NOT NULL,   -- sha1 of judge.render_sequence of the transmissions judged
+    created_at_utc    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE (recording_id, transcript_kind, transcript_model, judge_model, judge_version)
+);
 """
 
 

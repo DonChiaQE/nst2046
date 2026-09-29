@@ -1,7 +1,8 @@
 # ATC conflict engine — design
 
 **Status: APPROVED 2026-09-14; Section 3 addendum approved 2026-09-17; phase-3 design-pass addendum approved
-2026-09-26.** Phases 1 and 2 merged (PR #1, PR #2). Next step: the phase-2.5 plan via `superpowers:writing-plans`.
+2026-09-26.** Phases 1 and 2 merged (PR #1, PR #2); phase 2.5 in PR #3. Next step: execute the phase-3a plan,
+`docs/superpowers/plans/2026-09-27-claude-parser.md`.
 
 ## Context / pivot
 
@@ -342,7 +343,8 @@ Measured on the 309 foldable tower recordings (gold, `human`) and two NTSB incid
   per event — change, runway, callsign, type — match the engine's `Event` one to one.
 - **What is cached.** Unchanged contract: API errors and `stop_reason: "refusal"` propagate and cache nothing.
   Individual events that fail validation are dropped and counted (A.3.5); a parse with nothing left stores the NOOP
-  row.
+  row. A parse failure in `window` mode also stops later transmissions of that replay from being parsed or cached
+  (they are served from the cache or marked skipped), because their context would be incomplete.
 - **Registry.** `PARSER_MODELS` becomes `dict[str, list[str]]`. The Claude parser is resolved lazily on first use, so
   importing `atcdb.replay` never needs `anthropic`. `parse_llm.VERSION = "p1"`, bumped by hand whenever the prompt or
   schema changes, like `parse_rules.VERSION`.
@@ -384,6 +386,11 @@ The written report (section 4, "Technical Investigation Plan") is now the commit
 - **Left for the 3b design pass:** the ASRS triage and reconstruction procedure, the Risk-weight derivation, and
   labelling logistics. **Risk:** Level 1 has no gold until someone labels ~250 rows, and the readback sheets are
   still 0/250. Labelling can run in parallel with 2.5 and 3a and should start now.
+
+- **3b design pass (2026-09-29).** 3b is split into 3b-1 (Level 2 synthetic, LLM judge, event sheet generator),
+  3b-2 (Level 1 extraction) and 3b-3 (ASRS and NTSB positives). 3b-1 is specified in
+  `2026-09-29-evaluation-3b1-design.md`, which also records that CROSS/LUAW staleness cannot be tuned on this corpus
+  (clips are shorter than any plausible timeout) and the ASR train/test leakage.
 
 ### A.6 Phase 4 — case studies (amends Section 4)
 

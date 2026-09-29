@@ -123,3 +123,4 @@ h2 { margin: 12px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.06
 .chip.flag.alert { background: var(--alert); border-color: var(--alert); }
 .chip.flag.warning { background: var(--warn); border-color: var(--warn); }
 .chip.failed { color: var(--alert); border-color: currentColor; }
+.chip.dropped { color: var(--warn); border-color: currentColor; border-style: dashed; }

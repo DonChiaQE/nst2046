@@ -1,10 +1,16 @@
+import subprocess
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 import soundfile as sf
 from fastapi.testclient import TestClient
 
 from atcdb.api import create_app
+from atcdb.engine import ClearToLand
 from atcdb.parse_rules import VERSION
+from atcdb.replay import PARSERS
 from atcdb.schema import init_db
 
 TURNS = [
@@ -42,9 +48,13 @@ def client(tmp_path):
     return TestClient(create_app(tmp_path / "t.sqlite", root))
 
 
-def test_capabilities(client):
+def test_capabilities(client, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    unavailable = {"model_version": "p1", "available": False, "reason": "ANTHROPIC_API_KEY not set"}
     assert client.get("/api/capabilities").json() == {
-        "parsers": [{"name": "rule", "model": "rules", "model_version": VERSION}],
+        "parsers": [{"name": "llm", "model": "claude-haiku-4-5", **unavailable},
+                    {"name": "llm", "model": "claude-sonnet-5", **unavailable},
+                    {"name": "rule", "model": "rules", "model_version": VERSION, "available": True, "reason": None}],
         "contexts": ["none", "role", "window"],
         "transcripts": {"gold": ["atco2-xml", "human"], "asr": ["whisper-test"]},
         "live": False,
@@ -77,6 +87,19 @@ def test_replay_folds_the_recording_and_pins_the_human_gold_transcripts(client):
     assert client.get("/api/recordings/10/replay").json() == d   # second request is served from the events cache
 
 
+def test_replay_pins_the_transcript_model_per_recording(client, tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    conn.execute("INSERT INTO recordings (id, source_id, external_id, facility) VALUES (12, 1, 'rec-synthetic', 'Tower')")
+    conn.execute("INSERT INTO transmissions (id, recording_id, external_id, start_s, speaker_role) "
+                 "VALUES (120, 12, 's0', 0.0, 'controller')")
+    _transcript(conn, 120, "gold", "synthetic", "csa one two three runway three one cleared to land")
+    conn.commit()
+    conn.close()
+    d = client.get("/api/recordings/12/replay").json()
+    assert d["transcript_model"] == "synthetic" and [e["kind"] for s in d["steps"] for e in s["events"]] == ["LAND"]
+    assert client.get("/api/recordings/10/replay").json()["transcript_model"] == "human"
+
+
 def test_replay_with_an_explicit_transcript_model_or_asr(client):
     d = client.get("/api/recordings/10/replay", params={"transcript_model": "atco2-xml"}).json()
     assert d["transcript_model"] == "atco2-xml"
@@ -90,7 +113,8 @@ def test_replay_errors(client):
     assert client.get("/api/recordings/999/replay").status_code == 404
     empty = client.get("/api/recordings/11/replay")
     assert empty.status_code == 200 and (empty.json()["steps"], empty.json()["runways"]) == ([], [])
-    for params in ({"parser": "magic"}, {"context": "everything"}, {"transcript": "llm"}):
+    for params in ({"parser": "magic"}, {"context": "everything"}, {"transcript": "llm"}, {"model": "claude-sonnet-5"},
+                   {"parser": "llm", "model": "claude-opus-5"}, {"parser": "llm", "model": "rules"}):
         r = client.get("/api/recordings/10/replay", params=params)
         assert r.status_code == 422 and "unknown" in r.json()["detail"]
     assert client.get("/api/recordings/abc/replay").status_code == 422
@@ -150,3 +174,24 @@ def test_missing_corpus_database_is_a_clear_503_and_is_not_created(tmp_path):
         assert r.status_code == 503 and "not found" in r.json()["detail"]
     assert not missing.exists()
     assert client.get("/").status_code == 200   # the page still loads and shows the message in its status line
+
+
+def test_replay_with_the_llm_parser_and_a_model(client, monkeypatch):
+    seen = []
+
+    def factory(model):
+        seen.append(model)
+        return lambda tx, ctx: [ClearToLand(callsign="csa one two three", runway="31")] if tx.role == "controller" else []
+
+    monkeypatch.setitem(PARSERS, "llm", factory)
+    d = client.get("/api/recordings/10/replay", params={"parser": "llm", "model": "claude-sonnet-5", "context": "role"}).json()
+    assert (d["parser"], d["model"], d["model_version"]) == ("llm", "claude-sonnet-5", "p1")
+    assert set(seen) == {"claude-sonnet-5"} and len(d["steps"]) == 4
+    assert client.get("/api/recordings/10/replay", params={"parser": "llm", "context": "role"}).json()["model"] == "claude-haiku-4-5"
+
+
+def test_importing_the_app_does_not_import_the_sdk():
+    code = "import sys, atcdb.api; print('anthropic' in sys.modules)"
+    root = Path(__file__).resolve().parents[1]
+    out = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "False"

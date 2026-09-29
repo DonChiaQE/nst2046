@@ -13,7 +13,7 @@ def test_init_db_creates_all_tables(tmp_path):
     conn = init_db(tmp_path / "t.sqlite")
     assert set(TABLES) <= table_names(conn)
     assert {"sources", "recordings", "transmissions", "transcripts", "annotations", "phraseology_rules",
-            "readback_pairs", "events"} == set(TABLES)
+            "readback_pairs", "events", "judgments"} == set(TABLES)
 
 
 def _seed_transcript(conn) -> int:
@@ -68,3 +68,16 @@ def test_foreign_keys_are_enforced(tmp_path):
     except sqlite3.IntegrityError:
         enforced = True
     assert enforced
+
+
+def test_judgments_are_unique_per_recording_transcript_and_judge(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    _seed_transcript(conn)
+    row = (1, "gold", "human", "claude-sonnet-5", "j1", "[]", "sha")
+    sql = ("INSERT INTO judgments (recording_id, transcript_kind, transcript_model, judge_model, judge_version, "
+           "conflicts_json, sequence_sha1) VALUES (?,?,?,?,?,?,?)")
+    conn.execute(sql, row)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(sql, row)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(sql, (1, "llm", "human", "claude-sonnet-5", "j1", "[]", "sha"))

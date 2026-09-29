@@ -3,19 +3,27 @@
 `get_events` is the single cache path (cached rows from `events`, or parse-and-store on a miss); the
 precompute script and the web API both go through it. `build_timeline` folds the cached/parsed events so
 "state after transmission k" is available for every k, which is what the replay UI scrubs through.
-Window-mode parses depend on engine state, so after changing engine rules run `scripts/parse_events.py
---refresh` (see `clear_events`).
+Window-mode parses depend on engine state, so their cache key carries `engine.ENGINE_VERSION` (see `cache_version`):
+bump it after changing engine rules and the old window parses are simply never read again.
 """
 import sqlite3
 from dataclasses import dataclass
 from typing import Callable
 
-from atcdb import parse_rules
+from atcdb import engine, parse_llm, parse_rules
 from atcdb.engine import Conflict, Event, NoOp, State, apply
 from atcdb.parsing import CONTEXT_MODES, WINDOW, Context, Parser, Transmission, event_to_row, row_to_event
 
-PARSERS: dict[str, Parser] = {"rule": parse_rules.parse}
-PARSER_MODELS: dict[str, tuple[str, str]] = {"rule": ("rules", parse_rules.VERSION)}   # parser -> (model, model_version)
+# parser -> factory taking a model id. `get_events` calls it only on a cache miss, so the Claude client is created the
+# first time a transmission needs parsing, and a replay served from the cache needs no SDK and no key (spec addendum A.4).
+PARSERS: dict[str, Callable[[str], Parser]] = {"rule": lambda model: parse_rules.parse, "llm": parse_llm.make_parser}
+PARSER_MODELS: dict[str, list[str]] = {"rule": ["rules"], "llm": list(parse_llm.MODELS)}   # the first is the default
+PARSER_VERSIONS: dict[str, str] = {"rule": parse_rules.VERSION, "llm": parse_llm.VERSION}   # bumped by hand, cache key
+# parser -> (can a cold parse run here, and if not why); served by the capabilities route
+PARSER_AVAILABILITY: dict[str, Callable[[], tuple[bool, str | None]]] = {"rule": lambda: (True, None),
+                                                                          "llm": parse_llm.availability}
+# the source atcdb/inject.py stores synthetic-conflict recordings under; they replay like any other recording
+SYNTHETIC_SOURCE = "synthetic-conflicts"
 # parser -> instructions it recognised but could not place on a runway, for one transmission (spec addendum A.3.5)
 DROP_COUNTERS: dict[str, Callable[[Transmission, Context], int]] = {"rule": parse_rules.count_unresolved}
 
@@ -92,6 +100,12 @@ def list_recordings(conn: sqlite3.Connection, facility: str = "Tower", min_trans
     return [dict(r) for r in rows]
 
 
+def real_recordings(conn: sqlite3.Connection, **kwargs) -> list[dict]:
+    """`list_recordings` without the recordings conflict injection wrote (atcdb/inject.py): the real corpus, which the
+    evaluation's negatives, the labelling sheet and the injector itself draw from."""
+    return [r for r in list_recordings(conn, **kwargs) if r["source"] != SYNTHETIC_SOURCE]
+
+
 def get_recording(conn: sqlite3.Connection, recording_id: int) -> dict | None:
     """One recording's identity (id, source, external_id, airport_icao, facility), or None if the id is unknown.
     Distinguishes "no such recording" from "a recording with no transcripts of the requested kind"."""
@@ -110,14 +124,36 @@ def transcript_models(conn: sqlite3.Connection) -> dict[str, list[str]]:
     return out
 
 
-def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str) -> str | None:
+def default_transcript_model(conn: sqlite3.Connection, transcript_kind: str, recording_id: int | None = None) -> str | None:
     """The transcript model a replay pins when none is given, so cache keys do not drift between runs: `human` for
     gold (some transmissions also carry an `atco2-xml` gold transcript), otherwise the alphabetically first model.
-    None when the DB has no transcripts of that kind."""
-    models = transcript_models(conn).get(transcript_kind, [])
+    With `recording_id`, only that recording's transcripts count, so a recording whose gold transcripts all come from
+    another model (the `synthetic` recordings conflict injection writes) still replays. None when there are no
+    transcripts of that kind."""
+    if recording_id is None:
+        models = transcript_models(conn).get(transcript_kind, [])
+    else:
+        models = [r[0] for r in conn.execute(
+            """SELECT DISTINCT t.model FROM transcripts t JOIN transmissions x ON x.id = t.transmission_id
+               WHERE x.recording_id = ? AND t.kind = ? ORDER BY t.model""", (recording_id, transcript_kind))]
     if transcript_kind == "gold" and "human" in models:
         return "human"
     return models[0] if models else None
+
+
+def _resolve_model(parser: str, model: str | None) -> str:
+    """The model to use: `model`, or the parser's default when none is given, checked against `PARSER_MODELS[parser]`
+    so a rules parse can never be cached under a Claude model id or vice versa."""
+    model = model or PARSER_MODELS[parser][0]
+    if model not in PARSER_MODELS[parser]:
+        raise ValueError(f"unknown model {model!r} for parser {parser!r}; expected one of {PARSER_MODELS[parser]}")
+    return model
+
+
+def cache_version(model_version: str, mode: str) -> str:
+    """The `model_version` a cache row is stored under. A `window` parse saw the engine's state, so it is also keyed by
+    ENGINE_VERSION (spec addendum A.7.2); `none` and `role` parses never see it and keep the plain version."""
+    return f"{model_version}+engine{engine.ENGINE_VERSION}" if mode == "window" else model_version
 
 
 def _cached_events(conn: sqlite3.Connection, tx: Transmission, parser: str, model: str, model_version: str,
@@ -125,7 +161,7 @@ def _cached_events(conn: sqlite3.Connection, tx: Transmission, parser: str, mode
     rows = conn.execute(
         """SELECT kind, callsign, runway, extra_json FROM events
            WHERE transcript_id = ? AND parser = ? AND model = ? AND model_version = ? AND context = ?
-           ORDER BY seq""", (tx.transcript_id, parser, model, model_version, mode)).fetchall()
+           ORDER BY seq""", (tx.transcript_id, parser, model, cache_version(model_version, mode), mode)).fetchall()
     return [row_to_event(r["kind"], r["callsign"], r["runway"], r["extra_json"], t=tx.start_s, text=tx.text) for r in rows]
 
 
@@ -135,23 +171,27 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
     and stored. A parser exception propagates and nothing is stored, so the next call retries. An empty parse is
     stored as one NOOP row, so the transcript is not a cache miss forever. If another request cached the same
     transcript while this one was parsing, the first writer's parse wins: it is what stays cached and what is returned,
-    so the cache never mixes rows from two different parses."""
-    if model is None:
-        model, model_version = PARSER_MODELS[parser]
-    model_version = model_version or ""
+    so the cache never mixes rows from two different parses. An `IntegrityError` that leaves no rows behind was not a
+    race (a foreign-key failure, say) and is re-raised rather than returned as an empty parse."""
+    model = _resolve_model(parser, model)
+    model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     cached = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
     if cached:
         return cached
-    events = PARSERS[parser](tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
+    events = PARSERS[parser](model)(tx, ctx) or [NoOp(t=tx.start_s, text=tx.text)]
     try:
         conn.executemany(
             """INSERT INTO events (transcript_id, parser, model, model_version, context, seq, kind, callsign, runway, extra_json)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            [(tx.transcript_id, parser, model, model_version, ctx.mode, i, *event_to_row(e)) for i, e in enumerate(events)])
+            [(tx.transcript_id, parser, model, cache_version(model_version, ctx.mode), ctx.mode, i, *event_to_row(e))
+             for i, e in enumerate(events)])
         conn.commit()
     except sqlite3.IntegrityError:
         conn.rollback()   # lost the race: nothing of ours is kept
-        return _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+        winner = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+        if not winner:
+            raise
+        return winner
     except Exception:
         conn.rollback()   # a partial insert must never be committed later by someone else's commit
         raise
@@ -161,7 +201,9 @@ def get_events(conn: sqlite3.Connection, tx: Transmission, parser: str, ctx: Con
 def clear_events(conn: sqlite3.Connection, parser: str, model: str | None = None, model_version: str | None = None,
                  context: str | None = None) -> int:
     """Delete cached events for a parser (optionally narrowed to model / version / context mode). Returns rows deleted.
-    Needed because `window`-mode parses depend on engine state: after tuning engine rules, refresh the cache."""
+    `window`-mode parses are already invalidated automatically when engine rules change, via ENGINE_VERSION in the
+    cache key (see `cache_version`); a manual clear is for discarding parses you no longer want, e.g. a bad prompt
+    run. `model_version`, when given, must be the stored key, i.e. `cache_version(version, context)`."""
     sql, params = "DELETE FROM events WHERE parser = ?", [parser]
     for col, val in (("model", model), ("model_version", model_version), ("context", context)):
         if val is not None:
@@ -172,22 +214,50 @@ def clear_events(conn: sqlite3.Connection, parser: str, model: str | None = None
     return n
 
 
+def uncached_parses(conn: sqlite3.Connection, recording_id: int, parser: str = "rule", transcript_kind: str = "gold",
+                    context: str = "window", model: str | None = None, model_version: str | None = None,
+                    transcript_model: str | None = None) -> list[tuple[Transmission, Context]]:
+    """The transmissions `build_timeline` would have to parse, each with the context it would be parsed in as far as the
+    cache knows (cached events are folded; a missing parse contributes nothing to later context). Parses nothing and
+    stores nothing: this is what `parse_events.py --dry-run` counts."""
+    model = _resolve_model(parser, model)
+    model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
+    txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
+    state, out = State(), []
+    for k, tx in enumerate(txs):
+        ctx = build_context(context, tx, txs[:k], state)
+        cached = _cached_events(conn, tx, parser, model, model_version, context)
+        if not cached:
+            out.append((tx, ctx))
+        for e in cached:
+            state, _ = apply(state, e)
+    return out
+
+
 def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "rule", transcript_kind: str = "gold",
                    context: str = "window", model: str | None = None, model_version: str | None = None,
                    transcript_model: str | None = None) -> Timeline:
     """Fold a whole recording: one Step per transmission with its events, the conflicts they raised and the state after."""
-    if model is None:
-        model, model_version = PARSER_MODELS[parser]
+    model = _resolve_model(parser, model)
+    model_version = PARSER_VERSIONS[parser] if model_version is None else model_version
     txs = load_recording(conn, recording_id, transcript_kind, transcript_model)
     state = State()
     steps: list[Step] = []
+    window_broken = False   # a `window` parse failed earlier: later context would be built on incomplete state
     for k, tx in enumerate(txs):
         ctx = build_context(context, tx, txs[:k], state)
         error = None
-        try:
-            events = get_events(conn, tx, parser, ctx, model, model_version)
-        except Exception as e:   # a flaky parser (API error) must not break the replay; nothing was cached
-            events, error = [], f"{type(e).__name__}: {e}"
+        if window_broken:
+            # do not parse against context missing an earlier transmission's events; a cache hit is still fine
+            events = _cached_events(conn, tx, parser, model, model_version, ctx.mode)
+            if not events:
+                error = "skipped: an earlier transmission failed to parse, so the window context is incomplete"
+        else:
+            try:
+                events = get_events(conn, tx, parser, ctx, model, model_version)
+            except Exception as e:   # a flaky parser (API error) must not break the replay; nothing was cached
+                events, error = [], f"{type(e).__name__}: {e}"
+                window_broken = context == "window"
         conflicts: list[Conflict] = []
         ignored_before = state.ignored
         for e in events:
@@ -195,4 +265,4 @@ def build_timeline(conn: sqlite3.Connection, recording_id: int, parser: str = "r
             conflicts.extend(new)
         dropped = DROP_COUNTERS.get(parser, lambda tx, ctx: 0)(tx, ctx) + state.ignored - ignored_before
         steps.append(Step(tx=tx, events=tuple(events), conflicts=tuple(conflicts), state=state, error=error, dropped=dropped))
-    return Timeline(recording_id, parser, model, model_version or "", context, transcript_kind, tuple(steps))
+    return Timeline(recording_id, parser, model, model_version, context, transcript_kind, tuple(steps))

@@ -32,7 +32,25 @@ python scripts/show_replay.py uwb-atcc_TWR-DM7AI0  # step through one recording:
 # 5. replay UI: step through a recording in the browser (runway board, transmissions, conflicts, audio)
 uvicorn atcdb.api:app --reload                     # then open http://127.0.0.1:8000/?recording=528
 
-pytest   # 183 tests
+# 6. Claude parser (phase 3a): Haiku 4.5 and Sonnet 5 through one forced tool call; needs ANTHROPIC_API_KEY.
+#    Without a key the page lists it disabled, and replays already in the cache still work.
+python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528 --dry-run   # count and cost first
+python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528             # parse and cache
+
+# 7. evaluation, Level 2 (phase 3b-1): synthetic conflicts, every arm, adjudication, results doc.
+#    See docs/superpowers/specs/2026-09-29-evaluation-3b1-design.md. Dry-run before every paid run.
+python scripts/make_event_sheet.py                  # Level 1 labelling sheets -> data/labels/event_sheet_{A,B}.csv
+python scripts/run_asr.py --split train             # ASR for the rest of the corpus (~2 h CPU); before injecting
+python scripts/inject_conflicts.py                  # store 100 synthetic-conflict recordings; refuses while ASR is
+#    incomplete on a chosen original. Never run run_asr.py after injecting: the synthetic copies keep the split, so it
+#    would transcribe them and give an edited trigger Whisper's text of the unedited audio.
+python scripts/inject_conflicts.py --sheet data/labels/injection_check.csv        # then fill `valid` and
+python scripts/inject_conflicts.py --apply-sheet data/labels/injection_check.csv  # record the verdicts
+python scripts/eval_conflicts.py run --dry-run      # uncached calls and cost per arm; then without --dry-run
+python scripts/eval_conflicts.py adjudicate         # alert verdicts -> data/labels/adjudication_{A,B}.csv
+python scripts/eval_conflicts.py report             # -> docs/results/conflict-eval.md
+
+pytest   # 292 tests; the live smoke tests skip without ANTHROPIC_API_KEY
 ```
 
 See `docs/` for the sourcing research and the database design spec.
