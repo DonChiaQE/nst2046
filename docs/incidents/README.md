@@ -1,7 +1,7 @@
 # Incident reports
 
 Real-world evidence that grounds the runway-only scope and provides case studies for the report.
-Source PDFs live in `data/incidents/` (git-ignored; download links in `docs/references.md`).
+Source PDFs live in `data/incidents/` (git-ignored; download links in `docs/references/references.md`).
 
 ## Files
 

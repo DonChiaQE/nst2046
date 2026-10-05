@@ -11,7 +11,7 @@ failures, uncertainty and limitations", and require at least one analysed counte
 had the experiments but (a) all its gold except the event sheet came from the rules parser or from
 synthetic edits, (b) it had one human touchpoint, (c) it scored every extraction error equally, and
 (d) its two case studies were both assumed to be clearance conflicts; one is not. Prior work found
-since (see `docs/references.md`): Chang et al. 2026 show LLM extraction errors concentrate on runway
+since (see `docs/references/references.md`): Chang et al. 2026 show LLM extraction errors concentrate on runway
 identifiers and that aggregate F1 hides this; Helmke et al. 2022 give a real-audio benchmark of ~80%
 recall / ~11% false alarms for rules+ML readback detection.
 

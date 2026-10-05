@@ -12,5 +12,7 @@ __pycache__/
 # subagent-driven-development scratch (ledger, briefs, review packages)
 .superpowers/
 
-# literature PDFs (copyrighted, not for the repo)
-references/
+# literature PDFs (copyrighted, not for the repo). The notes written beside them are text, and commit.
+/references/
+docs/references/*
+!docs/references/*.md
