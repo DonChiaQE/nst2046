@@ -335,7 +335,7 @@ def test_an_unknown_model_for_the_parser_is_rejected(tmp_path):
 
 
 def test_the_registry_knows_both_parsers_and_their_models():
-    assert PARSER_MODELS == {"rule": ["rules"], "llm": ["claude-haiku-4-5", "claude-sonnet-5"]}
+    assert PARSER_MODELS == {"rule": ["rules"], "llm": ["claude-haiku-4-5", "claude-sonnet-5", "claude-haiku-5-5"]}
     assert PARSER_VERSIONS == {"rule": VERSION, "llm": "p1"}
     assert set(PARSERS) == set(PARSER_AVAILABILITY) == set(PARSER_MODELS)
     assert PARSER_AVAILABILITY["rule"]() == (True, None)

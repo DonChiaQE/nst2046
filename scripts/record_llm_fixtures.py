@@ -2,13 +2,15 @@
 """Record real Claude replies for the parser's regression fixtures (tests/fixtures/llm_responses.json).
 
 Usage:
-    ANTHROPIC_API_KEY=... python scripts/record_llm_fixtures.py
+    ANTHROPIC_API_KEY=... python scripts/record_llm_fixtures.py [--model claude-haiku-5-5]
 
-Sends each case below to every model in parse_llm.MODELS with exactly the request the parser makes, and stores each
-reply's stop reason and content blocks. Re-run it whenever parse_llm.VERSION is bumped, then update the expectations in
+Sends each case below to every model in parse_llm.MODELS (or only the `--model` ones, repeatable) with exactly the
+request the parser makes, and stores each reply's stop reason and content blocks. With `--model`, the other models'
+recorded replies are kept as they are. Re-run it whenever parse_llm.VERSION is bumped, then update the expectations in
 tests/test_parse_llm.py. The texts are NTSB public record (Austin, DCA23FA149) or invented: UWB-ATCC corpus text is
 CC BY-NC-ND and must never be written into a fixture.
 """
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -44,11 +46,16 @@ CASES: dict[str, tuple[str, str, Context]] = {
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--model", action="append", choices=MODELS)
+    models = ap.parse_args().model or list(MODELS)
+    kept = [r for r in json.loads(OUT.read_text()) if r["model"] not in models] if OUT.exists() else []
     client = anthropic.Anthropic()
     records = []
     for name, (role, text, ctx) in CASES.items():
         tx = Transmission(id=0, transcript_id=0, text=text, role=role, start_s=0.0)
-        for model in MODELS:
+        records += [r for r in kept if r["case"] == name]
+        for model in models:
             reply = client.messages.create(**request(model, tx, ctx))
             records.append({"case": name, "model": model, "version": VERSION, "role": role, "text": text,
                             "context": {"mode": ctx.mode, "role": ctx.role, "history": [list(h) for h in ctx.history],

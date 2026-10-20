@@ -36,7 +36,10 @@ class Arm:
         return f"{self.parser}-{self.model}-{self.context}-{self.transcript}"
 
 
-ARMS: tuple[Arm, ...] = tuple(Arm(p, m, c, t) for p, models in (("rule", ("rules",)), ("llm", parse_llm.MODELS))
+# The evaluation's Claude models, named here so a model added to the parser (the live app's claude-haiku-5-5) does not
+# add paid arms by itself; moving the evaluation to another model is its own decision.
+EVAL_MODELS = ("claude-haiku-4-5", "claude-sonnet-5")
+ARMS: tuple[Arm, ...] = tuple(Arm(p, m, c, t) for p, models in (("rule", ("rules",)), ("llm", EVAL_MODELS))
                               for m in models for c in CONTEXT_MODES for t in TRANSCRIPTS)
 # the ablation (spec section 7): the whole transcript to Claude, conflicts out, no parser and no engine
 JUDGE_ARMS: tuple[Arm, ...] = tuple(Arm("judge", m, "sequence", t) for m in judge.MODELS for t in TRANSCRIPTS)

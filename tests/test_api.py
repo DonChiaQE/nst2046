@@ -54,6 +54,7 @@ def test_capabilities(client, monkeypatch):
     assert client.get("/api/capabilities").json() == {
         "parsers": [{"name": "llm", "model": "claude-haiku-4-5", **unavailable},
                     {"name": "llm", "model": "claude-sonnet-5", **unavailable},
+                    {"name": "llm", "model": "claude-haiku-5-5", **unavailable},
                     {"name": "rule", "model": "rules", "model_version": VERSION, "available": True, "reason": None}],
         "contexts": ["none", "role", "window"],
         "transcripts": {"gold": ["atco2-xml", "human"], "asr": ["whisper-test"]},

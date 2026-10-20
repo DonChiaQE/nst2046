@@ -21,18 +21,25 @@ from atcdb.engine import (HANDOFF_TARGETS, ClearTakeoff, ClearToCross, ClearToLa
 from atcdb.parsing import Context, Parser, Transmission
 
 VERSION = "p1"
-MODELS = ("claude-haiku-4-5", "claude-sonnet-5")   # the cheap and the strong arm (spec addendum A.4)
+# The cheap and the strong evaluation arm (spec addendum A.4), then the live demo app's model (live demo spec, Section 8).
+MODELS = ("claude-haiku-4-5", "claude-sonnet-5", "claude-haiku-5-5")
 
-# Both models do one-shot extraction with thinking off. anthropic 1.x has no `temperature` parameter, so Haiku's goes in
-# extra_body; Sonnet 5 rejects temperature altogether and runs with thinking disabled at low effort instead.
+# Every model does one-shot extraction with thinking off. anthropic 1.x has no `temperature` parameter, so Haiku 4.5's
+# goes in extra_body; Sonnet 5 and Haiku 5.5 reject a non-default temperature and run with thinking disabled at low
+# effort instead.
 MODEL_SETTINGS: dict[str, dict[str, Any]] = {
     "claude-haiku-4-5": {"extra_body": {"temperature": 0}},
     "claude-sonnet-5": {"thinking": {"type": "disabled"}, "output_config": {"effort": "low"}},
+    "claude-haiku-5-5": {"thinking": {"type": "disabled"}, "output_config": {"effort": "low"}},
 }
 MAX_TOKENS = 1024   # a transmission yields a handful of events; a truncated reply raises ParseError
 
-# For `parse_events.py --dry-run` only. USD per million tokens, (input, output), as listed 2026-06.
-PRICES_PER_MTOK: dict[str, tuple[float, float]] = {"claude-haiku-4-5": (1.00, 5.00), "claude-sonnet-5": (2.00, 10.00)}
+# For `parse_events.py --dry-run` only. USD per million tokens, (input, output), as listed 2026-06 (Haiku 5.5: 2026-10,
+# prompts up to 100K tokens).
+PRICES_PER_MTOK: dict[str, tuple[float, float]] = {"claude-haiku-4-5": (1.00, 5.00), "claude-sonnet-5": (2.00, 10.00),
+                                                   "claude-haiku-5-5": (0.10, 0.50)}
+# Tokens per token of the older tokenizers for the same text: Haiku 5.5's newer tokenizer counts about 30% more.
+_TOKENIZER_FACTOR: dict[str, float] = {"claude-haiku-5-5": 1.3}
 _TOOL_USE_OVERHEAD_TOKENS = 350   # the system prompt the API adds when tools are present (rough)
 _OUTPUT_TOKENS = 150              # a tool call with a handful of events (rough)
 
@@ -178,7 +185,7 @@ def estimate_cost(model: str, prompts: list[str]) -> float:
     fixed = (len(SYSTEM) + len(json.dumps(TOOL))) / 4 + _TOOL_USE_OVERHEAD_TOKENS
     tokens_in = sum(fixed + len(p) / 4 for p in prompts)
     price_in, price_out = PRICES_PER_MTOK[model]
-    return (tokens_in * price_in + len(prompts) * _OUTPUT_TOKENS * price_out) / 1e6
+    return _TOKENIZER_FACTOR.get(model, 1.0) * (tokens_in * price_in + len(prompts) * _OUTPUT_TOKENS * price_out) / 1e6
 
 
 def availability() -> tuple[bool, str | None]:
