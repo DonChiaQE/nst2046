@@ -58,7 +58,7 @@ def test_capabilities(client, monkeypatch):
                     {"name": "rule", "model": "rules", "model_version": VERSION, "available": True, "reason": None}],
         "contexts": ["none", "role", "window"],
         "transcripts": {"gold": ["atco2-xml", "human"], "asr": ["whisper-test"]},
-        "live": False,
+        "live": True,
     }
 
 

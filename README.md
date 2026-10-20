@@ -50,7 +50,11 @@ python scripts/eval_conflicts.py run --dry-run      # uncached calls and cost pe
 python scripts/eval_conflicts.py adjudicate         # alert verdicts -> data/labels/adjudication_{A,B}.csv
 python scripts/eval_conflicts.py report             # -> docs/results/conflict-eval.md
 
-pytest   # 293 tests; the live smoke tests skip without ANTHROPIC_API_KEY
+# 8. live demo helper (Runway Watch): the Mac app starts it; see docs/superpowers/specs/2026-10-20-live-demo-app-design.md.
+python scripts/bench_whisper.py                     # once: fetch the GPU Whisper weights (1.5 GB) and check the gate
+uvicorn atcdb.api:app --host 127.0.0.1 --port 8020  # /api/live/health, /api/live/sessions, ... (Claude needs a key)
+
+pytest   # the live smoke tests skip without ANTHROPIC_API_KEY; run `env -u ANTHROPIC_API_KEY pytest` to spend nothing
 ```
 
 See `docs/` for the sourcing research and the database design spec.

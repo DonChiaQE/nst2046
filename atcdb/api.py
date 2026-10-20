@@ -13,6 +13,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from atcdb.live_api import make_router
+from atcdb.live_hub import LiveHub
 from atcdb.parsing import CONTEXT_MODES
 from atcdb.replay import (PARSER_AVAILABILITY, PARSER_MODELS, PARSER_VERSIONS, build_timeline, default_transcript_model,
                           get_recording, list_recordings, transcript_models)
@@ -29,7 +31,10 @@ def _require(name: str, value: str, allowed) -> None:
         raise HTTPException(422, f"unknown {name} {value!r}; expected one of {sorted(allowed)}")
 
 
-def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Path | str = ROOT) -> FastAPI:
+def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Path | str = ROOT,
+               live_hub: LiveHub | None = None) -> FastAPI:
+    """`live_hub` serves /api/live/ (the demo app); by default one over `project_root`, which loads nothing until the
+    app first asks for /api/live/health."""
     root = Path(project_root).absolute()
     app = FastAPI(title="ATC conflict engine", docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json")
 
@@ -50,7 +55,7 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
         return {"parsers": parsers,
                 "contexts": list(CONTEXT_MODES),
                 "transcripts": {k: models[k] for k in TRANSCRIPT_KINDS if k in models},
-                "live": False}
+                "live": True}
 
     @app.get("/api/recordings")
     def recordings(facility: str = "Tower", min_transmissions: int = Query(4, ge=1), transcript: str = "gold"):
@@ -85,8 +90,9 @@ def create_app(db_path: Path | str = ROOT / "data/atc.sqlite", project_root: Pat
             raise HTTPException(404, f"no clip for transmission {transmission_id}")
         return FileResponse(path, media_type="audio/wav")
 
-    # Mounted last: a mount at "/" swallows every route registered after it, so add new routes (such as the phase-4
-    # live endpoint) above this line.
+    app.include_router(make_router(live_hub or LiveHub.default(root)))
+
+    # Mounted last: a mount at "/" swallows every route registered after it, so add new routes above this line.
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
     return app
 
