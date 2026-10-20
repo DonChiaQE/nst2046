@@ -70,6 +70,41 @@
   ]
  },
  {
+  "case": "austin_landing_clearance",
+  "model": "claude-haiku-5-5",
+  "version": "p1",
+  "role": "controller",
+  "text": "fedex fourteen thirty-two heavy austin tower one eight left r-v-r touchdown one thousand four hundred midpoint six hundred rollout one thousand eight hundred one eight left cleared to land",
+  "context": {
+   "mode": "role",
+   "role": "controller",
+   "history": [],
+   "active_callsigns": [],
+   "active_runways": []
+  },
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_01EWLqy1uZ7j5wa8rTyNt7qf",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "events": [
+      {
+       "kind": "LAND",
+       "callsign": "fedex fourteen thirty-two heavy",
+       "runway": "18L",
+       "to": null
+      }
+     ]
+    },
+    "name": "report_events",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
   "case": "austin_takeoff_clearance",
   "model": "claude-haiku-4-5",
   "version": "p1",
@@ -121,6 +156,41 @@
   "content": [
    {
     "id": "toolu_01CRQEiQTAQgTbp3eW9JhNMq",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "events": [
+      {
+       "kind": "TAKEOFF",
+       "callsign": "southwest seven zero eight",
+       "runway": "18L",
+       "to": null
+      }
+     ]
+    },
+    "name": "report_events",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
+  "case": "austin_takeoff_clearance",
+  "model": "claude-haiku-5-5",
+  "version": "p1",
+  "role": "controller",
+  "text": "southwest seven zero eight austin tower runway one eight left r-v-r one thousand two hundred midpoint six hundred rollout one thousand six hundred fly heading one seven zero runway one eight left cleared for takeoff traffic three mile final is a heavy seven sixty-seven",
+  "context": {
+   "mode": "role",
+   "role": "controller",
+   "history": [],
+   "active_callsigns": [],
+   "active_runways": []
+  },
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_016ziGz94wDSR83m4W8u2kFm",
     "caller": {
      "type": "direct"
     },
@@ -210,6 +280,41 @@
   ]
  },
  {
+  "case": "austin_takeoff_readback",
+  "model": "claude-haiku-5-5",
+  "version": "p1",
+  "role": "pilot",
+  "text": "okay that's one seven zero cleared for takeoff one eight left copy the traffic southwest seven zero eight",
+  "context": {
+   "mode": "role",
+   "role": "pilot",
+   "history": [],
+   "active_callsigns": [],
+   "active_runways": []
+  },
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_01GMS92KdHzSUicfG9S7xDz1",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "events": [
+      {
+       "kind": "READBACK",
+       "callsign": "one seven zero",
+       "runway": "18L",
+       "to": null
+      }
+     ]
+    },
+    "name": "report_events",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
   "case": "austin_handoff",
   "model": "claude-haiku-4-5",
   "version": "p1",
@@ -261,6 +366,41 @@
   "content": [
    {
     "id": "toolu_015VnW6iBENruugpEpbPSY9V",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "events": [
+      {
+       "kind": "HANDOFF",
+       "callsign": "american nineteen thirteen",
+       "runway": null,
+       "to": "departure"
+      }
+     ]
+    },
+    "name": "report_events",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
+  "case": "austin_handoff",
+  "model": "claude-haiku-5-5",
+  "version": "p1",
+  "role": "controller",
+  "text": "american nineteen thirteen contact departure",
+  "context": {
+   "mode": "role",
+   "role": "controller",
+   "history": [],
+   "active_callsigns": [],
+   "active_runways": []
+  },
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_01WC8fgK6SFCHGWZWnDSBRLE",
     "caller": {
      "type": "direct"
     },
@@ -362,6 +502,47 @@
   ]
  },
  {
+  "case": "cross_then_hold_short",
+  "model": "claude-haiku-5-5",
+  "version": "p1",
+  "role": "controller",
+  "text": "lufthansa four five six cross runway two four hold short of runway three one",
+  "context": {
+   "mode": "role",
+   "role": "controller",
+   "history": [],
+   "active_callsigns": [],
+   "active_runways": []
+  },
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_01UWmTUkoEn1Cax2dFKNKk3e",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "events": [
+      {
+       "kind": "CROSS",
+       "callsign": "lufthansa four five six",
+       "runway": "24",
+       "to": null
+      },
+      {
+       "kind": "HOLD_SHORT",
+       "callsign": "lufthansa four five six",
+       "runway": "31",
+       "to": null
+      }
+     ]
+    },
+    "name": "report_events",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
   "case": "window_snaps_to_the_active_runway",
   "model": "claude-haiku-4-5",
   "version": "p1",
@@ -431,6 +612,50 @@
   "content": [
    {
     "id": "toolu_01E3J7WM6a5HGFLMcEddjzhK",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "events": [
+      {
+       "kind": "LAND",
+       "callsign": "csa one two three",
+       "runway": "31",
+       "to": null
+      }
+     ]
+    },
+    "name": "report_events",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
+  "case": "window_snaps_to_the_active_runway",
+  "model": "claude-haiku-5-5",
+  "version": "p1",
+  "role": "controller",
+  "text": "csa one two three cleared to land wind calm",
+  "context": {
+   "mode": "window",
+   "role": "controller",
+   "history": [
+    [
+     "pilot",
+     "csa one two three established runway three one"
+    ]
+   ],
+   "active_callsigns": [
+    "csa one two three"
+   ],
+   "active_runways": [
+    "31"
+   ]
+  },
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_01WT8SxQEgEXGneQRSUZUAm2",
     "caller": {
      "type": "direct"
     },

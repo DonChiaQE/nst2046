@@ -193,15 +193,17 @@ def test_estimate_cost_scales_with_the_calls_and_the_price():
 FIXTURE = ROOT / "tests" / "fixtures" / "llm_responses.json"
 
 # (case, model) -> what the recorded reply maps to: (event type, callsign, runway or handoff target).
-# Models whose replies are recorded; claude-haiku-5-5 joins once scripts/record_llm_fixtures.py has run for it.
-RECORDED_MODELS = ("claude-haiku-4-5", "claude-sonnet-5")
+# Models whose replies are recorded (claude-haiku-5-5: operational step O2 of the live demo helper plan, 2026-10-20).
+RECORDED_MODELS = ("claude-haiku-4-5", "claude-sonnet-5", "claude-haiku-5-5")
 RECORDED = {
     **{("austin_landing_clearance", m): [("ClearToLand", "fedex fourteen thirty-two heavy", "18L")] for m in RECORDED_MODELS},
     **{("austin_takeoff_clearance", m): [("ClearTakeoff", "southwest seven zero eight", "18L")] for m in RECORDED_MODELS},
     # Findings, not expectations to fix here: Haiku reads the pilot's readback as a new clearance for the heading,
-    # Sonnet sees a readback but misses the callsign said at the end.
+    # Sonnet sees a readback but misses the callsign said at the end, and Haiku 5.5 sees a readback but takes the heading
+    # for the callsign.
     ("austin_takeoff_readback", "claude-haiku-4-5"): [("ClearTakeoff", "one seven zero", "18L")],
     ("austin_takeoff_readback", "claude-sonnet-5"): [("ReadbackObserved", "", None)],
+    ("austin_takeoff_readback", "claude-haiku-5-5"): [("ReadbackObserved", "one seven zero", None)],
     **{("austin_handoff", m): [("Handoff", "american nineteen thirteen", "departure")] for m in RECORDED_MODELS},
     **{("cross_then_hold_short", m): [("ClearToCross", "lufthansa four five six", "24"),
                                       ("HoldShort", "lufthansa four five six", "31")] for m in RECORDED_MODELS},
