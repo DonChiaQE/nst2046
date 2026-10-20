@@ -294,7 +294,11 @@ def cohen_kappa(a: list[str], b: list[str]) -> float:
 
 # --- adjudication (spec section 6) -----------------------------------------------------------------------------------
 
-VERDICTS = ("genuine", "parse_error", "missing_info", "engine_rule")
+# Every non-genuine verdict is a false alarm, named by its source, so the report shows which ones the choice of extractor
+# can change: parse_error (extraction wrong), missing_release (extraction right, the release was never spoken),
+# other_frequency (extraction right, the release or the traffic was on a frequency the corpus does not record, such as
+# ground or apron), engine_rule (extraction right, the matrix is too strict).
+VERDICTS = ("genuine", "parse_error", "missing_release", "other_frequency", "engine_rule")
 ADJUDICATION_COLUMNS = ["key", "recording_id", "type", "runway", "tx_id", "arms", "callsigns", "context", "verdict", "notes"]
 CONTEXT_LINES = 6   # transmissions shown up to and including the trigger
 

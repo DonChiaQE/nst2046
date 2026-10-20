@@ -7,8 +7,8 @@ report.
 """
 from collections import Counter
 
-from atcdb.evaluate import (PRIMARY, Pending, alert_keys, bootstrap, detection, false_alarm_units, paired_bootstrap,
-                            per_hour, rate, recall, sweep, usable)
+from atcdb.evaluate import (PRIMARY, VERDICTS, Pending, alert_keys, bootstrap, detection, false_alarm_units,
+                            paired_bootstrap, per_hour, rate, recall, sweep, usable)
 from atcdb.inject import EDIT_KINDS
 
 
@@ -193,10 +193,9 @@ def render(summary: dict, date: str) -> str:
     for name, s in summary["arms"].items():
         out.append(f"| {name} | " + " | ".join(f"{s['by_kind'][k]['lenient']}/{s['by_kind'][k]['n']}" for k in EDIT_KINDS) + " |")
     out += ["", "## Failure taxonomy of alerts on real recordings", "",
-            "| Arm | genuine | parse_error | missing_info | engine_rule | unadjudicated |", "|---|---:|---:|---:|---:|---:|"]
+            "| Arm | " + " | ".join((*VERDICTS, "unadjudicated")) + " |", "|---|" + "---:|" * (len(VERDICTS) + 1)]
     for name, t in summary["taxonomy"].items():
-        out.append(f"| {name} | " + " | ".join(str(t.get(v, 0)) for v in
-                                              ("genuine", "parse_error", "missing_info", "engine_rule", "unadjudicated")) + " |")
+        out.append(f"| {name} | " + " | ".join(str(t.get(v, 0)) for v in (*VERDICTS, "unadjudicated")) + " |")
     kappa = summary["kappa"]
     out += ["", "## Agreement and generator precision", "",
             f"Adjudication agreement: Cohen's kappa {kappa[0]:.2f} over {kappa[1]} alerts labelled by both adjudicators."

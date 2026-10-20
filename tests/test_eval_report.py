@@ -19,7 +19,7 @@ RULES = [_row(1, "positives", [_c(2)]), _row(2, "positives", []), _row(10, "nega
          _row(11, "negatives", [], all_test=False)]
 SONNET = [_row(1, "positives", [_c(2)]), _row(2, "positives", [_c(3)]), _row(10, "negatives", []),
           _row(11, "negatives", [], all_test=False)]
-VERDICTS = {"10:RUNWAY:31:2": "missing_info"}
+VERDICTS = {"10:RUNWAY:31:2": "missing_release"}
 VALID = [{"recording_id": 1, "edit_kind": "splice", "valid": "yes"}, {"recording_id": 2, "edit_kind": "splice", "valid": "yes"}]
 
 
@@ -39,7 +39,7 @@ def test_primary_differences_are_paired_over_common_recordings():
 
 
 def test_taxonomy_counts_verdicts_of_the_arms_own_alerts():
-    assert taxonomy(RULES, VERDICTS) == {"missing_info": 1}
+    assert taxonomy(RULES, VERDICTS) == {"missing_release": 1}
     assert taxonomy(RULES, {}) == {"unadjudicated": 1}
 
 
@@ -56,6 +56,7 @@ def test_the_report_covers_every_section_and_uses_no_em_dash():
                     "Agreement and generator precision", "staleness sensitivity", "Caveats"):
         assert heading in text
     assert "Cohen's kappa 0.80 over 12 alerts" in text and "-50 pts" in text
+    assert "| Arm | genuine | parse_error | missing_release | other_frequency | engine_rule | unadjudicated |" in text
     assert "\u2014" not in text
     assert "trigger transmission is test split" in text and "reports recall only" not in text   # a usable headline negative is present
     pending = render(summarize(rows, {}, VALID, None), "29 Sep 2026")

@@ -163,12 +163,17 @@ each reported, and an empty `verdict`:
 
 - `genuine`: a truly incompatible pair of clearances.
 - `parse_error`: extraction was wrong.
-- `missing_info`: extraction right, the release was never spoken (the recording 528 type).
+- `missing_release`: extraction right, the release was never spoken (the recording 528 type).
+- `other_frequency`: extraction right, the release or the traffic was on a frequency the corpus does not record (ground,
+  apron). The real recordings are all tower frequency.
 - `engine_rule`: extraction right, the matrix is too strict.
+
+(Amended 2026-10-20 after the Milestone 1 feedback: `missing_info` was split into `missing_release` and
+`other_frequency`, so the report shows which false alarms the choice of extractor can change. No sheet had verdicts.)
 
 Sheet A (`data/labels/adjudication_A.csv`) has every row; sheet B (`adjudication_B.csv`) holds a fixed 30% of keys for a
 second person, chosen per key from a seeded hash so the overlap stays the same as more arms add alerts. Cohen's κ on the
-overlap. Non-`genuine` verdicts are false alarms; the four verdicts are the failure taxonomy. Re-generating the sheet
+overlap. Non-`genuine` verdicts are false alarms; the five verdicts are the failure taxonomy. Re-generating the sheet
 keeps existing verdicts (rows matched on the dedup key) and appends new alerts.
 
 ## 7. LLM judge (`atcdb/judge.py`)

@@ -173,7 +173,7 @@ def test_alert_keys_ignore_callsigns_and_warnings():
 def test_false_alarms_per_hour_use_verdicts_and_refuse_to_guess():
     rows = [_row([_c(2)], span=1800.0, rid=1), _row([_c(0), _c(3)], span=1800.0, rid=2), _row([], span=3600.0, rid=3),
             _row([_c(2)], span=3600.0, rid=4, incomplete=True)]
-    verdicts = {"1:RUNWAY:31:3": "parse_error", "2:RUNWAY:31:1": "genuine", "2:RUNWAY:31:4": "missing_info"}
+    verdicts = {"1:RUNWAY:31:3": "parse_error", "2:RUNWAY:31:1": "genuine", "2:RUNWAY:31:4": "missing_release"}
     units = false_alarm_units(rows, verdicts)
     assert units == [(1.0, 1800.0), (1.0, 1800.0), (0.0, 3600.0)]
     assert per_hour(units) == 1.0                  # two false alarms over two hours; the genuine one does not count
@@ -234,6 +234,14 @@ def test_read_verdicts_rejects_unknown_labels():
     assert read_verdicts([{"key": "k", "verdict": " Genuine "}, {"key": "j", "verdict": ""}]) == {"k": "genuine"}
     with pytest.raises(ValueError, match="verdict must be one of"):
         read_verdicts([{"key": "k", "verdict": "false"}])
+
+
+def test_verdicts_split_unheard_releases_by_frequency():
+    # a false alarm whose release was never spoken is told apart from one whose release went to a frequency we lack
+    assert read_verdicts([{"key": "k", "verdict": "missing_release"}, {"key": "j", "verdict": "other_frequency"}]) == \
+        {"k": "missing_release", "j": "other_frequency"}
+    with pytest.raises(ValueError, match="verdict must be one of"):
+        read_verdicts([{"key": "k", "verdict": "missing_info"}])
 
 
 def test_the_overlap_sheet_is_a_stable_share_that_hides_the_first_verdicts():

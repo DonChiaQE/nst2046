@@ -16,8 +16,10 @@ calls and a rough cost per arm and spends nothing.
 
 `adjudicate` pools every alert the arms raised on the negatives into data/labels/adjudication_A.csv (verdicts already
 given are kept) and writes the second adjudicator's overlap, adjudication_B.csv. Fill `verdict` with genuine,
-parse_error (the extraction was wrong), missing_info (extraction right, the release was never spoken) or engine_rule
-(extraction right, the matrix is too strict). Re-run it after new arms have run. `--kappa` reports agreement instead.
+parse_error (the extraction was wrong), missing_release (extraction right, the release was never spoken),
+other_frequency (extraction right, the release or the traffic was on a frequency the corpus does not record, such as
+ground or apron) or engine_rule (extraction right, the matrix is too strict). Re-run it after new arms have run.
+`--kappa` reports agreement instead.
 
 `sweep` re-folds every structured arm's stored events with the CROSS and LUAW timeouts set to each value and prints
 lenient recall and raw negative alerts per value. A finding only: engine.STALE_S is not changed.
