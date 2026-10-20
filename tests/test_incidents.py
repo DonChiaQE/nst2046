@@ -5,7 +5,6 @@ which is not redistributed, so its test reads the local corpus DB read-only and 
 rules-parser baseline (parse_rules v1, spec addendum A.7): these are findings the evaluation reports, not bugs to fix.
 """
 import contextlib
-import re
 import sqlite3
 from pathlib import Path
 
@@ -13,29 +12,12 @@ import pytest
 
 from atcdb import parse_rules
 from atcdb.engine import Conflict, State, apply
+from atcdb.incidents import load_ntsb_transcript
 from atcdb.parsing import Transmission
 from atcdb.replay import build_context, load_recording
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CORPUS = Path(__file__).resolve().parents[1] / "data" / "atc.sqlite"
-
-
-def load_ntsb_transcript(path: Path) -> list[tuple[str, Transmission]]:
-    """(time, transmission) for every on-frequency line. Intrafacility lines are controller-to-controller, not radio,
-    and are dropped; bracketed annotations ([indiscernible], [break in transmission]) are removed."""
-    out, last = [], ""
-    for line in path.read_text().splitlines():
-        if not line.strip() or line.startswith("#"):
-            continue
-        hhmm, ident, text = line.split("|", 2)
-        last = hhmm or last
-        if "[intrafacility]" in text:
-            continue
-        t = int(last[:2]) * 3600 + int(last[2:4]) * 60 + int(last[5:7])
-        role = "controller" if ident.startswith("AUS-") else "unknown" if ident == "UNK" else "pilot"
-        clean = re.sub(r"\s+", " ", re.sub(r"\[[^\]]*\]", " ", text)).strip().lower()
-        out.append((last, Transmission(id=len(out), transcript_id=len(out), text=clean, role=role, start_s=float(t))))
-    return out
 
 
 def fold_rules(txs: list[Transmission]) -> list[tuple[list[Conflict], int]]:
