@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Score the Claude parser against human event labels on the readback sheet's instructions.
+"""Score the rules parser and the Claude parser against human event labels on the readback sheet's instructions.
 
 The readback sheet (data/labels/readback_sheet_A.csv) came back labelled with each instruction's runway events
 (`land <three one> [csa one two three]`, `handoff <tower> [...]`, `noop`) instead of readback consistency. This script
 reads those labels as event labels for the 200 instruction transmissions, converts them to the event-sheet syntax of
-atcdb/event_labels.py, parses the same transmissions with the Claude parser (gold transcripts, `role` context, through
-the events cache) and scores the match. It is a supplementary parser check, not the Level 1 measure: the pairs are not a
+atcdb/event_labels.py, parses the same transmissions with each parser (gold transcripts, `role` context, through the
+events cache) and scores the match. The rules parser (`--model rules`) is free; the Claude models are billed on a cache
+miss. It is a supplementary parser check, not the Level 1 measure: the pairs are not a
 uniform sample, and most come from approach/radar recordings rather than the replayable tower recordings.
 
 Usage:
     python scripts/score_pair_events.py --labels ~/Downloads/readback_sheet_A.csv --dry-run
-    python scripts/score_pair_events.py --labels ~/Downloads/readback_sheet_A.csv [--model claude-sonnet-5] [--workers 8]
+    python scripts/score_pair_events.py --labels ~/Downloads/readback_sheet_A.csv [--model rules] [--workers 8]
 
 Writes data/labels/pair_events_A.csv (the converted labels) and data/eval/pair_events/<model>.jsonl (per-pair rows).
+`--model` is repeatable; without it, the rules parser and both Claude models are scored.
 """
 import argparse
 import csv
@@ -35,6 +37,11 @@ from atcdb.schema import connect  # noqa: E402
 
 LABEL_RE = re.compile(r"^(land|takeoff|luaw|cross|hold short|hold_short|handoff) <([^>]*)> \[([^\]]*)\]$")
 CONTEXT = "role"
+MODELS = ("rules", *parse_llm.MODELS)
+
+
+def parser_of(model: str) -> str:
+    return "rule" if model == "rules" else "llm"
 
 
 def convert_label(label: str) -> str:
@@ -129,8 +136,8 @@ def report(model: str, results: list[dict]) -> None:
     exact = sum(1 for r in results if not r["score"]["missed"] and not r["score"]["extra"])
     print(f"\n== {model} (context {CONTEXT}, gold transcripts, {len(results)} instructions) ==")
     print(f"transmissions with exactly the labelled events (kind + runway): {exact}/{len(results)}")
-    print(f"human noop -> Claude noop {noop['noop', 'noop']}, Claude event {noop['noop', 'event']}; "
-          f"human event -> Claude event {noop['event', 'event']}, Claude noop {noop['event', 'noop']}")
+    print(f"human noop -> parser noop {noop['noop', 'noop']}, parser event {noop['noop', 'event']}; "
+          f"human event -> parser event {noop['event', 'event']}, parser noop {noop['event', 'noop']}")
     print(f"{'kind':<12}{'TP':>5}{'FN':>5}{'FP':>5}{'recall':>9}{'precision':>11}")
     for k in sorted(set(tp) | set(fn) | set(fp)):
         rec = tp[k] / (tp[k] + fn[k]) if tp[k] + fn[k] else float("nan")
@@ -145,18 +152,18 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--labels", type=Path, required=True)
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
-    ap.add_argument("--model", action="append", choices=parse_llm.MODELS)
+    ap.add_argument("--model", action="append", choices=MODELS)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
-    models = args.model or list(parse_llm.MODELS)
+    models = args.model or list(MODELS)
 
     conn = connect(args.db)
     pairs = load_pairs(conn, args.labels)
     write_converted(pairs, ROOT / "data/labels/pair_events_A.csv")
     print(f"{len(pairs)} labelled instructions; converted labels in data/labels/pair_events_A.csv")
     if args.dry_run:
-        for m in models:
+        for m in (m for m in models if parser_of(m) == "llm"):
             prompts = [parse_llm.render_prompt(p["tx"], Context(mode=CONTEXT, role=p["tx"].role)) for p in pairs]
             print(f"{m}: about ${parse_llm.estimate_cost(m, prompts):.2f} if nothing is cached")
         return
@@ -164,7 +171,7 @@ def main() -> None:
     def one(model: str, p: dict) -> dict:
         c = connect(args.db)
         try:
-            pred = get_events(c, p["tx"], "llm", Context(mode=CONTEXT, role=p["tx"].role), model=model)
+            pred = get_events(c, p["tx"], parser_of(model), Context(mode=CONTEXT, role=p["tx"].role), model=model)
         finally:
             c.close()
         return {**p, "pred": pred, "score": score_pair(p["gold"], pred)}
@@ -178,7 +185,7 @@ def main() -> None:
             for r in results:
                 s = r["score"]
                 fh.write(json.dumps({"pair_id": r["pair_id"], "text": r["tx"].text, "human": r["cell"],
-                                     "claude": [describe(e) for e in r["pred"] if not isinstance(e, NoOp)],
+                                     "parsed": [describe(e) for e in r["pred"] if not isinstance(e, NoOp)],
                                      "missed": [describe(e) for e in s["missed"]],
                                      "extra": [describe(e) for e in s["extra"]]}) + "\n")
         report(model, results)
