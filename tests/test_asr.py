@@ -1,4 +1,9 @@
-from atcdb.asr import normalize_asr_text, run_asr
+from types import SimpleNamespace
+
+import numpy as np
+import soundfile as sf
+
+from atcdb.asr import hf_whisper_transcriber, normalize_asr_text, run_asr
 from atcdb.loader import load_enriched_csv
 from atcdb.schema import init_db
 
@@ -59,3 +64,62 @@ def test_run_asr_can_be_limited_to_some_recordings(tmp_path, fixture_csv):
                                        "JOIN transmissions x ON x.id = t.transmission_id WHERE t.kind = 'asr'")}
     assert done == {rid}
     assert run_asr(conn, "fake", "v1", fake_transcriber, project_root=tmp_path, split="train", recording_ids=[]) == 0
+
+
+# --- Whisper on the GPU (live demo spec, Section 5) --------------------------------------------------------------------
+
+class _Features:
+    def __init__(self, n):
+        self.n, self.moved = n, None
+
+    def to(self, device, dtype=None):
+        self.moved = (device, dtype)
+        return self
+
+
+class FakeProcessor:
+    """Stands in for WhisperProcessor: records the audio it was given and decodes token ids to a fixed text."""
+
+    def __init__(self, text):
+        self.text, self.audio = text, None
+
+    def __call__(self, audio, sampling_rate, return_tensors):
+        assert (sampling_rate, return_tensors) == (16000, "pt")
+        self.audio = audio
+        return SimpleNamespace(input_features=_Features(len(audio)))
+
+    def batch_decode(self, ids, skip_special_tokens):
+        assert skip_special_tokens
+        return [f" {self.text} "]
+
+
+class FakeModel:
+    dtype = "float16"
+
+    def __init__(self):
+        self.calls = []
+
+    def generate(self, features, **kwargs):
+        self.calls.append((features, kwargs))
+        return [[1, 2, 3]]
+
+
+def test_the_gpu_transcriber_resamples_to_16_khz_and_returns_the_transcriber_shape(tmp_path):
+    clip = tmp_path / "c.wav"
+    sf.write(clip, np.zeros(8000, dtype=np.float32), 8000)   # 1 s at 8 kHz, as the jacktol clips are
+    processor, model = FakeProcessor("CSA 123, runway 31, cleared to land."), FakeModel()
+    out = hf_whisper_transcriber(processor, model, device="mps")(clip)
+    assert len(processor.audio) == 16000 and processor.audio.dtype == np.float32
+    features, kwargs = model.calls[0]
+    assert features.moved == ("mps", "float16")
+    assert kwargs == {"num_beams": 1}   # no language argument: an English-only model rejects it
+    assert out == {"text": "CSA 123, runway 31, cleared to land.", "avg_logprob": None, "no_speech_prob": None, "words": []}
+    assert normalize_asr_text(out["text"]) == "csa one two three runway three one cleared to land"
+
+
+def test_the_gpu_transcriber_mixes_stereo_down_to_mono(tmp_path):
+    clip = tmp_path / "s.wav"
+    sf.write(clip, np.zeros((16000, 2), dtype=np.float32), 16000)
+    processor = FakeProcessor("x")
+    hf_whisper_transcriber(processor, FakeModel())(clip)
+    assert processor.audio.shape == (16000,)

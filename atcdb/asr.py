@@ -88,3 +88,53 @@ def make_faster_whisper_transcriber(model_dir: Path | str, device: str = "cpu", 
                 "words": words}
 
     return transcribe
+
+
+# --- Whisper on the GPU (live demo spec, Section 5) --------------------------------------------------------------------
+# faster-whisper (CTranslate2) has no Apple GPU backend: on this Mac it takes 7 to 10 s for a 2.8 s clip. The live app
+# runs the same fine-tuned model from its Hugging Face weights with transformers on PyTorch's `mps` device instead.
+
+HF_WHISPER_REPO = "jacktol/whisper-medium.en-fine-tuned-for-ATC"   # the weights behind the repo's CTranslate2 model
+WHISPER_RATE = 16000
+
+
+def load_hf_whisper(model_dir: Path | str, device: str = "mps"):
+    """(processor, model) for the Hugging Face Whisper weights in `model_dir`, in half precision on `device`."""
+    import torch  # imported lazily: heavy
+    from transformers import WhisperForConditionalGeneration, WhisperProcessor
+
+    processor = WhisperProcessor.from_pretrained(str(model_dir))
+    model = WhisperForConditionalGeneration.from_pretrained(str(model_dir), dtype=torch.float16).to(device).eval()
+    return processor, model
+
+
+def _mono_16k(audio, rate: int):
+    """Float32 mono samples at 16 kHz: channels averaged, other rates resampled by linear interpolation."""
+    import numpy as np
+
+    audio = np.asarray(audio, dtype=np.float32)
+    if audio.ndim > 1:
+        audio = audio.mean(axis=1)
+    if rate != WHISPER_RATE and len(audio):
+        n = int(round(len(audio) * WHISPER_RATE / rate))
+        audio = np.interp(np.arange(n) * (rate / WHISPER_RATE), np.arange(len(audio)), audio).astype(np.float32)
+    return audio
+
+
+def hf_whisper_transcriber(processor, model, device: str = "mps", num_beams: int = 1) -> Transcriber:
+    """Transcriber over a loaded Hugging Face Whisper model, with the same result keys as the faster-whisper one (the
+    scores it cannot give are None). No `language` argument: an English-only checkpoint rejects one. The length cap is
+    the checkpoint's own (`max_length` 448 tokens), far above a transmission."""
+    import soundfile as sf
+
+    def transcribe(clip_path: Path) -> dict:
+        import torch
+
+        samples, rate = sf.read(str(clip_path), dtype="float32")
+        features = processor(_mono_16k(samples, rate), sampling_rate=WHISPER_RATE, return_tensors="pt").input_features
+        with torch.inference_mode():
+            ids = model.generate(features.to(device, dtype=model.dtype), num_beams=num_beams)
+        text = processor.batch_decode(ids, skip_special_tokens=True)[0].strip()
+        return {"text": text, "avg_logprob": None, "no_speech_prob": None, "words": []}
+
+    return transcribe
