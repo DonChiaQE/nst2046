@@ -18,34 +18,18 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from atcdb import parse_llm, parse_rules  # noqa: E402
-from atcdb.engine import Handoff, NoOp, State, apply  # noqa: E402
-from atcdb.incidents import load_ntsb_transcript  # noqa: E402
+from atcdb.engine import Handoff, NoOp, State  # noqa: E402
+from atcdb.incidents import austin_lines, fold_window as fold  # noqa: E402
 from atcdb.parsing import KINDS  # noqa: E402
 from atcdb.replay import build_context, build_timeline, uncached_parses  # noqa: E402
 from atcdb.schema import connect  # noqa: E402
 
-AUSTIN = ROOT / "tests/fixtures/austin_dca23fa149.txt"
-AUSTIN_FROM = "0628:26"   # Spirit 1145's 18R departure; every earlier 18L departure has already been sent to departure
 PRAGUE = 528              # Air France 198R crossing 13, then CSA 38W cleared to land 13 (spec addendum A.3.9)
 
 
 def austin() -> tuple[list[str], list]:
-    rows = load_ntsb_transcript(AUSTIN)
-    k = next(i for i, (hhmm, _) in enumerate(rows) if hhmm == AUSTIN_FROM)
-    return [hhmm for hhmm, _ in rows[k:]], [tx for _, tx in rows[k:]]
-
-
-def fold(txs: list, parse) -> list[tuple]:
-    """(tx, events, conflicts) per transmission, folding as build_timeline does but without the events cache."""
-    state, out = State(), []
-    for k, tx in enumerate(txs):
-        events = parse(tx, build_context("window", tx, txs[:k], state))
-        conflicts = []
-        for e in events:
-            state, new = apply(state, e)
-            conflicts.extend(new)
-        out.append((tx, events, conflicts))
-    return out
+    rows = austin_lines()
+    return [hhmm for hhmm, _ in rows], [tx for _, tx in rows]
 
 
 def describe(e) -> str:

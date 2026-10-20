@@ -12,7 +12,7 @@ import pytest
 
 from atcdb import parse_rules
 from atcdb.engine import Conflict, State, apply
-from atcdb.incidents import load_ntsb_transcript
+from atcdb.incidents import AUSTIN_FROM, austin_lines, fold_window, load_ntsb_transcript
 from atcdb.parsing import Transmission
 from atcdb.replay import build_context, load_recording
 
@@ -54,6 +54,14 @@ def test_austin_rules_baseline():
     hhmm, c = runway[-1]
     assert (hhmm, c.severity, c.callsigns, c.basis) == ("0639:34", "warning", ("", "southwest seven zero eight"),
                                                         "icao-4444-7.10.1")
+
+
+def test_the_austin_scenario_starts_at_spirits_departure_and_folds_like_the_rules_baseline():
+    rows = austin_lines()
+    assert (rows[0][0], rows[-1][0], len(rows)) == (AUSTIN_FROM, "0642:14", 32)
+    folded = fold_window([tx for _, tx in rows], parse_rules.parse)
+    raised = [(hhmm, c.severity) for (hhmm, _), (_, _, cs) in zip(rows, folded) for c in cs if c.type == "RUNWAY"]
+    assert raised == [("0639:34", "warning")]   # as from the full transcript: late, and capped at warning
 
 
 @pytest.mark.skipif(not CORPUS.exists(), reason="corpus DB not present (UWB-ATCC is not redistributed)")
