@@ -1,0 +1,550 @@
+row_id,transmission_id,recording_id,role,context,text,clip_path,events,notes
+1,1432,962,controller,"[controller] csa five three six runway one three cleared for takeoff wind zero five zero degrees five knots
+[pilot] go runway one three csa five three si",csa five alfa juliett line up runway one three,data/jacktol-atc/clips/test/test_01431.wav,,
+2,2834,1649,controller,"[pilot] yne tower lot five two seven final three one
+[controller] lot five two seven ruzyne tower",runway three one cleared to land wind zero six zero degrees and six knots,data/jacktol-atc/clips/test/test_02833.wav,,
+3,1570,329,controller,"[pilot] ruzyne tower good morning beline seven zero victor
+[controller] beline seven zero victor good morn
+[pilot] there s not on a we request start your frequency no response on to the free or grou",yes on this frequency,data/jacktol-atc/clips/test/test_01569.wav,,
+4,150,141,controller,[pilot] ruzyne tower csa nine seven five visual approach runway one,csa nine seven five,data/jacktol-atc/clips/test/test_00149.wav,,
+5,888,716,pilot,"[controller] csa six two two line up runway three one and wait you will be number two for departure number one atr romeo interesction
+[pilot] ok line up runway three one and number two csa six two two
+[controller] csa seven nine zero line up runway three one number one",ok line up runway three one csa seven nine,data/jacktol-atc/clips/test/test_00887.wav,,
+6,1809,1238,pilot,"[pilot] line up runway three one hotel
+[controller] mike sierra four
+[controller] austrian seven zero six clear to cross two two zero four
+[pilot] affirm cross runway two two",crossing two two seven zero six papa,data/jacktol-atc/clips/test/test_01808.wav,,
+7,1740,210,pilot,"[controller] sky travel nine five juliett contact ruzyne ground one two one decimal nine
+[pilot] one two one nine sky travel nine five juliett
+[mixed] csa six papa juliett runway one three cleared for takeoff wind zero five zero degrees four knots cleared for takeoff one three csa six
+[pilot] papa charlie",ruzyne tower csa seven e,data/jacktol-atc/clips/test/test_01739.wav,,
+8,1504,1083,controller,"[controller] aero flot one four one contact ground one two nine bye
+[pilot] one two nine aero flot",csa four nine two runway three one cleared for takeoff wind one eight zero degrees three knots,data/jacktol-atc/clips/test/test_01503.wav,,
+9,1072,840,controller,,csa eight zero three runway one three clear to land wind three six zero degrees seven knots,data/jacktol-atc/clips/test/test_01071.wav,,
+10,1727,1198,pilot,[controller] csa four eight one contact ruzyne ground one two one decimal nine,one decimal nine csa four eight one,data/jacktol-atc/clips/test/test_01726.wav,,
+11,1302,141,pilot,"[pilot] ruzyne tower csa nine seven five visual approach runway one
+[controller] csa nine seven five
+[controller] csa seven zero two runway one three cleared for takeoff wind zero six zero degrees",runway one three cleared for,data/jacktol-atc/clips/test/test_01301.wav,,
+12,2055,242,controller,"[pilot] one two one decimal nine csa five
+[pilot] ruzyne tower csa five victor papa ils three one
+[controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one
+[pilot] reducing speed one fifty csa five victor papa",csa nine six one runway three one cleared to land wind one six zero degrees five knots,data/jacktol-atc/clips/test/test_02054.wav,,
+13,662,555,pilot,[controller] seven seven two tower,reaching,data/jacktol-atc/clips/test/test_00661.wav,,
+14,1800,528,pilot,"[controller] csa three eight whiskey runway one three cleared to land wind zero three zero degrees seven knots expedite vacating
+[pilot] cleared to land one three csa three eight whiskey and will expedite to
+[controller] air france one nine eight romeo to hold short of runway two four
+[pilot] hold short to runway two four air france one nine eight romeo",ruzyne tower csa seven three charlie ils,data/jacktol-atc/clips/test/test_01799.wav,,
+15,426,380,pilot,"[pilot] tower csa eight echo charlie ils three one correction on
+[controller] csa eight echo charlie continu",continue approach,data/jacktol-atc/clips/test/test_00425.wav,,
+16,986,111,pilot,"[controller] five nine one roger so atc clearance to
+[controller] baltu two bravo departure
+[controller] six two three information o
+[controller] zero four zero zero",roger will check information,data/jacktol-atc/clips/test/test_00985.wav,,
+17,2837,1650,pilot,"[pilot] clear to land runway three one csa nine two one
+[pilot] tower jobair zero five papa on i
+[controller] hello
+[controller] three five delta taxi via golf bravo zulu alfa va",golf bravo zulu alfa number three csa three five delta,data/jacktol-atc/clips/test/test_02836.wav,,
+18,2813,242,controller,"[pilot] ruzyne tower aero flot
+[pilot] four two",aero flot one four two ruzyne tower,data/jacktol-atc/clips/test/test_02812.wav,,
+19,304,280,mixed,"[pilot] rwy three one cleared for takeoff csa five one six
+[pilot] ruzyne tower c
+[controller] csa eight zero five ruzyne tower
+[mixed] csa seven three zero ready yeah we are ready csa seven three zero",line up runway three one lining up runway three one csa seven three zero,data/jacktol-atc/clips/test/test_00303.wav,,
+20,2215,1425,controller,,csa seven two seven contact ground one two one nine,data/jacktol-atc/clips/test/test_02214.wav,,
+21,867,698,pilot,,ruzyne tower good evening el al five two two,data/jacktol-atc/clips/test/test_00866.wav,,
+22,1881,1041,pilot,"[pilot] request taxi csa two eight six
+[controller] csa two eight six taxi bravo delta hold",bravo delta,data/jacktol-atc/clips/test/test_01880.wav,,
+23,2563,555,pilot,"[controller] we will try it
+[controller] csa seven seven two line up runway three one
+[pilot] seven eight two two
+[controller] affirm",lining up runway two one runway,data/jacktol-atc/clips/test/test_02562.wav,,
+24,2129,45,pilot,"[controller] csa seven five one runway one three clear to land wind zero six zero degrees six knots
+[mixed] land one three csa seven five one camber three five two seven to the left to ground one two one decimal nine
+[pilot] one two one decimal nine camber three five
+[pilot] lot five two fi",established runway one three eight mile,data/jacktol-atc/clips/test/test_02128.wav,,
+25,454,123,controller,"[controller] so
+[controller] qnh is one zero one eight wind is zero six zero five knots standby
+[pilot] traffic on runway one three in sight
+[pilot] qnh one zero one eight and standing",now,data/jacktol-atc/clips/test/test_00453.wav,,
+26,1089,1,pilot,[controller] air france one seven eight two contact ruzyne ground one two one decimal nine good bye,one two one nine one seven eight two bye bye,data/jacktol-atc/clips/test/test_01088.wav,,
+27,314,288,pilot,"[controller] swedestar zero five one contact ruzyne ground one two one decimal nine bye bye
+[pilot] one two one
+[controller] one two one nine",one two one nine swedestar zero five one,data/jacktol-atc/clips/test/test_00313.wav,,
+28,2695,1436,pilot,[controller] csa nine zero four initial climb to three thousand feet,ok we will climb initially three thousand feet csa nine zero four,data/jacktol-atc/clips/test/test_02694.wav,,
+29,251,232,pilot,"[pilot] start one engine and
+[controller] yangtze river seven four six ze zero push back crew knows how to push you out yet
+[pilot] understand pushback fro
+[pilot] echo",seven,data/jacktol-atc/clips/test/test_00250.wav,,
+30,2487,549,controller,,easy six six yankee just follow info approaching traffic still one and half minute to touch down and call you behind,data/jacktol-atc/clips/test/test_02486.wav,,
+31,1190,913,pilot,,tower good morning sky travel one one nine three we re established,data/jacktol-atc/clips/test/test_01189.wav,,
+32,1698,1182,pilot,"[controller] csa seven two six line up runway one three
+[pilot] up runway one three csa seven two
+[pilot] zyne tower csa five three seven established ils approach runway one three
+[controller] csa five three seven no speed limit",no speed limit csa,data/jacktol-atc/clips/test/test_01697.wav,,
+33,1956,1309,controller,"[controller] csa nine two zero runway one three cleared for takeoff wind one eight zero degrees three knots
+[pilot] cleared for takeoff one three csa nine three zero
+[pilot] ruzyne tower csa nine six seven",csa nine six seven ruzyne tower continue approach,data/jacktol-atc/clips/test/test_01955.wav,,
+34,315,289,mixed,"[controller] southern air eight five zero zero ready for immediate
+[pilot] yes ready for immediate sunair eight five zero zero",southern air eight five zero zero roger line up runway three one line up and wait three one sunair eight five zero zero,data/jacktol-atc/clips/test/test_00314.wav,,
+35,1296,123,controller,"[pilot] two zero zero information romeo one zero
+[pilot] one nine
+[controller] krystof zero one roger there is now departing traffic boeing seven three seven runway one three
+[controller] so",qnh is one zero one eight wind is zero six zero five knots standby,data/jacktol-atc/clips/test/test_01295.wav,,
+36,1597,1083,pilot,[controller] aero flot one four one contact ground one two nine bye,one two nine aero flot,data/jacktol-atc/clips/test/test_01596.wav,,
+37,1124,870,controller,"[pilot] lining up runway one three lot five two si
+[pilot] ruzyne tower from csa seven zero two
+[pilot] we are
+[pilot] shortly ready for",csa five zero nine papa ground,data/jacktol-atc/clips/test/test_01123.wav,,
+38,2174,548,pilot,"[controller] lufthansa four tango papa runway one three clear to land wind zero four zero degrees six knots
+[pilot] lufthansa four tango papa clear to land one three
+[mixed] csa five mike bravo left lima and ground one two one decimal nine left lima one one one two one zero
+[controller] one two one nine",sorry one two one nine,data/jacktol-atc/clips/test/test_02173.wav,,
+39,2291,1452,controller,"[controller] csa eight eight one runway one three cleared to land wind zero one zero degrees four knots
+[pilot] ay one three cleared to land csa eight eight one",csa three seven bravo ground one two one decimal nine,data/jacktol-atc/clips/test/test_02290.wav,,
+40,634,537,pilot,"[mixed] sky travel one zero one zero confirm ready for departure we are ready for departure one zero one zero
+[controller] sky travel one zero one zero roger line up runway three one and wait
+[pilot] we line up and wait three one sky travel one zero one zero",ruzyne tower lufthan,data/jacktol-atc/clips/test/test_00633.wav,,
+41,1938,369,pilot,"[pilot] tower good morning finn air seven one five whiskey ils three one
+[controller] good morning finn air seven one five whiskey ruzyne tower continue approach reduce speed one five zero knots until four miles final traffic
+[pilot] continue approach speed one five zero utnil four finn air",ruzyne tower csa nine seven seven establish localizer three,data/jacktol-atc/clips/test/test_01937.wav,,
+42,2855,1656,controller,"[controller] lady rasim three one three runway one three cleared for takeoff wind zero six zero five knots
+[pilot] runway one three
+[pilot] tower csa zero two seven establish ils one three",csa zero two seven roger runway one three clear to land wind zero six zero five knots,data/jacktol-atc/clips/test/test_02854.wav,,
+43,1611,329,controller,"[pilot] we will check papa
+[pilot] on board and startup approved to brusseles runway three one baltu two bravo
+[pilot] squawk one four zero two and we are none onl
+[pilot] departure beline seven zero victor",roger we ll give you,data/jacktol-atc/clips/test/test_01610.wav,,
+44,1833,133,pilot,"[controller] austrian seven one zero papa runway one three cleared for takeoff wind zero five zero degrees five knots
+[pilot] cleared for takeoff one three austrian seven zero one papa
+[mixed] affirm bye bye",ruzyne tower three one three holding position runway one three taxiway golf,data/jacktol-atc/clips/test/test_01832.wav,,
+45,893,304,pilot,"[pilot] and tower sky travel one one nine two
+[controller] sky travel one one zero two",good morning can you just confirm expect,data/jacktol-atc/clips/test/test_00892.wav,,
+46,219,204,pilot,"[pilot] four nine eight yankee
+[mixed] good evening swiss four nine eight yankee ruzyne tower runway one three cleared to land wind zero three zero degrees six knots cleared to land one three",tower good afternoon turkish one seven seven zero on lima to holding point runway two four,data/jacktol-atc/clips/test/test_00218.wav,,
+47,1927,528,pilot,"[controller] csa seven three charlie continue approach speed one sixty to four
+[pilot] one sixty till
+[pilot] csa seven three
+[pilot] speed bird eight",to hold delta fully ready for an immediate if cleared,data/jacktol-atc/clips/test/test_01926.wav,,
+48,58,56,mixed,"[pilot] ruzyne tower csa
+[pilot] nine zero we are ready",csa six nine zero ruzyne tower line up runway one three cleared for takeoff wind one five zero degrees four knots lining up and cleared for,data/jacktol-atc/clips/test/test_00057.wav,,
+49,298,274,controller,"[controller] stefanik tower pekne popoludnie tatra six one three establish ils three one
+[pilot] tatra six one three dobre popoludnie stefanik tower runway three one cleared to land wind three zero zero degrees one nine knots maximum three three knots
+[controller] runway three one clear to land tatra six one three
+[pilot] and after landing vacate via delta",after landing via delta six one three,data/jacktol-atc/clips/test/test_00297.wav,,
+50,1473,1066,pilot,,tower csa nine one six holding point three one ready for depar,data/jacktol-atc/clips/test/test_01472.wav,,
+51,2409,1279,controller,"[pilot] cleared for takeoff runway three one
+[mixed] tower csa seven whiskey india approaching holding three one ready csa seven whiskey india tower
+[mixed] to confirm cleared for takeoff runway three one csa seven seven two affirm clear takeoff three one wind one seven zero degrees five knots
+[mixed] calibra six whiskey via fully ready via r",finn air seven one six whiskey tower good morning roger use runway two two hold short of three one,data/jacktol-atc/clips/test/test_02408.wav,,
+52,2241,1436,pilot,"[controller] csa nine zero four initial climb to three thousand feet
+[pilot] ok we will climb initially three thousand feet csa nine zero four
+[controller] csa nine zero four runway one three cleared for takeoff wind zero five zero degrees four knots",csa nine zero four,data/jacktol-atc/clips/test/test_02240.wav,,
+53,1,1,controller,"[controller] lufthansa eight kilo alfa runway three one cleared for takeoff wind two one zero degrees five knots good by
+[pilot] eight kilo alfa runway three one
+[pilot] ruzyne tower
+[pilot] german wings seven papa we are on dme three one",german wing seven papa ruzyne tower hello again roger,data/jacktol-atc/clips/test/test_00000.wav,,
+54,2177,1410,controller,"[controller] csa two eight whiskey runway three one cleared for takeoff wind two one zero degrees six knots
+[pilot] runway three one cleared for takeoff csa two whiskey
+[pilot] good morning nor shuttle one five one four with you established on the",nor shuttle one five one four ruzyne tower good afternoon roger,data/jacktol-atc/clips/test/test_02176.wav,,
+55,1764,242,pilot,"[controller] csa five seven three contact ruzyne ground one two one decimal nine
+[pilot] one two one decimal nine csa five
+[pilot] ruzyne tower csa five victor papa ils three one
+[controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one",reducing speed one fifty csa five victor papa,data/jacktol-atc/clips/test/test_01763.wav,,
+56,1198,918,controller,"[controller] csa six one eight ruzyne tower dobre odpoledne taxi via runway two four and hold short of runway one three
+[pilot] short of runway one three csa six one eight lin line up runway two
+[pilot] ruzyne tower csa two mike delta
+[controller] csa two mike delta ruzyne tower",csa five six zero runway one three cleared for takeoff wind zero six zero degrees six kdnots,data/jacktol-atc/clips/test/test_01197.wav,,
+57,765,289,controller,,southern air eight five zero zero ready for immediate,data/jacktol-atc/clips/test/test_00764.wav,,
+58,1177,900,controller,[mixed] swiss one two four alfa contact ground one two one nine bye bye bye swiss one two four alfa,lufthansa nine lima charlie traffic information there is helicopter flyin,data/jacktol-atc/clips/test/test_01176.wav,,
+59,220,205,pilot,,good evening sky travel one zero three seven,data/jacktol-atc/clips/test/test_00219.wav,,
+60,596,509,pilot,"[pilot] csa one zulu alfa ready for immediate
+[controller] csa one zulu alfa roger line up runway three one be ready",line up runway three one ready csa one zulu alfa,data/jacktol-atc/clips/test/test_00595.wav,,
+61,1996,913,pilot,"[pilot] tower good morning sky travel one one nine three we re established
+[pilot] to runway three one
+[controller] sky travel one one nine three tower good morning continue approach
+[pilot] tinue approach sky travel on",three,data/jacktol-atc/clips/test/test_01995.wav,,
+62,673,261,mixed,"[controller] bye bye
+[mixed] ruzyne tower csa zero two five ils one three csa zero two five continue approach
+[pilot] wilco
+[controller] air france one nine eight three i estimate two landings standby",standing bye air france one nine eight three r thank you,data/jacktol-atc/clips/test/test_00672.wav,,
+63,739,300,pilot,"[controller] zero one landing traffic now on the runway is crj seven can you see
+[pilot] traffic in sight zero one
+[controller] roger so cleared for approach heliport three wind is zero six zero seven knots report on the ground",cleared to land heliport three report on the ground,data/jacktol-atc/clips/test/test_00738.wav,,
+64,429,213,pilot,"[controller] kilo and lima
+[pilot] clear to taxi holding point runway three one
+[pilot] via kilo and lima sky travel one zero three four
+[pilot] ruzyne tower wizz air",five five six on the stand five two information november qnh one zero two three clear luton destination,data/jacktol-atc/clips/test/test_00428.wav,,
+65,1908,1286,controller,[controller] whiskey so take runway zero four,and contact ground one two one nine,data/jacktol-atc/clips/test/test_01907.wav,,
+66,1623,232,pilot,"[pilot] understand pushback fro
+[pilot] echo
+[pilot] seven
+[pilot] alfa approv",river seven four five,data/jacktol-atc/clips/test/test_01622.wav,,
+67,294,270,controller,"[controller] csa seven three two two line up runway one three
+[pilot] lining up run runway one three csa
+[pilot] csa five two zero call for sequence ready",csa five six zero ruzyne tower roger,data/jacktol-atc/clips/test/test_00293.wav,,
+68,266,245,pilot,"[pilot] holding short one three bline four zero victor
+[controller] turkish one seven six nine runway one three cleared to land wind zero three zero degrees two knots
+[pilot] cleared to land runway one three turkish one seven six nine
+[controller] csa four delta romeo taxi via runway two four and hold short of runway one three",taxi via runway two four hold short of runway one three csa four delta romeo,data/jacktol-atc/clips/test/test_00265.wav,,
+69,1140,878,controller,"[pilot] ruzyne tower opera jet three zero zero approaching holding point papa one three fully ready
+[controller] opera jet three zero zero roger s",so stop at the holding point runway one three there is one more landing traffic runway three one expect five minutes delay,data/jacktol-atc/clips/test/test_01139.wav,,
+70,1803,1234,controller,,csa five zero five vacate via golf contact ruzyne ground one two one decimal nine,data/jacktol-atc/clips/test/test_01802.wav,,
+71,1747,1208,pilot,"[controller] lot five romeo whiskey ready for departure
+[pilot] we are ready any time",five romeo,data/jacktol-atc/clips/test/test_01746.wav,,
+72,331,304,pilot,"[controller] sky travel one one zero two
+[pilot] good morning can you just confirm expect
+[pilot] parture clearance we should have
+[controller] so now airport is closed expect the earliest departure at zero three zero zero",ok zero three zero zero and ex,data/jacktol-atc/clips/test/test_00330.wav,,
+73,1062,375,pilot,"[pilot] praha good day three whiskey golf runway one three
+[controller] good evening easy eight three whiskey golf ruzyne tower runway one three cleared to la
+[controller] ind two one zero degrees tw",cleared to la,data/jacktol-atc/clips/test/test_01061.wav,,
+74,2616,1552,mixed,"[controller] csa five zero four ruzyne tower stop at holding point
+[pilot] stop at holding point
+[pilot] tower good morning lufthansa two juliett whiskey ready
+[controller] good morning lufthansa two juliett whiskey ruzyne tower",smart lynx one zero seven papa runway three one cleared to land wind calm cleared to land wind calm smart lynx one zero seven papa thank you,data/jacktol-atc/clips/test/test_02615.wav,,
+75,1025,812,controller,"[pilot] oscar kilo hotel uniform u
+[controller] oscar kilo hotel uniform u
+[pilot] oscar kilo hotel uniform u zephyr
+[pilot] tower hello swiss four eight seven november approaching holding point three one and read",good morning break shamrock six four five now line up runway three one and cleared for takeoff wind one two zero degrees five knots,data/jacktol-atc/clips/test/test_01024.wav,,
+76,393,352,mixed,"[controller] csa five zero five continue approach
+[controller] csa seven four three continue golf hold short of lima and one two one nine
+[pilot] via golf hold short of lima one two one nine
+[controller] austrian seven one one zulu runway one",zero eight zero degrees six knots clear to one three land austrian seven one zulu,data/jacktol-atc/clips/test/test_00392.wav,,
+77,2553,433,controller,"[controller] hello wizz air four charlie bravo ruzyne tower continue approach
+[pilot] continue approach wizz air four charlie bravo
+[controller] easy three eight papa golf we are ready for depart
+[controller] easy three eight papa golf now expect landing",expect departure in two minutes,data/jacktol-atc/clips/test/test_02552.wav,,
+78,2463,1519,pilot,"[pilot] clear takeoff runway three one good day to you easy two five echo
+[pilot] tower klm five five tango ils three one
+[controller] klm five five tango tower continue approach speed one six zero until four miles final expect departure ahead
+[pilot] one sixty until four and continue approach klm five five tango roger tower hello britair nine zero two delta holding poin",three one ready,data/jacktol-atc/clips/test/test_02462.wav,,
+79,1896,1279,pilot,"[mixed] calibra six whiskey via fully ready via r
+[controller] finn air seven one six whiskey tower good morning roger use runway two two hold short of three one
+[pilot] use runway two two hold short of three one finn air seven one six
+[controller] wizz air four papa uniform line up runway three one and cleared for takeoff wind one eight zero degrees six knots",line up and takeoff runway three one wizz air four papa uniform,data/jacktol-atc/clips/test/test_01895.wav,,
+80,2619,1555,controller,"[controller] csa seven echo charlie runway one three clear to takeoff wind zero two zero degrees five knots
+[pilot] runway one three clear takeoff csa seven echo charlie
+[controller] channex eight seven papa romeo praha
+[pilot] tower hello channex ei",hello channex eight seven papa romeo ruzyne tower continue approach,data/jacktol-atc/clips/test/test_02618.wav,,
+81,2769,232,controller,"[controller] yes it will be all on taxiway zulu taxiway alfa is closed
+[pilot] all the way on taxi
+[mixed] yes still report ready for push back and you ready for copy your clearance affirm ready to clearance yangt
+[controller] roger yangtze river seven four six zero",startup si approved time three one cleared to shanghai runway three one artup one bravo departure squawk one four zero one,data/jacktol-atc/clips/test/test_02768.wav,,
+82,2295,528,pilot,"[pilot] eight romeo
+[controller] air france one nine eight romeo now expedite cross runway one three continue via delta to hold short of runway two four
+[pilot] thank you expedite and cross delta
+[mixed] air france one nine eight romeo cross runway one three cross runway one three",yeah runway one three air france one nine,data/jacktol-atc/clips/test/test_02294.wav,,
+83,2067,1362,controller,,csa nine seven eight ready,data/jacktol-atc/clips/test/test_02066.wav,,
+84,1021,716,controller,,csa six two two line up runway three one and wait you will be number two for departure number one atr romeo interesction,data/jacktol-atc/clips/test/test_01020.wav,,
+85,1613,360,controller,"[pilot] tower good beline three papa p on final i
+[pilot] three",beline three papa p tower good morning runway three one clear to land wind one seven zero degrees three knots,data/jacktol-atc/clips/test/test_01612.wav,,
+86,2394,261,mixed,"[pilot] three eight whiskey
+[controller] speed bird eight six one runway one three cleared for immediate takeoff wind zero two zero degrees nine knots
+[pilot] speed bird eight six one is ready
+[controller] bye bye",ruzyne tower csa zero two five ils one three csa zero two five continue approach,data/jacktol-atc/clips/test/test_02393.wav,,
+87,2104,1377,pilot,,tower good evening again bee line eight hotel sierra established ils one three,data/jacktol-atc/clips/test/test_02103.wav,,
+88,2924,1682,controller,,lufthansa nine kilo yankee contact ground one two one decimal nine good bye,data/jacktol-atc/clips/test/test_02923.wav,,
+89,1125,716,pilot,[controller] csa six two two line up runway three one and wait you will be number two for departure number one atr romeo interesction,ok line up runway three one and number two csa six two two,data/jacktol-atc/clips/test/test_01124.wav,,
+90,2029,1346,pilot,,ruzyne tower cs,data/jacktol-atc/clips/test/test_02028.wav,,
+91,758,563,controller,"[controller] one two two bravo departure squawk one four zero seven information november time
+[pilot] lufthansa six mike alf
+[pilot] tower again hotel romeo november five one
+[pilot] we are ready for",h romeo november five one one roger,data/jacktol-atc/clips/test/test_00757.wav,,
+92,1024,23,controller,"[pilot] one two one decimal nine csa eight tango
+[controller] cimber three five two three runway three one cleared to land wind one nine zero degrees six knots
+[pilot] runway three one cleared to land cimber three five two three
+[pilot] morning mike echo mike india eleven and half miles fin",hello mike echo mike lima india ruzyne tower continue approach deaparture ahead airbus three two zero,data/jacktol-atc/clips/test/test_01023.wav,,
+93,570,490,pilot,"[controller] lufthansa nine juliett charlie hello tower continue approach
+[controller] lufthansa four kilo hotel traffic information low vfr
+[controller] helicopter approaching airfield from the north not crossing axis of runway three one
+[controller] and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day",seven kilo hotel runway,data/jacktol-atc/clips/test/test_00569.wav,,
+94,592,505,controller,[pilot] tower eight five zero zero ils runway three one,southern air eight five zero zero tower good morning continue approach,data/jacktol-atc/clips/test/test_00591.wav,,
+95,580,469,controller,[pilot] qality nine one romeo request taxi,qality nine one romeo,data/jacktol-atc/clips/test/test_00579.wav,,
+96,129,122,pilot,"[pilot] tower swiss four seven three charlie we are ready for departure from romeo
+[controller] swiss four seven three charlie ruzyne tower good afternoon roger and squawk on please
+[pilot] is on
+[mixed] nor shuttle one five one four contact ruzyne ground one two one decimal nine good bye ground one two one nine nor shuttle one five one four",and we expect to line up via runway two two,data/jacktol-atc/clips/test/test_00128.wav,,
+97,2556,951,controller,"[controller] november two six nine six sierra vacate to the right via papa and contact ruzyne ground one two one decimal nine and squawk on until gate
+[pilot] right to gate vacate papa go to ground one two one decimal nine two six nine six sierra good day",good day,data/jacktol-atc/clips/test/test_02555.wav,,
+98,1721,1195,mixed,[mixed] csa six bravo charlie contact ruzyne ground one two one decimal nine one two one decimal nine six bravo charlie,lot five romeo whiskey runway three one cleared for takeoff wind one nine zero degrees four knots bye cleared for takeoff run runway three one,data/jacktol-atc/clips/test/test_01720.wav,,
+99,233,216,pilot,"[controller] camber three five two five contact ground one two one decimal nine good bye
+[pilot] one two one nine camber three five two five by
+[controller] csa four nine three runway three one clear to land wind zero seven zero degrees two knot
+[pilot] clear to land runway",three one csa four nine three,data/jacktol-atc/clips/test/test_00232.wav,,
+100,293,269,controller,[pilot] ruzyne tower csa one nine six two on papa ready,csa one nine six two ruzyne tower roger,data/jacktol-atc/clips/test/test_00292.wav,,
+101,401,359,pilot,"[controller] air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots
+[pilot] clear takeoff runway one three air france one nine eight romeo
+[controller] izrael two five to the left and the ground one two one point nine",aero flot one four eight nine zero two five,data/jacktol-atc/clips/test/test_00400.wav,,
+102,455,242,controller,"[pilot] ruzyne tower aero flot
+[pilot] four two
+[controller] aero flot one four two ruzyne tower",swiss one two five victor runway three one cleared for immediate takeoff wind one seven zero degrees four knots traffic two and half miles final,data/jacktol-atc/clips/test/test_00454.wav,,
+103,141,133,controller,,austrian seven one zero papa runway one three cleared for takeoff wind zero five zero degrees five knots,data/jacktol-atc/clips/test/test_00140.wav,,
+104,2388,1493,controller,[pilot] ruzyne tower csa nine seven nine establish ils three o,nine ruzyne tower,data/jacktol-atc/clips/test/test_02387.wav,,
+105,2284,1449,controller,"[pilot] cleared for takeoff runway three one austrian seven zero eight papa
+[pilot] oscar kilo hotel
+[pilot] praha hello wizz air four quebec sierra on lima approaching ho
+[pilot] ready for dep",wizz air four quebec sierra roger landing traffic standby,data/jacktol-atc/clips/test/test_02283.wav,,
+106,1448,756,controller,"[pilot] one nine csa five victor papa
+[controller] britair five nine zero bravo runway three one clear to land wind one eight zero degrees five knots
+[pilot] clear to land three one britair five nine zer
+[pilot] tower good morning speed bird four alfa charlie fully established i",hello speed bird four alfa charlie ruzyne tower continue approach reduce speed one five zero knots until four miles final departure ahead atr,data/jacktol-atc/clips/test/test_01447.wav,,
+107,1848,1097,controller,"[pilot] so we would be ready for start
+[pilot] we have information november and
+[pilot] is from
+[controller] ok sir so hotel lima romeo november five one one startup is a",time four,data/jacktol-atc/clips/test/test_01847.wav,,
+108,962,771,controller,"[controller] hotel foxtrot three contact ruzyne ground one two one decimal nine good bye
+[pilot] one two one nine good day",csa three delta zulu runway three one clear to takeoff wind one zero zero degrees and five knots,data/jacktol-atc/clips/test/test_00961.wav,,
+109,1845,1256,controller,"[controller] swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots
+[pilot] cleared takeoff runway three one swiss four eight
+[pilot] ruzyne tower czech holiday seven four two zero ready",czech holiday seven four two zero roger,data/jacktol-atc/clips/test/test_01844.wav,,
+110,724,602,pilot,"[pilot] tower air france two four eight two establish ils o
+[controller] air france two four eight two two four eight two continue",air france two fo,data/jacktol-atc/clips/test/test_00723.wav,,
+111,658,553,controller,"[controller] csa eight two seven speed one sixty or less departure ahead
+[pilot] reducing speed one sixty or less csa
+[mixed] austrian seven zero three runway three one clear to land wind two zero zero degrees three knots clear land three one austrian seven zero three",lufthansa two juliett whiskey behind landing traffic short final dash line up runway three one behind,data/jacktol-atc/clips/test/test_00657.wav,,
+112,1546,602,controller,"[controller] air france two four eight two two four eight two continue
+[pilot] air france two fo
+[pilot] tower good day lufthansa nine
+[controller] lufthansa nine whiskey tango perfect now line up runway one three",aero flot one four three expedite to the left and vacate via runway two two,data/jacktol-atc/clips/test/test_01545.wav,,
+113,958,698,controller,"[controller] good evening el al five
+[pilot] we are ready
+[pilot] for clearance we have information lima
+[controller] el al five two two startup approved time four five",clearance to telaviv via voz one hotel departure squawk alfa,data/jacktol-atc/clips/test/test_00957.wav,,
+114,1630,1097,pilot,"[pilot] we are cleared destination runway three one baltu two
+[pilot] departure
+[pilot] the squawk is
+[pilot] two one",romeo november five one o,data/jacktol-atc/clips/test/test_01629.wav,,
+115,2721,520,pilot,[controller] swedestar zero five one runway three one cleared to land wind zero nine zero degrees five kno,runway three one cleared to land swedestar zero five o,data/jacktol-atc/clips/test/test_02720.wav,,
+116,1301,978,pilot,"[pilot] tower csa four two zero ready from delta
+[controller] csa four two zero ruzyne tower line up runway one three cleared for takeoff wind one seven zero degrees one knot
+[pilot] line up and clear takeoff runway one three from delta csa four two zero",ruzyne tower csa four zero six d,data/jacktol-atc/clips/test/test_01300.wav,,
+117,283,261,pilot,"[controller] speed bird eight six one runway one three cleared for immediate takeoff wind zero two zero degrees nine knots
+[pilot] speed bird eight six one is ready
+[controller] bye bye
+[mixed] ruzyne tower csa zero two five ils one three csa zero two five continue approach",wilco,data/jacktol-atc/clips/test/test_00282.wav,,
+118,2444,1509,pilot,"[pilot] alfa juliett established ils one three
+[controller] csa seven alfa juliett continue approach
+[pilot] continue approach csa seven alfa juliett
+[controller] austrian seven one zulu left lima and ground one two one nine",left on lima one two one nine austrian seven one one zulu,data/jacktol-atc/clips/test/test_02443.wav,,
+119,351,322,pilot,"[pilot] tower csa eight mike three established ils three one reducing one sixty
+[mixed] csa eight mike three eight mike three ruzyne tower continue approach departure ahead airbus three two zero continue approach csa eight mike three
+[controller] speed bird four alfa charlie contact ruzyne ground one two one decimal nine good bye",one two one nine speed bird four alfa charlie bye bye,data/jacktol-atc/clips/test/test_00350.wav,,
+120,1743,1206,pilot,[controller] n golf alfa runway three one cleared for takeoff wind one six zero degrees three knots,cleared for takeoff runway three one,data/jacktol-atc/clips/test/test_01742.wav,,
+121,1219,931,pilot,,tower good evening,data/jacktol-atc/clips/test/test_01218.wav,,
+122,2437,380,pilot,"[pilot] tower csa eight echo charlie ils three one correction on
+[controller] csa eight echo charlie continu
+[pilot] continue approach",aero flot one four four fully ready,data/jacktol-atc/clips/test/test_02436.wav,,
+123,2445,1510,pilot,"[controller] swiss four eight alfa november roger hello again ok line up runway three one
+[pilot] line up three one swiss
+[pilot] tower good afternoon calibra five two
+[controller] calibra five two tango",roger direct tango,data/jacktol-atc/clips/test/test_02444.wav,,
+124,59,57,pilot,[pilot] vacating runway two zero changing ground one two one nine,changing ground runway vacated,data/jacktol-atc/clips/test/test_00058.wav,,
+125,921,740,controller,,britair nine zero four charlie line up runway one three,data/jacktol-atc/clips/test/test_00920.wav,,
+126,2656,1135,controller,"[pilot] tower hello nor shuttle one five zero three
+[controller] nor shuttle one five zero three hello ruzyne tower are you ready
+[pilot] we",nor shuttle one five zero three line up runway three one,data/jacktol-atc/clips/test/test_02655.wav,,
+127,663,556,controller,"[controller] lufthansa three kilo alfa good evening continue approach number three
+[controller] csa seven alfa juliett reduce one five zero
+[pilot] reducing one five zero csa seven alfa juliett
+[pilot] air france two eight victor we are for immediate departure",ok call you behind the next landing,data/jacktol-atc/clips/test/test_00662.wav,,
+128,1369,111,pilot,"[controller] csa three five delta runway three one cleared to land wind calm
+[pilot] cleared for runway three one csa three five delta
+[pilot] november five one one we are reaching five thou
+[mixed] call departure one two zero decimal five two five bye bye two zero five two five",ruzyne tower csa nine two one established ils runway three on,data/jacktol-atc/clips/test/test_01368.wav,,
+129,539,469,controller,"[pilot] qality nine one romeo request taxi
+[controller] qality nine one romeo
+[controller] axi to ho",point runway one three via zulu bravo and delta,data/jacktol-atc/clips/test/test_00538.wav,,
+130,2621,737,pilot,"[controller] csa nine seven four runway one three cleared for takeoff wind zero three zero degrees four knots
+[pilot] runway one three cleared for takeoff csa nine seven four
+[pilot] sa five three",holding point runway one,data/jacktol-atc/clips/test/test_02620.wav,,
+131,1574,1119,pilot,"[controller] camber three five two three vacate via golf contact ruzyne ground one two one decimal nine good bye
+[pilot] one two one nine for ground three five two four three five two three bye
+[controller] air france one three eight three runway three one cleared for takeoff wind one eight zero degrees five knots traffic four miles final",cleared for takeoff three one air france one three eight three,data/jacktol-atc/clips/test/test_01573.wav,,
+132,2554,1552,pilot,"[pilot] ruzyne tower csa five
+[controller] csa five zero four ruzyne tower stop at holding point
+[pilot] stop at holding point",tower good morning lufthansa two juliett whiskey ready,data/jacktol-atc/clips/test/test_02553.wav,,
+133,2645,216,pilot,"[controller] csa four nine three runway three one clear to land wind zero seven zero degrees two knot
+[pilot] clear to land runway
+[pilot] three one csa four nine three
+[controller] german wings seven hotel behind landing traffic short final boeing seven three seven line up runway three one behind",german wings seven hotel behind landing,data/jacktol-atc/clips/test/test_02644.wav,,
+134,453,404,pilot,"[pilot] ruzyne tower good aero flot one four four hold short runway zero se
+[pilot] one three left and there are delay one two minutes
+[mixed] aero flot one four four tower call me when ready call me when call you when ready aero flot one
+[controller] sa two delta lima runway one three clear to land wind zero eight zero degrees five",runway one three clear to land csa two delta lima,data/jacktol-atc/clips/test/test_00452.wav,,
+135,2404,245,pilot,"[pilot] tower bline four zero victor approaching delta when ready
+[controller] bline four zero victor ruzyne tower good afternoon report ready
+[pilot] we are fully ready bline four zero victor
+[controller] bline four zero victor roger hold short of runway one three",holding short one three bline four zero victor,data/jacktol-atc/clips/test/test_02403.wav,,
+136,169,158,controller,,csa five four four runway one three clear to takeoff wind zero two zero degrees four knots,data/jacktol-atc/clips/test/test_00168.wav,,
+137,2723,1612,pilot,[controller] kilo one three five you can use runway two two and line up runway three one,via two two line up three one klm one three five two,data/jacktol-atc/clips/test/test_02722.wav,,
+138,97,94,pilot,"[mixed] csa three five ground one two one decimal nine one two one decimal nine ahoj csa three fi
+[controller] csa five mike bravo runway one three cleared to land wind zero two zero degrees six knots",cleared to land runway one three csa five mike bravo,data/jacktol-atc/clips/test/test_00096.wav,,
+139,2302,340,mixed,"[controller] csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots
+[pilot] runway three o
+[mixed] csa nine seven seven finn air seven one five whiskey contact ruzyne ground one two one decimal nine good bye
+[pilot] one two one nine finn air seven one four whiskey bye bye",tower csa nine six one full established ils three one csa nine six one ruzyne tower continue approach,data/jacktol-atc/clips/test/test_02301.wav,,
+140,2162,533,controller,[pilot] tower good evening austrian seven one two zulu ready for departure,hello ausrtian seven one two zulu ruzyne tower roger line up runway one three,data/jacktol-atc/clips/test/test_02161.wav,,
+141,367,333,pilot,"[pilot] sky travel one one nine two request ta
+[controller] sky travel one one nine two taxi holding point runway three o
+[controller] hotel lima",lima sky travel one one nine,data/jacktol-atc/clips/test/test_00366.wav,,
+142,2066,549,controller,"[pilot] easy six six yankee nobody yes we re call you back ready
+[controller] csa six three three papa lima and ground one two one nine
+[pilot] lima one two one eight bravo eight six three eight three
+[pilot] ruzyne tower csa five six",csa five six one reduce one six zero knots,data/jacktol-atc/clips/test/test_02065.wav,,
+143,2235,902,pilot,"[pilot] runway three one cleared for takeoff csa six eight eight
+[controller] wizz air five zero zero contact ruzyne ground one two one decimal nin
+[pilot] one two one nine wizz air five one one bye
+[controller] csa eight mike three runway three one cleared to land wind one seven zero degrees three knots",cleared to land runway three one csa eight five three,data/jacktol-atc/clips/test/test_02234.wav,,
+144,1360,1003,pilot,"[controller] csa nine two seven runway one three clear to land wind three five zero degrees seven knots
+[pilot] runway
+[mixed] three clear to land csa nine two seven csa two zulu alfa left lima and ground one two one decimal nine",csa two zulu alfa,data/jacktol-atc/clips/test/test_01359.wav,,
+145,1926,1296,controller,"[mixed] nor shuttle three five eight zero contact ground one two one nine good bye one two one nine bye nor shuttle three
+[controller] finn air seven one six whiskey runway three one cleared for takeoff wind one seven zero degrees six knots good bye
+[pilot] clear takeoff runway three one finn air seven one six whiskey
+[controller] csa three seven alfa line up runway three one",csa three seven alfa line up runway three one,data/jacktol-atc/clips/test/test_01925.wav,,
+146,131,123,controller,"[controller] yes takeoff is approved out of heliport three proceed heading two zero zero
+[pilot] out of
+[pilot] departing traffic heading two zero zero
+[controller] might wake up",mike wait what i sa,data/jacktol-atc/clips/test/test_00130.wav,,
+147,79,76,pilot,"[controller] lufthansa nine echo lima ruzyne tower good afternoon
+[controller] turkish one seven six nine contact ruzyne ground one two one decimal nine good bye
+[pilot] one two one decimal nine turkish one seven six nine bye bye
+[controller] csa four delta romeo runway one three cleared for takeoff wind zero four zero degrees five knots",cleared for takeoff runway one three csa four delta romeo,data/jacktol-atc/clips/test/test_00078.wav,,
+148,610,520,pilot,"[controller] swedestar zero five one runway three one cleared to land wind zero nine zero degrees five kno
+[pilot] runway three one cleared to land swedestar zero five o",tower wizz air four xray zulu,data/jacktol-atc/clips/test/test_00609.wav,,
+149,2627,490,pilot,"[controller] lufthansa four kilo hotel traffic information low vfr
+[controller] helicopter approaching airfield from the north not crossing axis of runway three one
+[controller] and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day
+[pilot] seven kilo hotel runway",three one kilo hotel runway three one cleared for takeoff,data/jacktol-atc/clips/test/test_02626.wav,,
+150,2770,490,controller,"[mixed] shamrock six four four contact ground one two one decimal nine good bye one two one decimal nine shamrock six one one zero
+[pilot] ruzyne tower lufthansa
+[pilot] nine juliett charlie",lufthansa nine juliett charlie hello tower continue approach,data/jacktol-atc/clips/test/test_02769.wav,,
+151,2506,111,controller,"[pilot] cleared blatu two alfa departure si
+[pilot] two three on the squawk wizz air five nine one
+[controller] departure is baltu two bravo runway three on
+[pilot] baltu two bravo runway three one copied six six two three wizz air five nine one",ct report ready for startup,data/jacktol-atc/clips/test/test_02505.wav,,
+152,327,300,controller,,zero one landing traffic now on the runway is crj seven can you see,data/jacktol-atc/clips/test/test_00326.wav,,
+153,1349,1004,pilot,"[mixed] tower csa three eight whiskey establish ils one three csa three eight whiskey continue
+[pilot] tower air france one nine eight romeo hello on the
+[controller] air france one nine eight romeo hello i need to be ready behind landing traffic
+[pilot] maintaining and waiting",runway and we have got traffic in sight air france one,data/jacktol-atc/clips/test/test_01348.wav,,
+154,2516,1539,controller,,aero flot one four nine runway three one cleared to land wind one eight zero degrees three knots,data/jacktol-atc/clips/test/test_02515.wav,,
+155,116,111,pilot,"[controller] ct report ready for startup
+[pilot] call you ready for sta
+[controller] csa three five delta runway three one cleared to land wind calm
+[pilot] cleared for runway three one csa three five delta",november five one one we are reaching five thou,data/jacktol-atc/clips/test/test_00115.wav,,
+156,1687,756,controller,"[pilot] camber three five two four we re ready for imme
+[pilot] britair one ei
+[controller] camber three five two four one more landing
+[pilot] holding",csa five victor papa contact ruzyne ground one two one decimal nine,data/jacktol-atc/clips/test/test_01686.wav,,
+157,1239,943,controller,,csa zero two four runway three one cleared for takeoff wind one eight zero degrees four knots,data/jacktol-atc/clips/test/test_01238.wav,,
+158,45,45,pilot,"[controller] csa seven five one runway one three clear to land wind zero six zero degrees six knots
+[mixed] land one three csa seven five one camber three five two seven to the left to ground one two one decimal nine
+[pilot] one two one decimal nine camber three five",lot five two fi,data/jacktol-atc/clips/test/test_00044.wav,,
+159,940,756,pilot,"[pilot] camber three five two four we re ready for imme
+[pilot] britair one ei
+[controller] camber three five two four one more landing",holding,data/jacktol-atc/clips/test/test_00939.wav,,
+160,649,549,pilot,[controller] easy six six yankee just follow info approaching traffic still one and half minute to touch down and call you behind,papa,data/jacktol-atc/clips/test/test_00648.wav,,
+161,2750,1619,pilot,"[pilot] hello tower it s november two six nine six sierra short
+[controller] good eve november two six nine six sierra ruzyne tower continue approach
+[pilot] two six nine six sierra
+[pilot] ruzyne tower wizz air four nine",runway three one,data/jacktol-atc/clips/test/test_02749.wav,,
+162,182,171,pilot,"[pilot] praha radar praha tower good morning klm one three five one ils three one
+[controller] klm one three five one ruzyne tower good moorning runway three one clear to land wind one seven zero degrees three knots",clear to land runway three one,data/jacktol-atc/clips/test/test_00181.wav,,
+163,1545,1102,pilot,"[controller] csa eight echo charlie papa lima ground one two one nine
+[pilot] p lima one two one nine csa eight echo charlie
+[controller] csa two mike charlie runway one three clear to land wind zero eight zero degree",clear to land runway one three csa two mike charlie,data/jacktol-atc/clips/test/test_01544.wav,,
+164,2102,1208,controller,,lot five romeo whiskey ready for departure,data/jacktol-atc/clips/test/test_02101.wav,,
+165,130,111,controller,,say again for startup who wanted star up,data/jacktol-atc/clips/test/test_00129.wav,,
+166,335,307,controller,"[controller] csa five one seven contact ruzyne ground one two one decimal nine
+[pilot] two nine csa seven seven",turkish one seven six seven runway three one cleared to land wind one six zero degrees four knots,data/jacktol-atc/clips/test/test_00334.wav,,
+167,1801,528,pilot,"[pilot] roger maintaining holding point delta to one three and expect taxi via delta
+[pilot] air france one nine
+[pilot] eight romeo
+[controller] air france one nine eight romeo now expedite cross runway one three continue via delta to hold short of runway two four",thank you expedite and cross delta,data/jacktol-atc/clips/test/test_01800.wav,,
+168,1154,157,mixed,"[pilot] ruzyne tower csa six bravo charlie ils three one reducing one seven zero
+[controller] csa six bravo charlie tower continue approach runway three one
+[pilot] nue approach csa six bravo charlie",jobair zero seven two contact ground one two one nine two one nine jobair zero s,data/jacktol-atc/clips/test/test_01153.wav,,
+169,459,407,pilot,"[controller] lot five two papa contact ground one two one nine
+[pilot] one two one point ni
+[controller] lux air five four eight two runway three one cleared for takeoff wind one nine zero degrees four knots good by",clear takeoff three one thank you bye,data/jacktol-atc/clips/test/test_00458.wav,,
+170,541,470,pilot,"[pilot] ruzyne csa five one seven establsih
+[pilot] three one
+[controller] csa five one seven ruzyne tower continue approach",five one seven,data/jacktol-atc/clips/test/test_00540.wav,,
+171,2841,1174,pilot,"[controller] csa three zero three runway three one clear to land
+[pilot] clear to land runway three one csa
+[controller] jobair zero one zero five one papa reduce speed one four zero knots",reducing one forty jobair zero five one papa,data/jacktol-atc/clips/test/test_02840.wav,,
+172,1810,812,pilot,"[controller] oscar kilo hotel uniform u
+[pilot] oscar kilo hotel uniform u zephyr
+[pilot] tower hello swiss four eight seven november approaching holding point three one and read
+[controller] good morning break shamrock six four five now line up runway three one and cleared for takeoff wind one two zero degrees five knots",cleared line up takeoff runway three one shamrock,data/jacktol-atc/clips/test/test_01809.wav,,
+173,2342,1473,pilot,"[mixed] ruzyne tower good evening aero flot one four three ils established runway one three aero flot one four three good evening continue approach
+[pilot] continue approach aero flot one",tower speed bird three zero charlie ready,data/jacktol-atc/clips/test/test_02341.wav,,
+174,2785,359,pilot,[controller] air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots,clear takeoff runway one three air france one nine eight romeo,data/jacktol-atc/clips/test/test_02784.wav,,
+175,723,601,pilot,[controller] csa eight two six runway one three cleared for takeoff wind one four zero degrees three knots,runway one three cleared for takeoff csa eight two six,data/jacktol-atc/clips/test/test_00722.wav,,
+176,77,74,controller,"[mixed] adria four zero vacate via golf and contact ruzyne ground one two one decimal nine golf and one two one deci
+[pilot] good afternoon lufthansa seven
+[controller] lufthansa seven echo lima hello confirm ready for departure
+[pilot] affirm ready in the",roger thank you,data/jacktol-atc/clips/test/test_00076.wav,,
+177,1049,830,pilot,[pilot] ruzyne tower sky travel,six six one,data/jacktol-atc/clips/test/test_01048.wav,,
+178,2118,978,pilot,,tower csa four two zero ready from delta,data/jacktol-atc/clips/test/test_02117.wav,,
+179,1274,962,pilot,[controller] csa five three six runway one three cleared for takeoff wind zero five zero degrees five knots,go runway one three csa five three si,data/jacktol-atc/clips/test/test_01273.wav,,
+180,622,490,controller,"[pilot] ruzyne tower lufthansa
+[pilot] nine juliett charlie
+[controller] lufthansa nine juliett charlie hello tower continue approach
+[controller] lufthansa four kilo hotel traffic information low vfr",helicopter approaching airfield from the north not crossing axis of runway three one,data/jacktol-atc/clips/test/test_00621.wav,,
+181,2771,157,pilot,"[pilot] clear to land runway three one c
+[pilot] easy four nine six papa we are fully ready and we can take romeo
+[controller] easy four nine six papa roger use romeo and stop at holding point runway three one landing traffic
+[pilot] hold romeo for",easy four nine six pa,data/jacktol-atc/clips/test/test_02770.wav,,
+182,2727,45,controller,"[mixed] land one three csa seven five one camber three five two seven to the left to ground one two one decimal nine
+[pilot] one two one decimal nine camber three five
+[pilot] lot five two fi
+[pilot] established runway one three eight mile",lot five two five hello roger continue approach and higher speed one sixty or greater until four miles final,data/jacktol-atc/clips/test/test_02726.wav,,
+183,548,123,pilot,"[pilot] tower
+[pilot] zero one
+[pilot] course to heliport three report departure report estimation heading
+[pilot] two zero zero information romeo one zero",one nine,data/jacktol-atc/clips/test/test_00547.wav,,
+184,1350,721,controller,"[pilot] ruzyne tower beair five
+[controller] beair five nine one tower line up runway three one
+[pilot] three one beair five",csa four nine five contact ground one two one nine,data/jacktol-atc/clips/test/test_01349.wav,,
+185,2036,1043,pilot,"[controller] tel four xray zulu contact ruzyne ground one two one decimal nine bye bye
+[pilot] one two one nine",wizz air four,data/jacktol-atc/clips/test/test_02035.wav,,
+186,2023,1344,controller,"[controller] zero one now contact ruzyne one one nine zero
+[pilot] ruzyne radar one one nine zero
+[pilot] bye bye
+[pilot] tower malev eight two four ils one",malev eight two four runway two one three clear to land wind zero six zero six knots,data/jacktol-atc/clips/test/test_02022.wav,,
+187,993,141,pilot,,ruzyne tower csa nine seven five visual approach runway one,data/jacktol-atc/clips/test/test_00992.wav,,
+188,286,263,pilot,"[pilot] tower
+[pilot] nine fi
+[controller] csa nine five six ruzyne tower line up runway one three and wait",line up one three and wait cs,data/jacktol-atc/clips/test/test_00285.wav,,
+189,1255,304,pilot,"[pilot] good morning can you just confirm expect
+[pilot] parture clearance we should have
+[controller] so now airport is closed expect the earliest departure at zero three zero zero
+[pilot] ok zero three zero zero and ex",is departure and then,data/jacktol-atc/clips/test/test_01254.wav,,
+190,1238,942,controller,,aero flot one four nine vacate via golf contact ruzyne ground one two one decimal nine good bye,data/jacktol-atc/clips/test/test_01237.wav,,
+191,319,293,pilot,"[controller] csa three seven alfa runway three one cleared for takeoff wind one six zero degrees five knots
+[pilot] runway three one cleared for takeoff",en three alfa,data/jacktol-atc/clips/test/test_00318.wav,,
+192,1430,931,pilot,[pilot] tower good evening,lufthansa two victor charlie ils one,data/jacktol-atc/clips/test/test_01429.wav,,
+193,103,100,controller,"[pilot] tower csa six three five establish localizer three one
+[controller] six three five tower continue
+[mixed] csa nine six zero line up runway three one lining up three one csa nine six zero
+[controller] say seven six",contact ground one two one nine,data/jacktol-atc/clips/test/test_00102.wav,,
+194,1455,205,pilot,[pilot] good evening sky travel one zero three seven,ils established runway one three,data/jacktol-atc/clips/test/test_01454.wav,,
+195,2890,23,pilot,"[controller] good morning lufthansa eight lima l ruzyne tower
+[controller] csa eight tango contact ruzyne ground one two one decimal
+[pilot] one two one decimal nine csa eight tango
+[controller] cimber three five two three runway three one cleared to land wind one nine zero degrees six knots",runway three one cleared to land cimber three five two three,data/jacktol-atc/clips/test/test_02889.wav,,
+196,261,242,pilot,"[pilot] ruzyne tower aero flot
+[pilot] four two
+[controller] aero flot one four two ruzyne tower
+[controller] swiss one two five victor runway three one cleared for immediate takeoff wind one seven zero degrees four knots traffic two and half miles final",cleared immediate takeoff runway three one swi,data/jacktol-atc/clips/test/test_00260.wav,,
+197,2069,1363,pilot,"[controller] sa five delta romeo left lima one two one nine
+[pilot] l one two one nine csa five delta romeo
+[controller] csa four nine four runway one three cleared for
+[controller] wind zero eight zero degrees",tower csa six three three established ils runway one three,data/jacktol-atc/clips/test/test_02068.wav,,
+198,2266,602,controller,[pilot] tower air france two four eight two establish ils o,air france two four eight two two four eight two continue,data/jacktol-atc/clips/test/test_02265.wav,,
+199,899,725,controller,"[controller] time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating
+[pilot] cleared to land runway three one will vacate via golf time air six one two papa
+[pilot] or may we do short backtrack",a backtrack approved,data/jacktol-atc/clips/test/test_00898.wav,,
+200,397,356,controller,,csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots,data/jacktol-atc/clips/test/test_00396.wav,,
