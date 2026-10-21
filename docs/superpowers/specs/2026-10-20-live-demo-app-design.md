@@ -1,8 +1,8 @@
 # Live demo app: Runway Watch, design
 
 **Status: design approved section by section in chat on 2026-10-20; spec approved the same day; amended while planning
-(the eight "Planning amendments" in `docs/superpowers/plans/2026-10-20-live-demo-helper.md`, which win where they
-differ).** Design guidance: `docs/2026-10-20-macos-hig-research.md` (the HIG brief, every point linked to its Apple page).
+(the eight "Planning amendments" in `docs/superpowers/plans/2026-10-20-live-demo-helper.md`, and the twelve in
+`docs/superpowers/plans/2026-10-21-runway-watch-app.md` for the Mac app, which win where they differ).** Design guidance: `docs/2026-10-20-macos-hig-research.md` (the HIG brief, every point linked to its Apple page).
 
 ## 1. Purpose and success
 
@@ -249,7 +249,7 @@ model choice, which stays a separate decision.
 |---|---|---|
 | 1 | Whisper on `mps`: time 20 test-split clips; word error rate against the human transcripts, beside the CTranslate2 model's | Median at most 2.0 s per clip and a word error rate at most 2 points above CTranslate2's; otherwise Apple speech becomes the default transcript and Whisper an option. Passed while planning: 1.03 s, 9.3% vs 11.0% |
 | 1 | Haiku 5.5 in `parse_llm` and the 6-cent check (Section 8) | As in Section 8 |
-| 1 | `SpeechAnalyzer` probe: volatile results and context priming on this Mac | Preview text appears while talking |
+| 1 | `SpeechAnalyzer` probe: volatile results and context priming on this Mac | Preview text appears while talking. Passed while planning the app: the progressive preset updates about once a second; priming changed nothing |
 | 2 | `atcdb/live.py` and the `/api/live/` routes | Tests pass |
 | 2 to 3 | The Mac app | Tests pass; manual checklist below |
 | 3 | HIG and Accessibility Inspector audit; two full rehearsals with Jennifer, one saved as the replay backup | Section 1 success criteria met in a rehearsal |
