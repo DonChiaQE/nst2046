@@ -24,7 +24,7 @@
   "stop_reason": "tool_use",
   "content": [
    {
-    "id": "toolu_01EVQBM352BLPECS59mNnZKf",
+    "id": "toolu_018aqNpkbFBT7YXAmzC8Z9Sz",
     "caller": {
      "type": "direct"
     },
@@ -35,6 +35,59 @@
        "runway": "31",
        "callsigns": [
         "lufthansa four five six"
+       ],
+       "trigger_index": 3
+      }
+     ]
+    },
+    "name": "report_conflicts",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
+  "case": "crossing_against_a_landing",
+  "model": "claude-haiku-5-5",
+  "version": "j1",
+  "turns": [
+   [
+    "controller",
+    "csa one two three runway three one cleared to land wind calm"
+   ],
+   [
+    "pilot",
+    "cleared to land runway three one csa one two three"
+   ],
+   [
+    "controller",
+    "lufthansa four five six cross runway three one"
+   ],
+   [
+    "pilot",
+    "crossing runway three one lufthansa four five six"
+   ]
+  ],
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_017hg1tpRvwiUp322uufXBqF",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "conflicts": [
+      {
+       "type": "RUNWAY",
+       "runway": "31",
+       "callsigns": [
+        "csa",
+        "one",
+        "two",
+        "three",
+        "lufthansa",
+        "four",
+        "five",
+        "six"
        ],
        "trigger_index": 3
       }
@@ -78,7 +131,52 @@
   "stop_reason": "tool_use",
   "content": [
    {
-    "id": "toolu_01HjCbSYAvxGMsj1NT2dwjvS",
+    "id": "toolu_01LQXG17HgYJndd5tw5PxjFE",
+    "caller": {
+     "type": "direct"
+    },
+    "input": {
+     "conflicts": []
+    },
+    "name": "report_conflicts",
+    "type": "tool_use"
+   }
+  ]
+ },
+ {
+  "case": "released_before_the_takeoff",
+  "model": "claude-haiku-5-5",
+  "version": "j1",
+  "turns": [
+   [
+    "controller",
+    "csa one two three runway three one cleared to land wind calm"
+   ],
+   [
+    "pilot",
+    "cleared to land runway three one csa one two three"
+   ],
+   [
+    "pilot",
+    "runway vacated csa one two three"
+   ],
+   [
+    "controller",
+    "csa one two three contact ground one two one decimal nine"
+   ],
+   [
+    "controller",
+    "lufthansa four five six runway three one cleared for takeoff"
+   ],
+   [
+    "pilot",
+    "cleared for takeoff runway three one lufthansa four five six"
+   ]
+  ],
+  "stop_reason": "tool_use",
+  "content": [
+   {
+    "id": "toolu_01DpaYsNqsEvoj6esbZ44KQv",
     "caller": {
      "type": "direct"
     },

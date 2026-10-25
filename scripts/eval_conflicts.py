@@ -8,7 +8,7 @@ Usage:
     python scripts/eval_conflicts.py sweep [--values 30 60 90 120 300]
     python scripts/eval_conflicts.py report [--doc docs/results/conflict-eval.md]
 
-`run` replays every recording of the evaluation sets under each selected arm (the 18 structured arms and the two
+`run` replays every recording of the evaluation sets under each selected arm (the 18 structured arms and the four
 judge arms by default; `--parser judge` for the judge only) and writes one JSONL per arm to data/eval/conflicts/.
 With `--set`, only that set's rows in an existing JSONL are replaced; the other set's are kept.
 Parses and judgments come from their caches, so a re-run is free; always `--dry-run` first, which prints the uncached

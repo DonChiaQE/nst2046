@@ -2,8 +2,8 @@
 
 The whole transcript of one recording goes to Claude in one call, and a forced, strict `report_conflicts` tool lists the
 incompatible clearances it sees. No parser, no engine: this is the "raw LLM over the transcript" baseline that the
-structured system is compared with. The model and request settings match the parser's Sonnet arm (`parse_llm`), so the
-comparison is about structure, not reasoning budget. Judgments are cached in the `judgments` table, one per (recording,
+structured system is compared with. Each model's request settings match the parser's arm for that model (`parse_llm`),
+so the comparison is about structure, not reasoning budget. Judgments are cached in the `judgments` table, one per (recording,
 transcript kind and model, judge model, VERSION), stored with the sha1 of the sequence judged: a judgment of another
 sequence (say, a partial ASR run since completed) is a miss, deleted and judged again. API errors and unusable replies
 raise and cache nothing.
@@ -16,11 +16,11 @@ import sqlite3
 from typing import Any
 
 from atcdb.engine import normalize_runway
-from atcdb.parse_llm import MODEL_SETTINGS, PRICES_PER_MTOK, _default_client
+from atcdb.parse_llm import _TOKENIZER_FACTOR, MODEL_SETTINGS, PRICES_PER_MTOK, _default_client
 from atcdb.parsing import Transmission
 
 VERSION = "j1"
-MODELS = ("claude-sonnet-5",)
+MODELS = ("claude-sonnet-5", "claude-haiku-5-5")
 MAX_TOKENS = 2048   # a recording holds at most a few conflicts; a truncated reply raises JudgeError
 _TOOL_USE_OVERHEAD_TOKENS = 350
 _OUTPUT_TOKENS = 120
@@ -148,7 +148,7 @@ def estimate_cost(model: str, prompts: list[str]) -> float:
     fixed = (len(SYSTEM) + len(json.dumps(TOOL))) / 4 + _TOOL_USE_OVERHEAD_TOKENS
     tokens_in = sum(fixed + len(p) / 4 for p in prompts)
     price_in, price_out = PRICES_PER_MTOK[model]
-    return (tokens_in * price_in + len(prompts) * _OUTPUT_TOKENS * price_out) / 1e6
+    return _TOKENIZER_FACTOR.get(model, 1.0) * (tokens_in * price_in + len(prompts) * _OUTPUT_TOKENS * price_out) / 1e6
 
 
 def is_cached(conn: sqlite3.Connection, recording_id: int, transcript_kind: str, transcript_model: str,

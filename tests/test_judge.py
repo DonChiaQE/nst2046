@@ -58,15 +58,16 @@ def _seed(conn, turns=TURNS, external_id="r1"):
     return rid
 
 
-def test_the_tool_is_strict_and_the_request_matches_the_sonnet_parser_arm():
+def test_the_tool_is_strict_and_each_request_matches_the_parser_arm_of_its_model():
     assert TOOL["name"] == "report_conflicts" and TOOL["strict"] is True
     item_schema = TOOL["input_schema"]["properties"]["conflicts"]["items"]
     assert item_schema["required"] == ["type", "runway", "callsigns", "trigger_index"]
     assert item_schema["additionalProperties"] is False and item_schema["properties"]["type"]["enum"] == ["RUNWAY", "READBACK"]
-    r = request("claude-sonnet-5", TXS)
-    assert r["system"] == SYSTEM and r["tools"] == [TOOL] and r["tool_choice"] == {"type": "tool", "name": "report_conflicts"}
-    assert (r["thinking"], r["output_config"]) == (MODEL_SETTINGS["claude-sonnet-5"]["thinking"], {"effort": "low"})
-    assert MODELS == ("claude-sonnet-5",)
+    assert MODELS == ("claude-sonnet-5", "claude-haiku-5-5")
+    for model in MODELS:
+        r = request(model, TXS)
+        assert r["system"] == SYSTEM and r["tools"] == [TOOL] and r["tool_choice"] == {"type": "tool", "name": "report_conflicts"}
+        assert (r["thinking"], r["output_config"]) == (MODEL_SETTINGS[model]["thinking"], {"effort": "low"})
 
 
 def test_render_sequence_numbers_every_transmission_from_one():
@@ -161,6 +162,8 @@ def test_the_judge_arm_row_places_conflicts_at_their_trigger(tmp_path, monkeypat
 def test_estimate_cost_scales_with_the_sequences():
     one = estimate_cost("claude-sonnet-5", ["x" * 2000])
     assert 0 < one < 0.02 and estimate_cost("claude-sonnet-5", ["x" * 2000] * 3) == pytest.approx(3 * one)
+    # a twentieth of Sonnet's prices, but its newer tokenizer counts the same text as about 30% more tokens
+    assert estimate_cost("claude-haiku-5-5", ["x" * 2000]) == pytest.approx(0.065 * one)
 
 
 # --- recorded replies (scripts/record_judge_fixtures.py) -----------------------------------------
@@ -169,6 +172,8 @@ FIXTURE = ROOT / "tests" / "fixtures" / "judge_responses.json"
 RECORDED = {
     ("crossing_against_a_landing", "claude-sonnet-5"): [("RUNWAY", "31", 2)],
     ("released_before_the_takeoff", "claude-sonnet-5"): [],
+    ("crossing_against_a_landing", "claude-haiku-5-5"): [("RUNWAY", "31", 2)],
+    ("released_before_the_takeoff", "claude-haiku-5-5"): [],
 }
 
 

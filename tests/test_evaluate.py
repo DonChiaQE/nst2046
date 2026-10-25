@@ -41,8 +41,8 @@ QUIET = [
 
 def test_the_arms_cover_every_extractor_context_and_transcript():
     assert len(ARMS) == 18 and len(set(ARMS)) == 18
-    # a model added to the parser (claude-haiku-5-5, for the live app) does not add paid arms by itself
-    assert {a.model for a in ARMS} == {"rules", "claude-haiku-4-5", "claude-sonnet-5"}
+    # Haiku 5.5 replaced Haiku 4.5 (decision 2026-10-25); a model the parser still knows adds no paid arm by itself
+    assert {a.model for a in ARMS} == {"rules", "claude-haiku-5-5", "claude-sonnet-5"}
     assert {a.parser for a in ARMS} == {"rule", "llm"} and {a.transcript for a in ARMS} == {"gold", "asr"}
     assert PRIMARY == (Arm("rule", "rules", "window", "gold"), Arm("llm", "claude-sonnet-5", "window", "gold"))
     assert PRIMARY[1].name == "llm-claude-sonnet-5-window-gold"

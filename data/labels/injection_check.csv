@@ -1,0 +1,946 @@
+recording_id,external_id,edit_kind,runway,context,before,after,valid,notes
+3201,1238-runway_swap-0-0,runway_swap,31,"A> [controller] csa eight five six runway three one cleared for takeoff wind one six zero degrees five knots
+   [pilot] runway three one cleared for takeoff csa eight five six
+   [controller] tel seven mike sierra four line up runway three one
+   [pilot] line up runway three one hotel
+   [controller] mike sierra four
+B> [controller] austrian seven zero six clear to cross three one zero four
+   [pilot] affirm cross runway two two",austrian seven zero six clear to cross two two zero four,austrian seven zero six clear to cross three one zero four,no,implausible phraseology
+3202,528-holdshort_to_cross-0-1,holdshort_to_cross,13,"   [controller] csa eight two nine vacate to the left contact ruzyne ground one two one point nine
+A> [controller] csa three eight whiskey runway one three cleared to land wind zero three zero degrees seven knots expedite vacating
+   [pilot] cleared to land one three csa three eight whiskey and will expedite to
+B> [controller] air france one nine eight romeo to cross runway one three
+   [pilot] hold short to runway two four air france one nine eight romeo",air france one nine eight romeo to hold short of runway two four,air france one nine eight romeo to cross runway one three,yes,
+3203,189-verb_upgrade-0-2,verb_upgrade,31,"A> [controller] swiss one two four alfa runway three one cleared to land wind one eight zero degrees three knots
+   [pilot] cleared to land three one swiss one two four alfa
+   [pilot] oscar kilo bravo yankee romeo
+   [pilot] bravo yankee romeo
+   [controller] b romeo yankee
+   [pilot] bravo yankee romeo
+B> [controller] lufthansa nine lima charlie cleared for takeoff runway three one
+   [pilot] line up and wait runway three one",lufthansa nine lima charlie line up runway three one and wait,lufthansa nine lima charlie cleared for takeoff runway three one,yes,
+3204,528-release_delete-0-3,release_delete,13,"   [pilot] thank you expedite and cross delta
+A> [mixed] air france one nine eight romeo cross runway one three cross runway one three
+   [pilot] yeah runway one three air france one nine
+B> [controller] csa three eight whiskey runway one three cleared to land wind zero three zero degrees seven knots expedite vacating
+   [pilot] cleared to land one three csa three eight whiskey and will expedite to
+(deleted release: csa eight two nine vacate to the left contact ruzyne ground one two one point nine)",csa three eight whiskey runway one three cleared to land wind zero three zero degrees seven knots expedite vacating,csa three eight whiskey runway one three cleared to land wind zero three zero degrees seven knots expedite vacating,yes,
+3205,359-splice-0-4,splice,13,"A> [controller] air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots
+   [pilot] clear takeoff runway one three air france one nine eight romeo
+   [controller] izrael two five to the left and the ground one two one point nine
+   [pilot] aero flot one four eight nine zero two five
+--- recording 1004 follows ---
+   [controller] seven nine one ground
+B> [mixed] csa seven nine one csa two nine runway one three cleared to land wind zero two zero degrees six knots
+   [pilot] runway one three cleared to land csa two nine",csa seven nine one csa two nine runway one three cleared to land wind zero two zero degrees six knots,csa seven nine one csa two nine runway one three cleared to land wind zero two zero degrees six knots,yes,
+3206,1279-holdshort_to_cross-0-5,holdshort_to_cross,31,"   [mixed] tower csa seven whiskey india approaching holding three one ready csa seven whiskey india tower
+A> [mixed] to confirm cleared for takeoff runway three one csa seven seven two affirm clear takeoff three one wind one seven zero degrees five knots
+   [mixed] calibra six whiskey via fully ready via r
+B> [controller] finn air seven one six whiskey tower good morning roger use runway two two cross runway three one
+   [pilot] use runway two two hold short of three one finn air seven one six",finn air seven one six whiskey tower good morning roger use runway two two hold short of three one,finn air seven one six whiskey tower good morning roger use runway two two cross runway three one,yes,
+3207,840-splice-0-6,splice,13,"   [controller] csa eight zero three runway one three clear to land wind three six zero degrees seven knots
+A> [controller] csa eight zero three cleared to land runway one three
+   [controller] csa nine two seven left lima and ground one two one decimal nine
+   [pilot] to the left via lima one two one decimal nine csa nine two seven
+--- recording 2465 follows ---
+   [pilot] tower good evening malev eight two five
+B> [controller] malev eight two five roger line up runway one three cleared for takeoff wind zero nine zero seven knots
+   [pilot] cleared line up take o",malev eight two five roger line up runway one three cleared for takeoff wind zero nine zero seven knots,malev eight two five roger line up runway one three cleared for takeoff wind zero nine zero seven knots,yes,
+3208,245-holdshort_to_cross-0-7,holdshort_to_cross,13,"   [pilot] holding short one three bline four zero victor
+A> [controller] turkish one seven six nine runway one three cleared to land wind zero three zero degrees two knots
+   [pilot] cleared to land runway one three turkish one seven six nine
+B> [controller] csa four delta romeo taxi via runway two four and cross runway one three
+   [pilot] taxi via runway two four hold short of runway one three csa four delta romeo",csa four delta romeo taxi via runway two four and hold short of runway one three,csa four delta romeo taxi via runway two four and cross runway one three,yes,
+3209,1577-splice-0-8,splice,13,"   [mixed] easy six seven kilo papa contact ruzyne ground one two one decimal nine good bye one two one nine zero six seven kilo good day
+A> [controller] sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots
+   [pilot] cleared to land one three sky travel one zero one one
+   [pilot] tower austrian
+   [controller] swedestar eight eight seven ruzyne tower good afternoon roger hold short of runway one three landing traffic
+   [pilot] holding short of ranwa
+--- recording 1041 follows ---
+   [pilot] request taxi csa two eight six
+   [controller] csa two eight six taxi bravo delta hold
+   [pilot] bravo delta
+   [pilot] one minute for for departure
+   [controller] ok delta and lima
+   [pilot] bravo delta lima hold short two four two eight six
+   [pilot] sky travel six eight two ready for taxi
+   [controller] sky travel six eight two taxi zulu bravo delta lima holding point ru
+   [pilot] taxiing zulu bravo delta lima hold short of runway two four we are able from foxtrot sky travel six eight two
+   [controller] ok
+   [controller] bravo
+   [pilot] taxiing zulu bravo delta holding point one three sky travel six eight two
+   [pilot] csa six zero five zero ready for departure
+B> [controller] six zero five zero line up runway one three
+   [controller] and wind two three zero degrees",six zero five zero line up runway one three,six zero five zero line up runway one three,yes,
+3210,204-holdshort_to_cross-0-9,holdshort_to_cross,13,"   [pilot] four nine eight yankee
+A> [mixed] good evening swiss four nine eight yankee ruzyne tower runway one three cleared to land wind zero three zero degrees six knots cleared to land one three
+   [pilot] tower good afternoon turkish one seven seven zero on lima to holding point runway two four
+B> [controller] good evening turkish one seven seven zero ruzyne tower cross runway one three
+   [pilot] hold short to runway one three turkish one seven seven zero",good evening turkish one seven seven zero ruzyne tower hold short of runway one three,good evening turkish one seven seven zero ruzyne tower cross runway one three,yes,
+3211,1182-splice-0-10,splice,13,"   [pilot] no speed limit csa
+A> [controller] csa seven two six runway one three cleared for takeoff wind zero six zero degrees four knots
+   [pilot] cleared for takeoff one three csa seven two six
+--- recording 267 follows ---
+   [mixed] golf affirm golf
+   [pilot] good evening csa five
+   [controller] csa five six one one two one decimal nine
+B> [controller] csa seven four three runway one three cleared to land wind zero zero zero degrees six knots
+   [pilot] runway one three cleared to",csa seven four three runway one three cleared to land wind zero zero zero degrees six knots,csa seven four three runway one three cleared to land wind zero zero zero degrees six knots,yes,
+3212,1577-holdshort_to_cross-0-11,holdshort_to_cross,13,"   [mixed] easy six seven kilo papa contact ruzyne ground one two one decimal nine good bye one two one nine zero six seven kilo good day
+A> [controller] sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots
+   [pilot] cleared to land one three sky travel one zero one one
+   [pilot] tower austrian
+B> [controller] swedestar eight eight seven ruzyne tower good afternoon roger cross runway one three landing traffic
+   [pilot] holding short of ranwa",swedestar eight eight seven ruzyne tower good afternoon roger hold short of runway one three landing traffic,swedestar eight eight seven ruzyne tower good afternoon roger cross runway one three landing traffic,no,implausible phraseology
+3213,2100-splice-0-12,splice,31,"   [pilot] one two one nine csa three foxt
+A> [controller] csa six three one runway three one cleared to land wind one eight zero degrees three knots
+   [pilot] leared to land runway three one
+   [pilot] six three one
+--- recording 1065 follows ---
+   [controller] ruzyne tower good morning two two two holding point runway three one
+   [mixed] russia two two two hello ruzyne tower are you ready ready for departu
+   [pilot] three one sierra mike two two two
+B> [controller] roger sierra delta mike two two two line up runway three one
+   [pilot] ine up runway three one sierra delta mike",roger sierra delta mike two two two line up runway three one,roger sierra delta mike two two two line up runway three one,yes,
+3214,951-splice-0-13,splice,31,"   [controller] good day
+A> [controller] wizz air four nine one runway three one cleared for takeoff wind one zero zero degrees three knots traffic four miles final
+   [pilot] clear takeoff runway three one wizz air four nine one bye bye
+--- recording 111 follows ---
+   [controller] say again for startup who wanted star up
+   [pilot] yes five nine one requesting atc
+   [controller] five nine one roger so atc clearance to
+   [controller] baltu two bravo departure
+   [controller] six two three information o
+   [controller] zero four zero zero
+   [pilot] roger will check information
+   [pilot] cleared blatu two alfa departure si
+   [pilot] two three on the squawk wizz air five nine one
+   [controller] departure is baltu two bravo runway three on
+   [pilot] baltu two bravo runway three one copied six six two three wizz air five nine one
+   [controller] ct report ready for startup
+   [pilot] call you ready for sta
+B> [controller] csa three five delta runway three one cleared to land wind calm
+   [pilot] cleared for runway three one csa three five delta",csa three five delta runway three one cleared to land wind calm,csa three five delta runway three one cleared to land wind calm,yes,
+3215,2521-splice-0-14,splice,31,"   [pilot] ruzyne tower csa five one six ready for departure
+A> [controller] csa five one six ruzyne tower roger behind landing traffic short final boeing seven three seven line up runway three one behind
+   [pilot] behind landing traffic on short final
+   [pilot] csa one s
+--- recording 269 follows ---
+   [pilot] ruzyne tower csa one nine six two on papa ready
+   [controller] csa one nine six two ruzyne tower roger
+B> [controller] jobair zero six one runway three one cleared for takeoff wind one nine zero degrees six knots
+   [pilot] runway three one jobair zero six",jobair zero six one runway three one cleared for takeoff wind one nine zero degrees six knots,jobair zero six one runway three one cleared for takeoff wind one nine zero degrees six knots,yes,
+3216,1194-splice-0-15,splice,31,"   [pilot] ready to takeoff runway three one csa four bravo echo
+A> [controller] csa nine two two line up runway three one
+   [pilot] line up three one csa nine two two
+--- recording 1410 follows ---
+B> [controller] csa two eight whiskey runway three one cleared for takeoff wind two one zero degrees six knots
+   [pilot] runway three one cleared for takeoff csa two whiskey",csa two eight whiskey runway three one cleared for takeoff wind two one zero degrees six knots,csa two eight whiskey runway three one cleared for takeoff wind two one zero degrees six knots,yes,
+3217,2037-splice-0-16,splice,13,"   [controller] csa five zero eight ruzyne tower roger
+A> [controller] csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots
+   [pilot] cleared to land runway one three csa one delta zulu
+--- recording 2595 follows ---
+B> [controller] csa five zero eight runway one three cleared for takeoff wind zero six zero degrees three knots
+   [pilot] cleared for takeoff runway one three csa five zero eight",csa five zero eight runway one three cleared for takeoff wind zero six zero degrees three knots,csa five zero eight runway one three cleared for takeoff wind zero six zero degrees three knots,yes,
+3218,2239-splice-0-17,splice,13,"A> [controller] sky travel one zero three six line up runway one three
+   [pilot] line up ran
+   [pilot] one three sky travel one zero three si
+   [controller] lufthansa three romeo kilo vacate to the left and contact ruzyne ground one two one decimal nine
+   [pilot] hansa three romeo kilo left off one two one nine good bye
+--- recording 1198 follows ---
+   [controller] csa four eight one contact ruzyne ground one two one decimal nine
+   [pilot] one decimal nine csa four eight one
+B> [mixed] britair nine zero four charlie runway one three cleared for takeoff wind three five zero degrees four knots good bye cleared takeoff one three brit
+   [pilot] zero four good bye",britair nine zero four charlie runway one three cleared for takeoff wind three five zero degrees four knots good bye cleared takeoff one three brit,britair nine zero four charlie runway one three cleared for takeoff wind three five zero degrees four knots good bye cleared takeoff one three brit,yes,
+3219,2111-splice-0-18,splice,13,"   [controller] csa seven zero one ruzyne tower roger
+A> [controller] beline four zero victor runway one three cleared for takeoff wind zero five zero degrees five knot
+   [pilot] cleared for takeoff beline four zero victor good bye
+--- recording 204 follows ---
+   [pilot] four nine eight yankee
+B> [mixed] good evening swiss four nine eight yankee ruzyne tower runway one three cleared to land wind zero three zero degrees six knots cleared to land one three
+   [pilot] tower good afternoon turkish one seven seven zero on lima to holding point runway two four",good evening swiss four nine eight yankee ruzyne tower runway one three cleared to land wind zero three zero degrees six knots cleared to land one three,good evening swiss four nine eight yankee ruzyne tower runway one three cleared to land wind zero three zero degrees six knots cleared to land one three,yes,
+3220,356-splice-0-19,splice,13,"   [pilot] tower csa
+A> [mixed] two six and ready for departure csa eight two six ruzyne tower line up runway one three and wait
+   [pilot] line up runway one three and wait csa eight two six
+--- recording 1577 follows ---
+   [mixed] easy six seven kilo papa contact ruzyne ground one two one decimal nine good bye one two one nine zero six seven kilo good day
+B> [controller] sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots
+   [pilot] cleared to land one three sky travel one zero one one",sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots,sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots,yes,
+3221,1051-splice-0-20,splice,13,"   [pilot] line up runway one three easy five four nine eight
+A> [controller] easy five four nine eight runway one three cleared for takeoff wind one nine zero degrees two knots bye bye
+   [pilot] takeoff runway one three easy five four nine eight good night
+--- recording 1577 follows ---
+   [mixed] easy six seven kilo papa contact ruzyne ground one two one decimal nine good bye one two one nine zero six seven kilo good day
+B> [controller] sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots
+   [pilot] cleared to land one three sky travel one zero one one",sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots,sky travel one zero one one runway one three cleared to land wind zero two zero degrees three knots,yes,
+3222,1256-splice-0-21,splice,31,"A> [controller] swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots
+   [pilot] cleared takeoff runway three one swiss four eight
+   [pilot] ruzyne tower czech holiday seven four two zero ready
+   [controller] czech holiday seven four two zero roger
+--- recording 1649 follows ---
+   [pilot] yne tower lot five two seven final three one
+   [controller] lot five two seven ruzyne tower
+B> [controller] runway three one cleared to land wind zero six zero degrees and six knots
+   [pilot] cleared to land three one lot five two seven",runway three one cleared to land wind zero six zero degrees and six knots,runway three one cleared to land wind zero six zero degrees and six knots,yes,
+3223,1362-splice-0-22,splice,13,"   [pilot] affirm nine seven
+A> [controller] line up runway one three and wait
+   [pilot] lining up one three and wait csa nine seven eight
+--- recording 2676 follows ---
+   [pilot] tower jobair zero five two golf holding one three we are
+B> [controller] jobair zero five two ruzyne tower line up runway one three cleared for takeoff wind one six zero degree
+   [mixed] knots lining up and cleared for takeoff runway one three",jobair zero five two ruzyne tower line up runway one three cleared for takeoff wind one six zero degree,jobair zero five two ruzyne tower line up runway one three cleared for takeoff wind one six zero degree,yes,
+3224,2348-splice-0-23,splice,31,"   [pilot] one two one nine swiss four six zero tango bye
+A> [controller] csa zero two runway three one cleared for takeoff wind one nine zero degrees seven knots
+   [pilot] cleared for takeoff runway three one csa eight zero two
+--- recording 483 follows ---
+   [pilot] ruzyne tower
+   [pilot] full establish ils three on
+B> [controller] sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots
+   [pilot] leared to land runway three one",sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots,sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots,yes,
+3225,216-splice-0-24,splice,31,"   [pilot] three one csa four nine three
+A> [controller] german wings seven hotel behind landing traffic short final boeing seven three seven line up runway three one behind
+   [pilot] german wings seven hotel behind landing
+   [pilot] three seven li
+   [pilot] up and wait
+--- recording 2348 follows ---
+   [controller] swiss four six zero tango contact ground one two one nine good bye
+   [pilot] one two one nine swiss four six zero tango bye
+B> [controller] csa zero two runway three one cleared for takeoff wind one nine zero degrees seven knots
+   [pilot] cleared for takeoff runway three one csa eight zero two",csa zero two runway three one cleared for takeoff wind one nine zero degrees seven knots,csa zero two runway three one cleared for takeoff wind one nine zero degrees seven knots,yes,
+3226,1-splice-0-25,splice,31,"   [pilot] one two one nine one seven eight two bye bye
+A> [controller] lufthansa eight kilo alfa runway three one cleared for takeoff wind two one zero degrees five knots good by
+   [pilot] eight kilo alfa runway three one
+   [pilot] ruzyne tower
+   [pilot] german wings seven papa we are on dme three one
+   [controller] german wing seven papa ruzyne tower hello again roger
+--- recording 340 follows ---
+B> [controller] csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots
+   [pilot] runway three o",csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots,csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots,yes,
+3227,2041-splice-0-26,splice,31,"A> [controller] sky travel one one nine three runway three one cleared to land wind one seven zero degrees three knots
+   [pilot] cleared to land runway three one sky travel one one nine three
+   [pilot] tower
+   [controller] csa seven zero zero tower stop at holding point
+   [pilot] tower time air six one two papa fully established ils
+   [controller] time air six one two papa tower continue approach and expect departure ahead
+   [pilot] roger continue approach time
+   [pilot] two papa
+--- recording 1256 follows ---
+B> [controller] swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots
+   [pilot] cleared takeoff runway three one swiss four eight",swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots,swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots,yes,
+3228,555-splice-0-27,splice,31,"   [controller] we will try it
+A> [controller] csa seven seven two line up runway three one
+   [pilot] seven eight two two
+   [controller] affirm
+   [pilot] lining up runway two one runway
+--- recording 2072 follows ---
+   [pilot] ruzyne tower hello austrian seven zero papa
+   [controller] austrian seven zero eight papa roger
+B> [controller] czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots
+   [pilot] runway three one line up and cleared for takeoff czech holidays seven four two zero",czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots,czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots,yes,
+3229,1118-splice-0-28,splice,13,"   [pilot] affirm
+A> [controller] chanex eight eight papa romeo line up runway one three
+   [pilot] runway one three
+--- recording 1452 follows ---
+B> [controller] csa eight eight one runway one three cleared to land wind zero one zero degrees four knots
+   [pilot] ay one three cleared to land csa eight eight one",csa eight eight one runway one three cleared to land wind zero one zero degrees four knots,csa eight eight one runway one three cleared to land wind zero one zero degrees four knots,yes,
+3230,490-splice-0-29,splice,31,"   [controller] helicopter approaching airfield from the north not crossing axis of runway three one
+A> [controller] and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day
+   [pilot] seven kilo hotel runway
+   [pilot] three one kilo hotel runway three one cleared for takeoff
+--- recording 520 follows ---
+B> [controller] swedestar zero five one runway three one cleared to land wind zero nine zero degrees five kno
+   [pilot] runway three one cleared to land swedestar zero five o",swedestar zero five one runway three one cleared to land wind zero nine zero degrees five kno,swedestar zero five one runway three one cleared to land wind zero nine zero degrees five kno,yes,
+3231,2768-splice-0-30,splice,13,"   [pilot] speed one six zero one six zero until fo
+A> [controller] csa eight six yankee roger line up runway one three
+--- recording 840 follows ---
+   [controller] csa eight zero three runway one three clear to land wind three six zero degrees seven knots
+B> [controller] csa eight zero three cleared to land runway one three
+   [controller] csa nine two seven left lima and ground one two one decimal nine",csa eight zero three cleared to land runway one three,csa eight zero three cleared to land runway one three,yes,
+3232,737-splice-0-31,splice,13,"   [controller] csa five three six ruzyne tower ready for departure
+A> [mixed] csa five three six roger line up runway one three line up runway one three cs
+   [pilot] ruzyne tower csa five alfa juliett ready
+   [controller] csa five alfa juliett ruzyne tower roger
+--- recording 978 follows ---
+   [pilot] tower csa four two zero ready from delta
+B> [controller] csa four two zero ruzyne tower line up runway one three cleared for takeoff wind one seven zero degrees one knot
+   [pilot] line up and clear takeoff runway one three from delta csa four two zero",csa four two zero ruzyne tower line up runway one three cleared for takeoff wind one seven zero degrees one knot,csa four two zero ruzyne tower line up runway one three cleared for takeoff wind one seven zero degrees one knot,yes,
+3233,1473-splice-0-32,splice,13,"   [controller] speed bird three zero charlie roger ready immediately
+A> [controller] line up runway one three cleared for immediate takeoff wind zero six zero seven knots
+   [pilot] cleared to line up and takeoff runway one three speed bird three zero charlie
+--- recording 601 follows ---
+B> [controller] csa eight two six runway one three cleared for takeoff wind one four zero degrees three knots
+   [pilot] runway one three cleared for takeoff csa eight two six",csa eight two six runway one three cleared for takeoff wind one four zero degrees three knots,csa eight two six runway one three cleared for takeoff wind one four zero degrees three knots,yes,
+3234,1208-splice-0-33,splice,31,"   [pilot] five romeo
+A> [mixed] roger line up runway three one lining up three one lot five r
+--- recording 862 follows ---
+   [controller] austrian seven zero three vacate via golf to the right and contact ruzyne ground one two one decimal nine good bye
+   [pilot] to golf
+   [pilot] seven zero three good bye
+B> [controller] lufthansa two juliett whiskey runway three one cleared for takeoff wind one seven zero degrees three knots good bye
+   [pilot] lufthansa two juliett whiskey runway three one clear takeoff bye bye",lufthansa two juliett whiskey runway three one cleared for takeoff wind one seven zero degrees three knots good bye,lufthansa two juliett whiskey runway three one cleared for takeoff wind one seven zero degrees three knots good bye,yes,
+3235,1934-splice-0-34,splice,31,"   [pilot] one two one decimal nine csa three mike zulu
+A> [controller] malev eight two one runway three one cleared for takeoff wind one six zero degrees five knots good bye
+   [pilot] clear takeoff runway three one malev eight two one bye bye
+--- recording 111 follows ---
+   [controller] say again for startup who wanted star up
+   [pilot] yes five nine one requesting atc
+   [controller] five nine one roger so atc clearance to
+   [controller] baltu two bravo departure
+   [controller] six two three information o
+   [controller] zero four zero zero
+   [pilot] roger will check information
+   [pilot] cleared blatu two alfa departure si
+   [pilot] two three on the squawk wizz air five nine one
+   [controller] departure is baltu two bravo runway three on
+   [pilot] baltu two bravo runway three one copied six six two three wizz air five nine one
+   [controller] ct report ready for startup
+   [pilot] call you ready for sta
+B> [controller] csa three five delta runway three one cleared to land wind calm
+   [pilot] cleared for runway three one csa three five delta",csa three five delta runway three one cleared to land wind calm,csa three five delta runway three one cleared to land wind calm,yes,
+3236,2465-splice-0-35,splice,13,"   [pilot] tower good evening malev eight two five
+A> [controller] malev eight two five roger line up runway one three cleared for takeoff wind zero nine zero seven knots
+   [pilot] cleared line up take o
+   [pilot] runway
+   [pilot] three one three malev eight two five
+--- recording 2037 follows ---
+   [pilot] csa five zero eight need two minutes
+   [controller] csa five zero eight ruzyne tower roger
+B> [controller] csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots
+   [pilot] cleared to land runway one three csa one delta zulu",csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots,csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots,yes,
+3237,100-splice-0-36,splice,31,"   [pilot] two one nine csa se
+A> [controller] csa nine six zero runway three one cleared for takeoff wind one six zero degrees three knots
+   [pilot] off csa nine six zero
+--- recording 725 follows ---
+B> [controller] time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating
+   [pilot] cleared to land runway three one will vacate via golf time air six one two papa",time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating,time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating,yes,
+3238,1279-splice-0-37,splice,31,"   [pilot] use runway two two hold short of three one finn air seven one six
+A> [controller] wizz air four papa uniform line up runway three one and cleared for takeoff wind one eight zero degrees six knots
+   [pilot] line up and takeoff runway three one wizz air four papa uniform
+   [pilot] praha tower good day nor shuttle three five eight zero established ils runway three one seven miles
+   [controller] nor shuttle three five eight zero tower good mor
+   [controller] continue approach
+   [pilot] continue nor shuttle three five eight
+--- recording 725 follows ---
+B> [controller] time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating
+   [pilot] cleared to land runway three one will vacate via golf time air six one two papa",time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating,time air six one two papa runway three one cleared to land wind one eight zero degrees six knots and papa is not available for vacating,yes,
+3239,2690-splice-0-38,splice,31,"   [pilot] tower good day turkish one seven six eight ready for
+A> [controller] turkish one seven six eight ruzyne tower hello line up runway three one
+   [pilot] line up runway three one turkish one seven six eight
+--- recording 280 follows ---
+   [controller] csa three sierra lima contact ruzyne ground one two one decimal nine
+   [pilot] ground one two one nine csa three sierra lima
+   [pilot] ruzyne tower csa seven three zero good morning again
+B> [controller] tower break break csa five one six runway three one cleared for takeoff wind calm
+   [pilot] rwy three one cleared for takeoff csa five one six",tower break break csa five one six runway three one cleared for takeoff wind calm,tower break break csa five one six runway three one cleared for takeoff wind calm,yes,
+3240,1410-splice-0-39,splice,31,"A> [controller] csa two eight whiskey runway three one cleared for takeoff wind two one zero degrees six knots
+   [pilot] runway three one cleared for takeoff csa two whiskey
+   [pilot] good morning nor shuttle one five one four with you established on the
+   [controller] nor shuttle one five one four ruzyne tower good afternoon roger
+--- recording 340 follows ---
+B> [controller] csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots
+   [pilot] runway three o",csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots,csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots,yes,
+3241,123-splice-0-40,splice,13,"A> [controller] channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots
+   [pilot] takeoff
+   [pilot] tower
+   [pilot] zero one
+   [pilot] course to heliport three report departure report estimation heading
+   [pilot] two zero zero information romeo one zero
+   [pilot] one nine
+   [controller] krystof zero one roger there is now departing traffic boeing seven three seven runway one three
+   [controller] so
+   [controller] qnh is one zero one eight wind is zero six zero five knots standby
+   [pilot] traffic on runway one three in sight
+   [pilot] qnh one zero one eight and standing
+   [controller] now
+   [controller] yes takeoff is approved out of heliport three proceed heading two zero zero
+   [pilot] out of
+   [pilot] departing traffic heading two zero zero
+   [controller] might wake up
+   [controller] mike wait what i sa
+   [controller] caution wake tubulence
+   [pilot] caution wake turubu
+--- recording 847 follows ---
+   [controller] csa seven three charlie left and ground one two one point nine
+   [pilot] two nine csa seve
+   [pilot] charlie
+B> [controller] csa zero two five runway one three cleared to land wind zero two zero degrees seven knots
+   [pilot] runway one three cleared to land csa zero two five",csa zero two five runway one three cleared to land wind zero two zero degrees seven knots,csa zero two five runway one three cleared to land wind zero two zero degrees seven knots,yes,
+3242,509-splice-0-41,splice,31,"   [pilot] csa one zulu alfa ready for immediate
+A> [controller] csa one zulu alfa roger line up runway three one be ready
+   [pilot] line up runway three one ready csa one zulu alfa
+   [controller] lufthansa eight echo november reduce to final speed one more departure ahead
+   [pilot] eight echo november reducing
+   [controller] csa one zulu alfa runway three one cleared for immediate takeoff wind one seven zero degrees four knots
+   [pilot] i have two four cleared for takeoff csa one zulu a
+   [pilot] fa
+--- recording 175 follows ---
+   [pilot] zyne tower wizz air five november ils runway three one
+   [controller] wizz air five zero zero ruzyne
+   [controller] tower continue approach
+   [pilot] ntinue approach
+   [controller] britair five nine zero bravo contact ruzyne ground one two one decimal nine good bye
+   [pilot] one two one nine britair nine zero bravo good bye
+B> [controller] cimber three five two four runway three one cleared for takeoff wind one nine zero degrees three knots traffic four miles final good bye
+   [pilot] we re rolling out three five two four cleared for takeoff three one",cimber three five two four runway three one cleared for takeoff wind one nine zero degrees three knots traffic four miles final good bye,cimber three five two four runway three one cleared for takeoff wind one nine zero degrees three knots traffic four miles final good bye,yes,
+3243,2602-splice-0-42,splice,31,"   [pilot] qnh one zero two two will proceed to echo after tango and two thousand five hundred oscar kilo
+A> [controller] csa seven two charlie runway three one cleared for takeoff wind two two zero degrees three knots
+   [pilot] clear takeoff runway three one cs
+--- recording 1097 follows ---
+   [pilot] tower good morning hotel
+   [pilot] five one one
+   [controller] good morning hotel romeo novem
+   [pilot] is there any delivery fre frequency already ready or have we to take the clearance from
+   [mixed] yeah just from here delivery start in one hour ok
+   [pilot] so we would be ready for start
+   [pilot] we have information november and
+   [pilot] is from
+   [controller] ok sir so hotel lima romeo november five one one startup is a
+   [controller] time four
+   [pilot] november
+   [controller] you are cleared to paris charles de gaulle runwa
+   [controller] three one baltu two bravo departure squawk si
+   [pilot] we are cleared destination runway three one baltu two
+   [pilot] departure
+   [pilot] the squawk is
+   [pilot] two one
+   [pilot] romeo november five one o
+   [controller] affirm read back correct report ready for ta
+   [pilot] tower good morning qality eight nine sierra is established runway
+B> [controller] good morning qality eight nine sierra ruzyne tower runway three one cleared to land win
+   [pilot] cleared to land qal",good morning qality eight nine sierra ruzyne tower runway three one cleared to land win,good morning qality eight nine sierra ruzyne tower runway three one cleared to land win,yes,
+3244,189-splice-0-43,splice,31,"   [pilot] bravo yankee romeo
+A> [controller] lufthansa nine lima charlie line up runway three one and wait
+   [pilot] line up and wait runway three one
+--- recording 1256 follows ---
+B> [controller] swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots
+   [pilot] cleared takeoff runway three one swiss four eight",swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots,swiss four eight seven november runway three one cleared for takeoff wind one three zero degrees seven knots,yes,
+3245,902-splice-0-44,splice,31,"   [pilot] one two one nine wizz air five one one bye
+A> [controller] csa eight mike three runway three one cleared to land wind one seven zero degrees three knots
+   [pilot] cleared to land runway three one csa eight five three
+--- recording 1934 follows ---
+   [controller] csa three mike zulu contact ruzyne ground one two one decimal nine
+   [pilot] one two one decimal nine csa three mike zulu
+B> [controller] malev eight two one runway three one cleared for takeoff wind one six zero degrees five knots good bye
+   [pilot] clear takeoff runway three one malev eight two one bye bye",malev eight two one runway three one cleared for takeoff wind one six zero degrees five knots good bye,malev eight two one runway three one cleared for takeoff wind one six zero degrees five knots good bye,yes,
+3246,2237-splice-0-45,splice,13,"   [pilot] ready turkish one seven seven zero
+A> [controller] roger line up runway one three
+   [pilot] line up runway one three turkish one seven seven zero
+--- recording 1970 follows ---
+   [pilot] tower csa four delta romeo
+   [controller] csa four delta romeo ruzyne tower hold short of runway one three
+   [pilot] hold short of runway one three csa four delta romeo and we request full lenght
+   [controller] roger so continue via lima
+   [pilot] continue via lima csa four delta romeo
+B> [controller] csa five alfa juliett runway one three cleared for takeoff wind zero four zero degrees three knots
+   [pilot] runway one three cleared to takeoff csa five alfa juliett",csa five alfa juliett runway one three cleared for takeoff wind zero four zero degrees three knots,csa five alfa juliett runway one three cleared for takeoff wind zero four zero degrees three knots,yes,
+3247,1984-splice-0-46,splice,31,"   [controller] csa five seven two runway three one cleared for takeoff wind one eight zero degrees
+A> [mixed] runway three one cleared for takeoff
+--- recording 2041 follows ---
+B> [controller] sky travel one one nine three runway three one cleared to land wind one seven zero degrees three knots
+   [pilot] cleared to land runway three one sky travel one one nine three",sky travel one one nine three runway three one cleared to land wind one seven zero degrees three knots,sky travel one one nine three runway three one cleared to land wind one seven zero degrees three knots,yes,
+3248,1719-splice-0-47,splice,31,"   [controller] and tower beline seven zero victor is entering runway two two three one we are ready for departure
+A> [mixed] belin seven zero victor roger line up runway three one cleared for takeoff wind calm good bye cleared for line up and takeoff
+   [pilot] runway three one have a nice day madame beline seven zero victor bye
+   [controller] same to you thank you
+--- recording 242 follows ---
+   [pilot] ruzyne tower aero flot
+   [pilot] four two
+   [controller] aero flot one four two ruzyne tower
+   [controller] swiss one two five victor runway three one cleared for immediate takeoff wind one seven zero degrees four knots traffic two and half miles final
+   [pilot] cleared immediate takeoff runway three one swi
+   [pilot] one two five victor bye bye
+   [controller] csa five seven three contact ruzyne ground one two one decimal nine
+   [pilot] one two one decimal nine csa five
+   [pilot] ruzyne tower csa five victor papa ils three one
+   [controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one
+   [pilot] reducing speed one fifty csa five victor papa
+B> [controller] csa nine six one runway three one cleared to land wind one six zero degrees five knots
+   [pilot] runway three one cleared to land csa nine six one",csa nine six one runway three one cleared to land wind one six zero degrees five knots,csa nine six one runway three one cleared to land wind one six zero degrees five knots,yes,
+3249,1579-splice-0-48,splice,13,"   [controller] csa five zero eight roger
+A> [mixed] csa six three bravo line up runway one three csa six three bravo line up
+--- recording 1509 follows ---
+   [pilot] alfa juliett established ils one three
+   [controller] csa seven alfa juliett continue approach
+   [pilot] continue approach csa seven alfa juliett
+   [controller] austrian seven one zulu left lima and ground one two one nine
+   [pilot] left on lima one two one nine austrian seven one one zulu
+B> [controller] bee line two lima kilo runway one three cleared to land wind zero eight zero degrees six knots
+   [pilot] cleared to land one three bee",bee line two lima kilo runway one three cleared to land wind zero eight zero degrees six knots,bee line two lima kilo runway one three cleared to land wind zero eight zero degrees six knots,yes,
+3250,2330-splice-0-49,splice,13,"   [mixed] csa two nine six ready ready csa
+A> [controller] line up runway one three
+   [pilot] line up runway one
+   [mixed] csa two nine six affirm
+--- recording 123 follows ---
+B> [controller] channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots
+   [pilot] takeoff",channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots,channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots,yes,
+3251,111-splice-0-50,splice,31,"   [pilot] call you ready for sta
+A> [controller] csa three five delta runway three one cleared to land wind calm
+   [pilot] cleared for runway three one csa three five delta
+   [pilot] november five one one we are reaching five thou
+   [mixed] call departure one two zero decimal five two five bye bye two zero five two five
+   [pilot] ruzyne tower csa nine two one established ils runway three on
+   [controller] csa nine two one tower
+--- recording 269 follows ---
+   [pilot] ruzyne tower csa one nine six two on papa ready
+   [controller] csa one nine six two ruzyne tower roger
+B> [controller] jobair zero six one runway three one cleared for takeoff wind one nine zero degrees six knots
+   [pilot] runway three one jobair zero six",jobair zero six one runway three one cleared for takeoff wind one nine zero degrees six knots,jobair zero six one runway three one cleared for takeoff wind one nine zero degrees six knots,yes,
+3252,1614-splice-0-51,splice,13,"   [pilot] seven four two on
+A> [controller] easy six six yankee runway one three cleared for takeoff wind zero zero zero degrees fi
+--- recording 267 follows ---
+   [mixed] golf affirm golf
+   [pilot] good evening csa five
+   [controller] csa five six one one two one decimal nine
+B> [controller] csa seven four three runway one three cleared to land wind zero zero zero degrees six knots
+   [pilot] runway one three cleared to",csa seven four three runway one three cleared to land wind zero zero zero degrees six knots,csa seven four three runway one three cleared to land wind zero zero zero degrees six knots,yes,
+3253,1097-splice-0-52,splice,31,"   [pilot] tower good morning qality eight nine sierra is established runway
+A> [controller] good morning qality eight nine sierra ruzyne tower runway three one cleared to land win
+   [pilot] cleared to land qal
+   [controller] follow echo bravo
+--- recording 1493 follows ---
+   [pilot] ruzyne tower csa nine seven nine establish ils three o
+   [controller] nine ruzyne tower
+B> [mixed] wizz air five five six is holding point runway three one fully ready wizz air five five six line up runway three one
+   [pilot] line up runway three one wizz air five five six",wizz air five five six is holding point runway three one fully ready wizz air five five six line up runway three one,wizz air five five six is holding point runway three one fully ready wizz air five five six line up runway three one,yes,
+3254,2506-splice-0-53,splice,13,"   [controller] air malta five three nine ready for immediate departure
+A> [mixed] fully ready for departure air malta five three nine roger air malta five three nine line up runway one three line up one three
+--- recording 2037 follows ---
+   [pilot] csa five zero eight need two minutes
+   [controller] csa five zero eight ruzyne tower roger
+B> [controller] csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots
+   [pilot] cleared to land runway one three csa one delta zulu",csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots,csa one delta zulu departing traffic seven three seven runway one three cleared to land wind is zero three zero degrees seven knots,yes,
+3255,1527-splice-0-54,splice,31,"   [pilot] aerosvit two one zero ready for de
+A> [controller] aerosvit two one zero line up runway three one and wait
+   [pilot] lining up runway three one and wait
+   [pilot] svit two one zero
+--- recording 340 follows ---
+B> [controller] csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots
+   [pilot] runway three o",csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots,csa nine seven seven runway three one cleared to land wind one eight zero degrees two knots,yes,
+3256,133-splice-0-55,splice,13,"A> [controller] austrian seven one zero papa runway one three cleared for takeoff wind zero five zero degrees five knots
+   [pilot] cleared for takeoff one three austrian seven zero one papa
+   [mixed] affirm bye bye
+   [pilot] ruzyne tower three one three holding position runway one three taxiway golf
+   [controller] three one three ruzyne number two for departure
+--- recording 840 follows ---
+   [controller] csa eight zero three runway one three clear to land wind three six zero degrees seven knots
+B> [controller] csa eight zero three cleared to land runway one three
+   [controller] csa nine two seven left lima and ground one two one decimal nine",csa eight zero three cleared to land runway one three,csa eight zero three cleared to land runway one three,yes,
+3257,2072-splice-0-56,splice,31,"   [controller] austrian seven zero eight papa roger
+A> [controller] czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots
+   [pilot] runway three one line up and cleared for takeoff czech holidays seven four two zero
+--- recording 111 follows ---
+   [controller] say again for startup who wanted star up
+   [pilot] yes five nine one requesting atc
+   [controller] five nine one roger so atc clearance to
+   [controller] baltu two bravo departure
+   [controller] six two three information o
+   [controller] zero four zero zero
+   [pilot] roger will check information
+   [pilot] cleared blatu two alfa departure si
+   [pilot] two three on the squawk wizz air five nine one
+   [controller] departure is baltu two bravo runway three on
+   [pilot] baltu two bravo runway three one copied six six two three wizz air five nine one
+   [controller] ct report ready for startup
+   [pilot] call you ready for sta
+B> [controller] csa three five delta runway three one cleared to land wind calm
+   [pilot] cleared for runway three one csa three five delta",csa three five delta runway three one cleared to land wind calm,csa three five delta runway three one cleared to land wind calm,yes,
+3258,553-splice-0-57,splice,31,"   [mixed] austrian seven zero three runway three one clear to land wind two zero zero degrees three knots clear land three one austrian seven zero three
+A> [controller] lufthansa two juliett whiskey behind landing traffic short final dash line up runway three one behind
+   [pilot] lufthansa two juliett whiskey behind landing traffic short final dash line up runway three one behind
+--- recording 1447 follows ---
+   [pilot] tower good mor
+   [pilot] final three
+   [controller] hotel zulu mike sierra four ruzyne tower good morning runway three one
+B> [controller] runway three one cleared to land wind two one zero degrees four knots
+   [pilot] cleared to land runway two one hotel zulu mike",runway three one cleared to land wind two one zero degrees four knots,runway three one cleared to land wind two one zero degrees four knots,yes,
+3259,237-splice-0-58,splice,13,"   [controller] csa three kilo foxtrot ruzyne tower
+A> [controller] csa three kilo foxtrot line up runway one three and wait
+   [pilot] line up runway one three and wait csa three kilo foxtrot
+--- recording 123 follows ---
+B> [controller] channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots
+   [pilot] takeoff",channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots,channex eight eight papa romeo runway one three cleared for takeoff wind zero six zero degrees five knots,yes,
+3260,2515-splice-0-59,splice,13,"   [pilot] we are ready for departure el al five
+A> [controller] roger line up runway one three cleared for takeoff wind two one zero degrees four knots bye bye
+   [pilot] clear to line up and takeoff runway one three el al five two two
+--- recording 847 follows ---
+   [controller] csa seven three charlie left and ground one two one point nine
+   [pilot] two nine csa seve
+   [pilot] charlie
+B> [controller] csa zero two five runway one three cleared to land wind zero two zero degrees seven knots
+   [pilot] runway one three cleared to land csa zero two five",csa zero two five runway one three cleared to land wind zero two zero degrees seven knots,csa zero two five runway one three cleared to land wind zero two zero degrees seven knots,yes,
+3261,49-splice-0-60,splice,13,"A> [controller] two six two three runway one three cleared to land wind zero eight zero degrees fi
+   [pilot] runway one three csa six three three
+   [controller] six yankee hello ruzyne tower hold
+   [controller] call you in minute to be
+   [pilot] tower hello czech holidays seven four two one established one three
+   [controller] czech holidays seven four two one
+   [controller] approach speed redu
+   [mixed] copy reducing one one sixty is ok one fifty
+   [pilot] one fifty we will do
+--- recording 1758 follows ---
+   [pilot] ruzyne tower csa two seven zero holding one three on delta ready
+B> [controller] csa two seven zero ruzyne tower line up runway one three cleared for takeoff wind one one zero degrees
+   [controller] knots",csa two seven zero ruzyne tower line up runway one three cleared for takeoff wind one one zero degrees,csa two seven zero ruzyne tower line up runway one three cleared for takeoff wind one one zero degrees,yes,
+3262,2042-splice-0-61,splice,13,"   [mixed] csa six three bravo runway one three cleared for takeoff wind zero three zero degrees four knots cleared for takeoff one
+A> [mixed] csa five zero eight line up runway one three lining up runway one three csa five zero eight
+--- recording 918 follows ---
+   [pilot] tower csa six one eight good afternoon approaching holding point runway two four
+   [controller] csa six one eight ruzyne tower dobre odpoledne taxi via runway two four and hold short of runway one three
+   [pilot] short of runway one three csa six one eight lin line up runway two
+   [pilot] ruzyne tower csa two mike delta
+   [controller] csa two mike delta ruzyne tower
+B> [controller] csa five six zero runway one three cleared for takeoff wind zero six zero degrees six kdnots
+   [mixed] we are taking off csa five six zero",csa five six zero runway one three cleared for takeoff wind zero six zero degrees six kdnots,csa five six zero runway one three cleared for takeoff wind zero six zero degrees six kdnots,yes,
+3263,1709-splice-0-62,splice,31,"   [pilot] one two one nine good bye swiss four seven two ech
+A> [controller] oscar kilo papa india alfa runway three one cleared for takeoff wind one nine zero degrees three knots
+   [pilot] cleared for takeoff oscar kilo india alfa
+--- recording 1552 follows ---
+   [pilot] ruzyne tower csa five
+   [controller] csa five zero four ruzyne tower stop at holding point
+   [pilot] stop at holding point
+   [pilot] tower good morning lufthansa two juliett whiskey ready
+   [controller] good morning lufthansa two juliett whiskey ruzyne tower
+B> [mixed] smart lynx one zero seven papa runway three one cleared to land wind calm cleared to land wind calm smart lynx one zero seven papa thank you",smart lynx one zero seven papa runway three one cleared to land wind calm cleared to land wind calm smart lynx one zero seven papa thank you,smart lynx one zero seven papa runway three one cleared to land wind calm cleared to land wind calm smart lynx one zero seven papa thank you,yes,
+3264,1065-splice-0-63,splice,31,"   [pilot] three one sierra mike two two two
+A> [controller] roger sierra delta mike two two two line up runway three one
+   [pilot] ine up runway three one sierra delta mike
+   [pilot] hello lufthansa seven kilo hotel fully ready
+   [controller] lufthansa seven kilo hotel hello tower roger expect one landing
+   [pilot] wilco
+--- recording 321 follows ---
+   [pilot] hello tower csa four mike bravo lima ready in seque
+   [controller] csa four mike bravo ruzyne tower roger
+   [controller] easy five three kilo romeo contact ruzyne ground one two one decimal nine good bye
+   [pilot] two one nine easy five three kilo romeo bye
+B> [mixed] csa eight two eight runway three one cleared for takeoff wind one eight zero degrees five knots three one cleared for takeoff
+   [mixed] csa four bravo echo line up runway three one lining up runway three one csa four bravo echo",csa eight two eight runway three one cleared for takeoff wind one eight zero degrees five knots three one cleared for takeoff,csa eight two eight runway three one cleared for takeoff wind one eight zero degrees five knots three one cleared for takeoff,yes,
+3265,1775-splice-0-64,splice,13,"   [mixed] csa seven zero one contact ruzyne ground one two one decimal nine one two one nine csa seven zero one
+A> [controller] lufthansa nine echo lima runway one three cleared for takeoff wind zero seven zero degrees eight knots good bye
+   [pilot] lufthansa nine echo lima runway one three cleared takeoff bye bye
+   [pilot] one golf rea
+   [controller] csa seven three two two ruzyne tower roger
+--- recording 510 follows ---
+B> [controller] csa five papa charlie runway one three cleared to land wind zero seven zero six knots
+   [pilot] land runway one three csa",csa five papa charlie runway one three cleared to land wind zero seven zero six knots,csa five papa charlie runway one three cleared to land wind zero seven zero six knots,yes,
+3266,270-splice-0-65,splice,13,"A> [controller] csa seven three two two line up runway one three
+   [pilot] lining up run runway one three csa
+   [pilot] csa five two zero call for sequence ready
+   [controller] csa five six zero ruzyne tower roger
+--- recording 141 follows ---
+   [pilot] ruzyne tower csa nine seven five visual approach runway one
+   [controller] csa nine seven five
+B> [controller] csa seven zero two runway one three cleared for takeoff wind zero six zero degrees
+   [pilot] runway one three cleared for",csa seven zero two runway one three cleared for takeoff wind zero six zero degrees,csa seven zero two runway one three cleared for takeoff wind zero six zero degrees,yes,
+3267,23-splice-0-66,splice,31,"   [pilot] one two one decimal nine csa eight tango
+A> [controller] cimber three five two three runway three one cleared to land wind one nine zero degrees six knots
+   [pilot] runway three one cleared to land cimber three five two three
+   [pilot] morning mike echo mike india eleven and half miles fin
+   [controller] hello mike echo mike lima india ruzyne tower continue approach deaparture ahead airbus three two zero
+--- recording 1984 follows ---
+B> [mixed] csa five seven two one line up runway three one lining up runway three one c
+   [controller] csa four echo line up runway three one and wait number two for departure number one atr intersection romeo",csa five seven two one line up runway three one lining up runway three one c,csa five seven two one line up runway three one lining up runway three one c,yes,
+3268,2595-splice-0-67,splice,13,"   [pilot] cleared for takeoff runway one three csa five zero eight
+A> [mixed] csa seven four two line up runway one three line up runway
+   [pilot] csa seven four two
+--- recording 880 follows ---
+   [pilot] ruzyne tower csa five four four
+   [mixed] csa five four four ruzyne tower hold short of runway one three hold short of runway one three csa five four four
+B> [controller] csa eight nine five runway one three cleared to land wind three six zero degrees five knots
+   [pilot] runway one three cleared to land",csa eight nine five runway one three cleared to land wind three six zero degrees five knots,csa eight nine five runway one three cleared to land wind three six zero degrees five knots,yes,
+3269,2104-splice-0-68,splice,13,"   [controller] donavia three zero six ready for departure
+A> [mixed] for departure from delta donavia three zero six donavia three zero six line up runway one three cleared for takeoff wind three one zero four knots
+   [pilot] lining up runway three four cleared for takeoff one three correction cleared for takeoff donavia three zero six
+--- recording 510 follows ---
+B> [controller] csa five papa charlie runway one three cleared to land wind zero seven zero six knots
+   [pilot] land runway one three csa",csa five papa charlie runway one three cleared to land wind zero seven zero six knots,csa five papa charlie runway one three cleared to land wind zero seven zero six knots,yes,
+3270,1749-splice-0-69,splice,31,"   [controller] csa seven six echo ruzyne tow
+A> [mixed] csa six three alfa runway three one cleared for takeoff wind calm cleared for takeoff runway three one csa six three alfa
+--- recording 1447 follows ---
+   [pilot] tower good mor
+   [pilot] final three
+   [controller] hotel zulu mike sierra four ruzyne tower good morning runway three one
+B> [controller] runway three one cleared to land wind two one zero degrees four knots
+   [pilot] cleared to land runway two one hotel zulu mike",runway three one cleared to land wind two one zero degrees four knots,runway three one cleared to land wind two one zero degrees four knots,yes,
+3271,1315-splice-0-70,splice,31,"A> [controller] h juliett november five one one runway three one cleared for takeoff wind is calm
+   [pilot] way one one three one five one one
+   [controller] csa nine delta sierra taxi via golf stand six two
+   [pilot] g six two
+   [pilot] csa nine delta sierra
+--- recording 23 follows ---
+   [pilot] ruzyne tower air france one three three
+   [controller] good morning air france one three eight three ruzyne tower
+   [controller] rogre one more landing
+   [pilot] tower good morning lufthansa eight lima l
+   [controller] good morning lufthansa eight lima l ruzyne tower
+   [controller] csa eight tango contact ruzyne ground one two one decimal
+   [pilot] one two one decimal nine csa eight tango
+B> [controller] cimber three five two three runway three one cleared to land wind one nine zero degrees six knots
+   [pilot] runway three one cleared to land cimber three five two three",cimber three five two three runway three one cleared to land wind one nine zero degrees six knots,cimber three five two three runway three one cleared to land wind one nine zero degrees six knots,yes,
+3272,1119-splice-0-71,splice,31,"   [pilot] one two one nine for ground three five two four three five two three bye
+A> [controller] air france one three eight three runway three one cleared for takeoff wind one eight zero degrees five knots traffic four miles final
+   [pilot] cleared for takeoff three one air france one three eight three
+--- recording 483 follows ---
+   [pilot] ruzyne tower
+   [pilot] full establish ils three on
+B> [controller] sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots
+   [pilot] leared to land runway three one",sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots,sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots,yes,
+3273,918-splice-0-72,splice,13,"   [controller] csa two mike delta ruzyne tower
+A> [controller] csa five six zero runway one three cleared for takeoff wind zero six zero degrees six kdnots
+   [mixed] we are taking off csa five six zero
+--- recording 94 follows ---
+   [mixed] csa three five ground one two one decimal nine one two one decimal nine ahoj csa three fi
+B> [controller] csa five mike bravo runway one three cleared to land wind zero two zero degrees six knots
+   [pilot] cleared to land runway one three csa five mike bravo",csa five mike bravo runway one three cleared to land wind zero two zero degrees six knots,csa five mike bravo runway one three cleared to land wind zero two zero degrees six knots,yes,
+3274,1041-splice-0-73,splice,13,"   [pilot] csa six zero five zero ready for departure
+A> [controller] six zero five zero line up runway one three
+   [controller] and wind two three zero degrees
+   [pilot] line up and cleared for takeoff runway one three csa six zero five
+--- recording 359 follows ---
+B> [controller] air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots
+   [pilot] clear takeoff runway one three air france one nine eight romeo",air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots,air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots,yes,
+3275,1802-splice-0-74,splice,31,"A> [controller] austrian seven zero six papa line up runway three one
+   [pilot] line up wait runway three one austrian seven zero six papa
+   [pilot] tower good day swiss four seven two echo ils three one
+   [controller] swiss four seven two echo tower good morning continue approach
+--- recording 1440 follows ---
+   [controller] speed bird eight six zero contact ruzyne ground one two one decimal nine bye bye
+   [pilot] one two one decimal nine speed bird eight six zer
+B> [controller] swiss one two four bravo runway three one cleared to land wind zero seven zero degrees five knots
+   [pilot] cleared to land runway three one swiss one two four bravo",swiss one two four bravo runway three one cleared to land wind zero seven zero degrees five knots,swiss one two four bravo runway three one cleared to land wind zero seven zero degrees five knots,yes,
+3276,263-splice-0-75,splice,13,"   [pilot] nine fi
+A> [controller] csa nine five six ruzyne tower line up runway one three and wait
+   [pilot] line up one three and wait cs
+--- recording 2232 follows ---
+   [mixed] bline nine six bravo november established ils one three hello bline six bravo november ruzyne tower continue approach
+   [mixed] csa nine seven one left taxiway lima and ground one two one decimal nine via lima and one two one decimal nine csa nine one seven
+B> [controller] oscar kilo delta sierra juliett runway one three cleared for takeoff wind three five zero degrees seven knots
+   [pilot] runway one three cleared for takeoff",oscar kilo delta sierra juliett runway one three cleared for takeoff wind three five zero degrees seven knots,oscar kilo delta sierra juliett runway one three cleared for takeoff wind three five zero degrees seven knots,yes,
+3277,175-splice-0-76,splice,31,"   [pilot] one two one nine britair nine zero bravo good bye
+A> [controller] cimber three five two four runway three one cleared for takeoff wind one nine zero degrees three knots traffic four miles final good bye
+   [pilot] we re rolling out three five two four cleared for takeoff three one
+--- recording 1245 follows ---
+   [pilot] zulu mike foxtrot any chance to reduce speed
+   [controller] no speed restrictions up to you
+   [pilot] thank you sir reducing
+B> [controller] wizz air five five seven runway three one cleared to land wind zero eight zero degrees and three knots",wizz air five five seven runway three one cleared to land wind zero eight zero degrees and three knots,wizz air five five seven runway three one cleared to land wind zero eight zero degrees and three knots,yes,
+3278,1004-splice-0-77,splice,13,"   [controller] seven nine one ground
+A> [mixed] csa seven nine one csa two nine runway one three cleared to land wind zero two zero degrees six knots
+   [pilot] runway one three cleared to land csa two nine
+   [mixed] tower csa three eight whiskey establish ils one three csa three eight whiskey continue
+   [pilot] tower air france one nine eight romeo hello on the
+   [controller] air france one nine eight romeo hello i need to be ready behind landing traffic
+   [pilot] maintaining and waiting
+   [pilot] runway and we have got traffic in sight air france one
+   [controller] thank you
+--- recording 2239 follows ---
+B> [controller] sky travel one zero three six line up runway one three
+   [pilot] line up ran",sky travel one zero three six line up runway one three,sky travel one zero three six line up runway one three,yes,
+3279,1732-splice-0-78,splice,13,"   [pilot] five four five
+A> [controller] air france three nine three victor runway one three cleared for takeoff wind zero eight zero degrees six knots bye
+   [pilot] cleared for takeoff runway one three air france three nine three victor bye
+--- recording 160 follows ---
+   [pilot] tower is stand
+   [pilot] hang on
+   [controller] lufthansa nine victor tango ruzyne tower hold position call you at
+B> [controller] jobair zero six two runway one three cleared to land wind zero two zero degrees six knots
+   [pilot] runway one three cleared to land juliett zulu",jobair zero six two runway one three cleared to land wind zero two zero degrees six knots,jobair zero six two runway one three cleared to land wind zero two zero degrees six knots,yes,
+3280,267-splice-0-79,splice,13,"   [controller] csa five six one one two one decimal nine
+A> [controller] csa seven four three runway one three cleared to land wind zero zero zero degrees six knots
+   [pilot] runway one three cleared to
+   [pilot] csa seven four three
+   [controller] and golf available as well
+   [pilot] csa se
+   [controller] bline two lima kilo continue approach
+--- recording 528 follows ---
+   [controller] csa eight three eight whiskey reduce speed one sixty
+   [pilot] reducing one sixty csa eight eight whiskey
+   [pilot] tower air france one nine eight romeo just to precise do we have to backtrack runway one three
+   [controller] you need to backtrack yes
+   [mixed] confirm need to backtrack yes wah we need to backtrack runway one three air france one nine eight r
+   [controller] air france one nine eight romeo
+   [controller] roger that is copy it
+   [controller] later on expect to taxi via taxiway delta on the other side but standby i will call you
+   [pilot] roger maintaining holding point delta to one three and expect taxi via delta
+   [pilot] air france one nine
+   [pilot] eight romeo
+B> [controller] air france one nine eight romeo now expedite cross runway one three continue via delta to hold short of runway two four
+   [pilot] thank you expedite and cross delta",air france one nine eight romeo now expedite cross runway one three continue via delta to hold short of runway two four,air france one nine eight romeo now expedite cross runway one three continue via delta to hold short of runway two four,yes,
+3281,470-splice-0-80,splice,31,"   [controller] wizz air five three zero ready for departure
+A> [mixed] affirm five two zero wizz air five three zero behind landing airbus three one nine short final line up runway three one behi
+   [pilot] line up runway three one behind wizz air five three zero
+--- recording 280 follows ---
+   [controller] csa three sierra lima contact ruzyne ground one two one decimal nine
+   [pilot] ground one two one nine csa three sierra lima
+   [pilot] ruzyne tower csa seven three zero good morning again
+B> [controller] tower break break csa five one six runway three one cleared for takeoff wind calm
+   [pilot] rwy three one cleared for takeoff csa five one six",tower break break csa five one six runway three one cleared for takeoff wind calm,tower break break csa five one six runway three one cleared for takeoff wind calm,yes,
+3282,365-splice-0-81,splice,31,"   [pilot] affirm we are ready
+A> [mixed] line up runway three one line up and wait runway three one air france one zero eight three
+--- recording 2072 follows ---
+   [pilot] ruzyne tower hello austrian seven zero papa
+   [controller] austrian seven zero eight papa roger
+B> [controller] czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots
+   [pilot] runway three one line up and cleared for takeoff czech holidays seven four two zero",czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots,czech holidays seven four two zero line up runway three one and you are cleared for takeoff wind one four zero five knots,yes,
+3283,1135-splice-0-82,splice,31,"   [pilot] we
+A> [controller] nor shuttle one five zero three line up runway three one
+   [pilot] lining up
+--- recording 280 follows ---
+   [controller] csa three sierra lima contact ruzyne ground one two one decimal nine
+   [pilot] ground one two one nine csa three sierra lima
+   [pilot] ruzyne tower csa seven three zero good morning again
+B> [controller] tower break break csa five one six runway three one cleared for takeoff wind calm
+   [pilot] rwy three one cleared for takeoff csa five one six",tower break break csa five one six runway three one cleared for takeoff wind calm,tower break break csa five one six runway three one cleared for takeoff wind calm,yes,
+3284,245-splice-0-83,splice,13,"   [pilot] holding short one three bline four zero victor
+A> [controller] turkish one seven six nine runway one three cleared to land wind zero three zero degrees two knots
+   [pilot] cleared to land runway one three turkish one seven six nine
+   [controller] csa four delta romeo taxi via runway two four and hold short of runway one three
+   [pilot] taxi via runway two four hold short of runway one three csa four delta romeo
+--- recording 2104 follows ---
+   [pilot] ruzyne tower donavia three zero six approaching holding position one three on the delta
+   [controller] donavia three zero six ready for departure
+B> [mixed] for departure from delta donavia three zero six donavia three zero six line up runway one three cleared for takeoff wind three one zero four knots
+   [pilot] lining up runway three four cleared for takeoff one three correction cleared for takeoff donavia three zero six",for departure from delta donavia three zero six donavia three zero six line up runway one three cleared for takeoff wind three one zero four knots,for departure from delta donavia three zero six donavia three zero six line up runway one three cleared for takeoff wind three one zero four knots,yes,
+3285,1509-splice-0-84,splice,13,"   [pilot] left on lima one two one nine austrian seven one one zulu
+A> [controller] bee line two lima kilo runway one three cleared to land wind zero eight zero degrees six knots
+   [pilot] cleared to land one three bee
+--- recording 35 follows ---
+   [pilot] ruzyne tower sky travel nine five juliett fully established ils one three
+   [controller] sky travel nine five juliett ruzyne tower continue approach runway one three departure ahead
+   [pilot] continue approaching runway one three sky travel nine five juliett
+B> [controller] twin star eight eight seven line up runway one three
+   [pilot] eight eight seven",twin star eight eight seven line up runway one three,twin star eight eight seven line up runway one three,yes,
+3286,813-splice-0-85,splice,31,"   [controller] seven five nine continue
+A> [controller] hotel zulu mike sierra four runway three one cleared for takeoff wind one eight zero degrees seven knots good bye
+   [pilot] takeoff
+   [controller] one two zero decimal five two five
+--- recording 1649 follows ---
+   [pilot] yne tower lot five two seven final three one
+   [controller] lot five two seven ruzyne tower
+B> [controller] runway three one cleared to land wind zero six zero degrees and six knots
+   [pilot] cleared to land three one lot five two seven",runway three one cleared to land wind zero six zero degrees and six knots,runway three one cleared to land wind zero six zero degrees and six knots,yes,
+3287,601-splice-0-86,splice,13,"   [controller] csa one eight three correction one eight four ruzyne tower
+A> [controller] contact lima golf line up runway one three and wait
+   [pilot] line up and wait runway one three and conta
+   [pilot] hello tower el al five two one
+   [pilot] for runway one three
+   [controller] hello el al five two one ruzyne tower continue approach
+   [pilot] tinue approach
+--- recording 356 follows ---
+B> [controller] csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots
+   [controller] csa nine five six runway one three cleared for takeoff wind one five zero degrees three knots",csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots,csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots,yes,
+3288,1620-splice-0-87,splice,31,"A> [controller] turkish one seven six eight runway three one cleared for takeoff wind one nine zero degrees three knots good bye
+   [pilot] cleared for takeoff runway three one good bye turkish one seven six
+   [pilot] ruzyne aero flot one four nine continue three one
+   [controller] aero flot one four nine ruzyne tower roger
+--- recording 483 follows ---
+   [pilot] ruzyne tower
+   [pilot] full establish ils three on
+B> [controller] sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots
+   [pilot] leared to land runway three one",sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots,sky travel one zero three five tower runway three one cleared to land wind one eight zero degrees four knots,yes,
+3289,122-splice-0-88,splice,31,"   [pilot] and we expect to line up via runway two two
+A> [controller] swiss four seven three charlie affirm now you may line up runway three one via runway two two
+   [pilot] via runway two two lining up and wait runway three one swiss four seven three charlie
+--- recording 490 follows ---
+   [mixed] shamrock six four four contact ground one two one decimal nine good bye one two one decimal nine shamrock six one one zero
+   [pilot] ruzyne tower lufthansa
+   [pilot] nine juliett charlie
+   [controller] lufthansa nine juliett charlie hello tower continue approach
+   [controller] lufthansa four kilo hotel traffic information low vfr
+   [controller] helicopter approaching airfield from the north not crossing axis of runway three one
+B> [controller] and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day
+   [pilot] seven kilo hotel runway",and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day,and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day,yes,
+3290,35-splice-0-89,splice,13,"   [pilot] continue approaching runway one three sky travel nine five juliett
+A> [controller] twin star eight eight seven line up runway one three
+   [pilot] eight eight seven
+--- recording 1309 follows ---
+B> [controller] csa nine two zero runway one three cleared for takeoff wind one eight zero degrees three knots
+   [pilot] cleared for takeoff one three csa nine three zero",csa nine two zero runway one three cleared for takeoff wind one eight zero degrees three knots,csa nine two zero runway one three cleared for takeoff wind one eight zero degrees three knots,yes,
+3291,1436-splice-0-90,splice,13,"   [pilot] ok we will climb initially three thousand feet csa nine zero four
+A> [controller] csa nine zero four runway one three cleared for takeoff wind zero five zero degrees four knots
+   [pilot] csa nine zero four
+   [pilot] we are cleared for takeoff runway one three
+--- recording 49 follows ---
+B> [controller] two six two three runway one three cleared to land wind zero eight zero degrees fi
+   [pilot] runway one three csa six three three",two six two three runway one three cleared to land wind zero eight zero degrees fi,two six two three runway one three cleared to land wind zero eight zero degrees fi,yes,
+3292,2120-splice-0-91,splice,13,"A> [controller] lufthansa nine victor tango line up runway one three
+   [pilot] ruzyne tower csa nine one seven
+   [pilot] blished the
+   [controller] csa nine one seven ruzyne tower continue approach
+   [pilot] continue approa
+--- recording 359 follows ---
+B> [controller] air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots
+   [pilot] clear takeoff runway one three air france one nine eight romeo",air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots,air france one nine eight romeo runway one three cleared for takeoff wind zero one zero degrees seven knots,yes,
+3293,160-splice-0-92,splice,13,"   [controller] lufthansa nine victor tango ruzyne tower hold position call you at
+A> [controller] jobair zero six two runway one three cleared to land wind zero two zero degrees six knots
+   [pilot] runway one three cleared to land juliett zulu
+--- recording 133 follows ---
+B> [controller] austrian seven one zero papa runway one three cleared for takeoff wind zero five zero degrees five knots
+   [pilot] cleared for takeoff one three austrian seven zero one papa",austrian seven one zero papa runway one three cleared for takeoff wind zero five zero degrees five knots,austrian seven one zero papa runway one three cleared for takeoff wind zero five zero degrees five knots,yes,
+3294,321-splice-0-93,splice,31,"   [mixed] csa eight two eight runway three one cleared for takeoff wind one eight zero degrees five knots three one cleared for takeoff
+A> [mixed] csa four bravo echo line up runway three one lining up runway three one csa four bravo echo
+--- recording 902 follows ---
+B> [controller] csa six eight eight runway three one cleared for takeoff wind one seven zero degrees four knots traffic four miles final
+   [pilot] runway three one cleared for takeoff csa six eight eight",csa six eight eight runway three one cleared for takeoff wind one seven zero degrees four knots traffic four miles final,csa six eight eight runway three one cleared for takeoff wind one seven zero degrees four knots traffic four miles final,yes,
+3295,195-splice-0-94,splice,31,"   [pilot] runway three one cleared for takeoff csa one nine six two
+A> [controller] mike echo mike lima india line up runway three one and wait
+   [pilot] line up runway three one and
+--- recording 1119 follows ---
+   [controller] camber three five two three vacate via golf contact ruzyne ground one two one decimal nine good bye
+   [pilot] one two one nine for ground three five two four three five two three bye
+B> [controller] air france one three eight three runway three one cleared for takeoff wind one eight zero degrees five knots traffic four miles final
+   [pilot] cleared for takeoff three one air france one three eight three",air france one three eight three runway three one cleared for takeoff wind one eight zero degrees five knots traffic four miles final,air france one three eight three runway three one cleared for takeoff wind one eight zero degrees five knots traffic four miles final,yes,
+3296,1449-splice-0-95,splice,31,"A> [controller] austrian seven zero eight papa runway three one cleared for takeoff wind one one zero five knots
+   [pilot] cleared for takeoff runway three one austrian seven zero eight papa
+   [pilot] oscar kilo hotel
+   [pilot] praha hello wizz air four quebec sierra on lima approaching ho
+   [pilot] ready for dep
+   [controller] wizz air four quebec sierra roger landing traffic standby
+   [pilot] wizz air four quebec sierra
+--- recording 1245 follows ---
+   [pilot] zulu mike foxtrot any chance to reduce speed
+   [controller] no speed restrictions up to you
+   [pilot] thank you sir reducing
+B> [controller] wizz air five five seven runway three one cleared to land wind zero eight zero degrees and three knots",wizz air five five seven runway three one cleared to land wind zero eight zero degrees and three knots,wizz air five five seven runway three one cleared to land wind zero eight zero degrees and three knots,yes,
+3297,1969-splice-0-96,splice,31,"   [pilot] four two ready for immediate
+A> [controller] aero flot one four two behind landing atr short final line up runway three one be ready for immediate departure
+   [controller] lining up
+   [pilot] three one
+   [pilot] after landing aircraft aero flot one
+   [pilot] tower hello britair five nine zero final three one
+   [controller] britair five nine zero praha ruzyne tower continue approach
+--- recording 490 follows ---
+   [mixed] shamrock six four four contact ground one two one decimal nine good bye one two one decimal nine shamrock six one one zero
+   [pilot] ruzyne tower lufthansa
+   [pilot] nine juliett charlie
+   [controller] lufthansa nine juliett charlie hello tower continue approach
+   [controller] lufthansa four kilo hotel traffic information low vfr
+   [controller] helicopter approaching airfield from the north not crossing axis of runway three one
+B> [controller] and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day
+   [pilot] seven kilo hotel runway",and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day,and runway three one cleared for takeoff wind zero four zero degrees and three knots have a good day,yes,
+3298,1206-splice-0-97,splice,31,"A> [controller] n golf alfa runway three one cleared for takeoff wind one six zero degrees three knots
+   [pilot] cleared for takeoff runway three one
+   [pilot] tower csa seven six five full established ils three one
+   [mixed] csa seven six five tower continue approach continue approach csa seven six five
+--- recording 1649 follows ---
+   [pilot] yne tower lot five two seven final three one
+   [controller] lot five two seven ruzyne tower
+B> [controller] runway three one cleared to land wind zero six zero degrees and six knots
+   [pilot] cleared to land three one lot five two seven",runway three one cleared to land wind zero six zero degrees and six knots,runway three one cleared to land wind zero six zero degrees and six knots,yes,
+3299,1083-splice-0-98,splice,31,"   [pilot] one two nine aero flot
+A> [controller] csa four nine two runway three one cleared for takeoff wind one eight zero degrees three knots
+   [pilot] cleared for takeoff runway three one
+   [pilot] ruzyne tower csa nine two delta continue taxi hodling position eighty one
+   [mixed] csa nine two delta report ready for departure wilco csa nine two delta
+--- recording 2100 follows ---
+   [controller] csa three foxtrot contact ruzyne ground one two one decimal nine
+   [pilot] one two one nine csa three foxt
+B> [controller] csa six three one runway three one cleared to land wind one eight zero degrees three knots
+   [pilot] leared to land runway three one",csa six three one runway three one cleared to land wind one eight zero degrees three knots,csa six three one runway three one cleared to land wind one eight zero degrees three knots,yes,
+3300,520-splice-0-99,splice,31,"A> [controller] swedestar zero five one runway three one cleared to land wind zero nine zero degrees five kno
+   [pilot] runway three one cleared to land swedestar zero five o
+   [pilot] tower wizz air four xray zulu
+   [controller] hello wizziar four xray zulu ruzyne tower
+--- recording 1206 follows ---
+B> [controller] n golf alfa runway three one cleared for takeoff wind one six zero degrees three knots
+   [pilot] cleared for takeoff runway three one",n golf alfa runway three one cleared for takeoff wind one six zero degrees three knots,n golf alfa runway three one cleared for takeoff wind one six zero degrees three knots,yes,
