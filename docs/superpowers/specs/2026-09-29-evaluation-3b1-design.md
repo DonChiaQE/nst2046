@@ -171,6 +171,11 @@ each reported, and an empty `verdict`:
 (Amended 2026-10-20 after the Milestone 1 feedback: `missing_info` was split into `missing_release` and
 `other_frequency`, so the report shows which false alarms the choice of extractor can change. No sheet had verdicts.)
 
+(Amended 2026-10-25 after the paid run: only RUNWAY alerts are adjudicated, 94 of the 335 pooled alerts. READBACK
+alerts are reported as raw alerts per hour, an upper bound on their false alarms, and the failure taxonomy covers RUNWAY
+alerts only. The pre-registered false-alarm measure is RUNWAY alerts, so the primary comparison is unchanged. No sheet
+had verdicts. Decision log, 2026-10-25.)
+
 Sheet A (`data/labels/adjudication_A.csv`) has every row; sheet B (`adjudication_B.csv`) holds a fixed 30% of keys for a
 second person, chosen per key from a seeded hash so the overlap stays the same as more arms add alerts. Cohen's κ on the
 overlap. Non-`genuine` verdicts are false alarms; the five verdicts are the failure taxonomy. Re-generating the sheet

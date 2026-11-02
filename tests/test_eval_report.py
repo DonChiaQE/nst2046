@@ -26,9 +26,12 @@ VALID = [{"recording_id": 1, "edit_kind": "splice", "valid": "yes"}, {"recording
 def test_arm_summary_counts_recall_and_false_alarms():
     s = arm_summary(RULES, VERDICTS)
     assert s["recall"] == {"n": 2, "strict": 1, "lenient": 1, "partial": 0, "miss": 1}
-    assert s["fa_RUNWAY"] == 1.0 and s["hours"] == 1.0 and s["fa_READBACK"] == 0.0
+    assert s["fa_RUNWAY"] == 1.0 and s["hours"] == 1.0 and s["readback_raw"] == 0.0
     assert s["by_kind"]["splice"]["n"] == 2 and s["by_kind"]["runway_swap"]["n"] == 0
     assert arm_summary(RULES, {})["fa_RUNWAY"] is None   # an unadjudicated alert: pending, not a number
+    # READBACK alerts are not adjudicated (decision 2026-10-25): every one counts, with or without a verdict
+    rb = arm_summary([_row(10, "negatives", [_c(1, type_="READBACK")])], {})
+    assert rb["readback_raw"] == 2.0 and rb["fa_RUNWAY"] == 0.0
 
 
 def test_primary_differences_are_paired_over_common_recordings():
@@ -41,6 +44,7 @@ def test_primary_differences_are_paired_over_common_recordings():
 def test_taxonomy_counts_verdicts_of_the_arms_own_alerts():
     assert taxonomy(RULES, VERDICTS) == {"missing_release": 1}
     assert taxonomy(RULES, {}) == {"unadjudicated": 1}
+    assert taxonomy([_row(10, "negatives", [_c(1), _c(2, type_="READBACK")])], {}) == {"unadjudicated": 1}   # RUNWAY only
 
 
 def test_the_report_covers_every_section_and_uses_no_em_dash():
@@ -57,6 +61,7 @@ def test_the_report_covers_every_section_and_uses_no_em_dash():
         assert heading in text
     assert "Cohen's kappa 0.80 over 12 alerts" in text and "-50 pts" in text
     assert "| Arm | genuine | parse_error | missing_release | other_frequency | engine_rule | unadjudicated |" in text
+    assert "READBACK alerts / h, not adjudicated" in text and "READBACK alerts were not adjudicated" in text
     assert "\u2014" not in text
     assert "trigger transmission is test split" in text and "reports recall only" not in text   # a usable headline negative is present
     pending = render(summarize(rows, {}, VALID, None), "29 Sep 2026")

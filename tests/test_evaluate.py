@@ -218,7 +218,8 @@ def test_the_adjudication_sheet_pools_alerts_across_arms_and_keeps_verdicts(tmp_
     rules = run_arm(db, PRIMARY[0], [(rid, "negatives", None), (quiet, "negatives", None)])
     other = [{**r, "conflicts": [{**c, "callsigns": ["", c["callsigns"][1]]} for c in r["conflicts"]]} for r in rules]
     positive = [{**rules[0], "set": "positives"}]
-    sheet = adjudication_rows(conn, {"rule-a": rules, "rule-b": other, "rule-c": positive})
+    readback = [{**r, "conflicts": [{**c, "type": "READBACK"} for c in r["conflicts"]]} for r in rules]   # not adjudicated
+    sheet = adjudication_rows(conn, {"rule-a": rules, "rule-b": other, "rule-c": positive, "rule-d": readback})
     [row] = sheet
     tx = rules[0]["tx_ids"][2]
     assert row["key"] == f"{rid}:RUNWAY:31:{tx}" and row["arms"] == "rule-a; rule-b"
@@ -230,6 +231,18 @@ def test_the_adjudication_sheet_pools_alerts_across_arms_and_keeps_verdicts(tmp_
     again = adjudication_rows(conn, {"rule-a": rules}, existing=[row, stale])
     assert [(r["key"], r["verdict"]) for r in again] == [(row["key"], "parse_error"), (stale["key"], "genuine")]
     assert read_verdicts(again) == {row["key"]: "parse_error", stale["key"]: "genuine"}
+
+
+def test_the_adjudication_context_shows_the_whole_recording_up_to_the_trigger(tmp_path):
+    # the clearance that holds the runway can be any number of lines back, so the sheet must not cut it off
+    db = tmp_path / "t.sqlite"
+    conn = init_db(db)
+    chatter = [("pilot", f"good morning tower number {n}") for n in ("one", "two", "three", "four", "five", "six")]
+    rid = _seed(conn, chatter + CONFLICT)
+    [row] = adjudication_rows(conn, {"rule-a": run_arm(db, PRIMARY[0], [(rid, "negatives", None)])})
+    lines = row["context"].splitlines()
+    assert len(lines) == 9 and lines[0] == "   [pilot] good morning tower number one"
+    assert lines[-1] == f">> [controller] {CONFLICT[2][1]}"
 
 
 def test_read_verdicts_rejects_unknown_labels():

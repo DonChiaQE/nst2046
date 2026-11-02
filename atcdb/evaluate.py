@@ -302,23 +302,26 @@ def cohen_kappa(a: list[str], b: list[str]) -> float:
 # other_frequency (extraction right, the release or the traffic was on a frequency the corpus does not record, such as
 # ground or apron), engine_rule (extraction right, the matrix is too strict).
 VERDICTS = ("genuine", "parse_error", "missing_release", "other_frequency", "engine_rule")
+# READBACK alerts are reported raw, not adjudicated (decision 2026-10-25): they were 241 of the 335 pooled alerts, and
+# the pre-registered false-alarm measure counts RUNWAY alerts only
+ADJUDICATED_TYPES = ("RUNWAY",)
 ADJUDICATION_COLUMNS = ["key", "recording_id", "type", "runway", "tx_id", "arms", "callsigns", "context", "verdict", "notes"]
-CONTEXT_LINES = 6   # transmissions shown up to and including the trigger
 
 
 def adjudication_rows(conn: sqlite3.Connection, rows_by_arm: dict[str, list[dict]],
                       existing: Iterable[dict] = ()) -> list[dict]:
-    """The adjudication sheet: every alert raised on a usable negative by any arm, pooled on `alert_key`, with the arms
-    that raised it, the callsigns each extracted and the human transcript up to the trigger. Verdicts and notes already
-    in `existing` are kept, and existing rows no longer raised by any arm stay on the sheet. Sorted by recording, then
-    transmission."""
+    """The adjudication sheet: every alert of an ADJUDICATED_TYPES type raised on a usable negative by any arm, pooled on
+    `alert_key`, with the arms that raised it, the callsigns each extracted and the whole human transcript up to the trigger (a
+    six-line window hid earlier lines in 35 of the 94 alerts of 2026-10-25).
+    Verdicts and notes already in `existing` are kept, and existing rows no longer raised by any arm stay on the sheet.
+    Sorted by recording, then transmission."""
     pooled: dict[str, dict] = {}
     for arm_name, rows in sorted(rows_by_arm.items()):
         for row in rows:
             if row["set"] != "negatives" or not usable(row):
                 continue
             for c in row["conflicts"]:
-                if c["severity"] != "alert":
+                if c["severity"] != "alert" or c["type"] not in ADJUDICATED_TYPES:
                     continue
                 key = alert_key(row["recording_id"], c)
                 entry = pooled.setdefault(key, {"key": key, "recording_id": row["recording_id"], "type": c["type"],
@@ -334,7 +337,7 @@ def adjudication_rows(conn: sqlite3.Connection, rows_by_arm: dict[str, list[dict
         txs = load_recording(conn, entry["recording_id"], "gold", default_transcript_model(conn, "gold", entry["recording_id"]))
         k = next(i for i, tx in enumerate(txs) if tx.id == entry["tx_id"])
         context = "\n".join(f"{'>>' if i == k else '  '} [{tx.role}] {tx.text}"
-                            for i, tx in enumerate(txs) if k - CONTEXT_LINES < i <= k)
+                            for i, tx in enumerate(txs[:k + 1]))
         out.append({**entry, "arms": "; ".join(entry["arms"]), "callsigns": "; ".join(entry["callsigns"]),
                     "context": context, "verdict": old.get(key, {}).get("verdict", ""),
                     "notes": old.get(key, {}).get("notes", "")})

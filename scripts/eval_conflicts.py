@@ -14,8 +14,8 @@ With `--set`, only that set's rows in an existing JSONL are replaced; the other 
 Parses and judgments come from their caches, so a re-run is free; always `--dry-run` first, which prints the uncached
 calls and a rough cost per arm and spends nothing.
 
-`adjudicate` pools every alert the arms raised on the negatives into data/labels/adjudication_A.csv (verdicts already
-given are kept) and writes the second adjudicator's overlap, adjudication_B.csv. Fill `verdict` with genuine,
+`adjudicate` pools every RUNWAY alert the arms raised on the negatives (READBACK alerts are reported raw, not
+adjudicated: decision 2026-10-25) into data/labels/adjudication_A.csv (verdicts already given are kept) and writes the second adjudicator's overlap, adjudication_B.csv. Fill `verdict` with genuine,
 parse_error (the extraction was wrong), missing_release (extraction right, the release was never spoken),
 other_frequency (extraction right, the release or the traffic was on a frequency the corpus does not record, such as
 ground or apron) or engine_rule (extraction right, the matrix is too strict). Re-run it after new arms have run.
@@ -24,8 +24,8 @@ ground or apron) or engine_rule (extraction right, the matrix is too strict). Re
 `sweep` re-folds every structured arm's stored events with the CROSS and LUAW timeouts set to each value and prints
 lenient recall and raw negative alerts per value. A finding only: engine.STALE_S is not changed.
 
-`report` writes the results doc from the arms' rows, the adjudication sheets and the injection check verdicts. False
-alarm rates show as pending until every alert has a verdict on sheet A.
+`report` writes the results doc from the arms' rows, the adjudication sheets and the injection check verdicts. An
+arm's RUNWAY false-alarm rate shows as pending until each of its RUNWAY alerts has a verdict on sheet A.
 """
 import argparse
 import csv

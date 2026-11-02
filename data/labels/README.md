@@ -1,15 +1,15 @@
 # Labelling guide
 
-One sheet is waiting now (the injection check), and another comes after the paid evaluation run. Each takes one column
-of answers. The event sheets are skipped for Milestone 2 (decision log, 2026-10-22): the extraction results use the
+The injection check is done (98 valid, 2 rejected) and the evaluation has run; the adjudication sheets are waiting now.
+Each takes one column of answers. The event sheets are skipped for Milestone 2 (decision log, 2026-10-22): the extraction results use the
 readback sheet's 200 labelled instructions instead. Section 1 stays for whenever there is time.
 
 | Sheet | Who | Rows | Fill in | When |
 |---|---|---:|---|---|
-| `injection_check.csv` | Jennifer | 100 | `valid` | now |
+| `injection_check.csv` | Jennifer | 100 | `valid` | done 2026-10-25 |
 | `event_sheet_A.csv` | Don | 200 | `events` | skipped for now |
 | `event_sheet_B.csv` | Jennifer | 50 (the same lines as A's first 50) | `events` | skipped for now |
-| `adjudication_A.csv` / `_B.csv` | Don / Jennifer | one row per alarm | `verdict` | after the evaluation run |
+| `adjudication_A.csv` / `_B.csv` | Don / Jennifer | 94 / 31 (one row per RUNWAY alarm) | `verdict` | now |
 
 **Rules for every sheet**
 - Work blind. Don't look at the other person's answers until both of you are done, and don't look at what the rules
@@ -112,9 +112,10 @@ When you're done, Don records the answers with
 
 ## 3. Adjudication: why did each alarm happen? (after the evaluation run)
 
-These sheets don't exist yet. After the paid run, `python scripts/eval_conflicts.py adjudicate` writes one row per
-alarm the extractors raised on real recordings (which contain no real conflicts). Don takes every row (sheet A),
-Jennifer a fixed 30% of them (sheet B). For each, write one `verdict`:
+`python scripts/eval_conflicts.py adjudicate` writes one row per RUNWAY alarm the extractors raised on real recordings
+(which contain no real conflicts): 94 rows after the 2026-10-25 run. Don takes every row (sheet A), Jennifer a fixed
+30% of them (sheet B, 31 rows). READBACK alarms are not on the sheets: the report gives their raw count instead
+(decision log, 2026-10-25). For each row, write one `verdict`:
 
 | Verdict | Means |
 |---|---|
@@ -125,3 +126,18 @@ Jennifer a fixed 30% of them (sheet B). For each, write one `verdict`:
 | `engine_rule` | the reading was right, but the conflict rules are too strict (for example a conditional clearance) |
 
 This is the professor's point 4: every false alarm gets a cause.
+
+**How to decide (agreed 2026-11-02; neither of us is a controller, so follow these steps rather than judging).**
+`context` shows the whole recording up to the alarm. Read the lines above the `>>` line and stop at the first answer:
+
+1. Above it, is a *different* plane cleared onto the *same* runway (`cleared to land`, `cleared for takeoff`, `line up`,
+   `cross`)? **No:** `parse_error` (the system made up the second plane). If the `>>` line names no plane, it is for
+   the plane the controller spoke to just before.
+2. After that clearance, is that plane told or does it say `vacated`, `contact ground`, `contact departure`,
+   `go around` or `hold short`? **Yes:** `parse_error` (the system missed the release).
+3. Is the `>>` line a line-up (`line up`, `line up and wait`, `behind ... line up`)? **Yes:** `engine_rule` (the
+   controller is queueing it on purpose; the rules count that as a conflict).
+4. Otherwise `missing_release`, or `other_frequency` if the release was probably said on ground's frequency.
+
+`genuine` is for two planes really cleared onto the runway at once with nothing between; expect none. If no step fits,
+take the closest and start `notes` with `none fits:`.

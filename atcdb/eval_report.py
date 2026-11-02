@@ -34,8 +34,8 @@ def _fa_units(rows: list[dict], verdicts: dict[str, str], conflict_type: str) ->
 
 
 def arm_summary(rows: list[dict], verdicts: dict[str, str]) -> dict:
-    """Recall (strict, lenient with CI, partial), false alarms per hour (RUNWAY and READBACK, with CI, or None when
-    pending), and the counts behind them, for one arm's rows."""
+    """Recall (strict, lenient with CI, partial), RUNWAY false alarms per hour (with CI, or None when pending), READBACK
+    alerts per hour (raw, with CI: they are not adjudicated), and the counts behind them, for one arm's rows."""
     positives = [r for r in rows if r["set"] == "positives"]
     negatives = [r for r in rows if r["set"] == "negatives"]
     hits = _recall_units(rows)
@@ -44,10 +44,11 @@ def arm_summary(rows: list[dict], verdicts: dict[str, str]) -> dict:
            "unscored": sum(not usable(r) for r in rows),
            "hours": sum(r["span_s"] for r in negatives if usable(r)) / 3600,
            "by_kind": {k: recall([r for r in positives if r["truth"]["edit_kind"] == k]) for k in EDIT_KINDS}}
-    for t in ("RUNWAY", "READBACK"):
-        units = _fa_units(rows, verdicts, t)
-        out[f"fa_{t}"] = None if units is None else per_hour(list(units.values()))
-        out[f"fa_{t}_ci"] = None if units is None else bootstrap(list(units.values()), per_hour)
+    units = _fa_units(rows, verdicts, "RUNWAY")
+    out["fa_RUNWAY"] = None if units is None else per_hour(list(units.values()))
+    out["fa_RUNWAY_ci"] = None if units is None else bootstrap(list(units.values()), per_hour)
+    raw = [(float(len(alert_keys(r, "READBACK"))), r["span_s"]) for r in negatives if usable(r)]
+    out["readback_raw"], out["readback_raw_ci"] = per_hour(raw), bootstrap(raw, per_hour)
     return out
 
 
@@ -68,8 +69,8 @@ def primary_differences(rows_a: list[dict], rows_b: list[dict], verdicts: dict[s
 
 
 def taxonomy(rows: list[dict], verdicts: dict[str, str]) -> Counter:
-    """Verdict counts over the distinct alerts one arm raised on usable negatives (`unadjudicated` for none yet)."""
-    keys = set().union(*[alert_keys(r) for r in rows if r["set"] == "negatives" and usable(r)])
+    """Verdict counts over the distinct RUNWAY alerts one arm raised on usable negatives (`unadjudicated` for none yet)."""
+    keys = set().union(*[alert_keys(r, "RUNWAY") for r in rows if r["set"] == "negatives" and usable(r)])
     return Counter(verdicts.get(k, "unadjudicated") for k in keys)
 
 
@@ -116,13 +117,13 @@ def _recall_cell(s: dict) -> str:
     return f"{_pct(r['lenient'] / r['n'])} ({_pct(lo)} to {_pct(hi)})"
 
 
-def _fa_cell(s: dict, t: str = "RUNWAY") -> str:
+def _fa_cell(s: dict, key: str = "fa_RUNWAY") -> str:
     if not s["hours"]:
         return "n/a"
-    if s[f"fa_{t}"] is None:
+    if s[key] is None:
         return "pending"
-    lo, hi = s[f"fa_{t}_ci"]
-    return f"{s[f'fa_{t}']:.1f} ({lo:.1f} to {hi:.1f})"
+    lo, hi = s[f"{key}_ci"]
+    return f"{s[key]:.1f} ({lo:.1f} to {hi:.1f})"
 
 
 def _diff_cell(d: tuple[float, float, float] | None, pct: bool) -> str:
@@ -134,12 +135,12 @@ def _diff_cell(d: tuple[float, float, float] | None, pct: bool) -> str:
 
 def _arm_table(arms: dict[str, dict]) -> list[str]:
     lines = ["| Arm | Positives | Strict | Lenient recall (95% CI) | Warning only | RUNWAY false alarms / h (95% CI) "
-             "| READBACK false alarms / h | Hours | Incomplete | Not scored |",
+             "| READBACK alerts / h, not adjudicated (95% CI) | Hours | Incomplete | Not scored |",
              "|---|---:|---:|---|---:|---|---|---:|---:|---:|"]
     for name, s in arms.items():
         r = s["recall"]
         lines.append(f"| {name} | {r['n']} | {r['strict']} | {_recall_cell(s)} | {r['partial']} | {_fa_cell(s)} "
-                     f"| {_fa_cell(s, 'READBACK')} | {s['hours']:.2f} | {s['incomplete']} | {s['unscored']} |")
+                     f"| {_fa_cell(s, 'readback_raw')} | {s['hours']:.2f} | {s['incomplete']} | {s['unscored']} |")
     return lines
 
 
@@ -192,7 +193,7 @@ def render(summary: dict, date: str) -> str:
             "| Arm | " + " | ".join(EDIT_KINDS) + " |", "|---|" + "---:|" * len(EDIT_KINDS)]
     for name, s in summary["arms"].items():
         out.append(f"| {name} | " + " | ".join(f"{s['by_kind'][k]['lenient']}/{s['by_kind'][k]['n']}" for k in EDIT_KINDS) + " |")
-    out += ["", "## Failure taxonomy of alerts on real recordings", "",
+    out += ["", "## Failure taxonomy of RUNWAY alerts on real recordings", "",
             "| Arm | " + " | ".join((*VERDICTS, "unadjudicated")) + " |", "|---|" + "---:|" * (len(VERDICTS) + 1)]
     for name, t in summary["taxonomy"].items():
         out.append(f"| {name} | " + " | ".join(str(t.get(v, 0)) for v in (*VERDICTS, "unadjudicated")) + " |")
@@ -230,6 +231,9 @@ def render(summary: dict, date: str) -> str:
             "trigger transmission), whatever callsigns each arm extracted.",
             "- A judge READBACK report without a normalisable runway is dropped, which shapes the judge's READBACK "
             "numbers.",
+            "- READBACK alerts were not adjudicated (decision log, 2026-10-25). Their column counts every READBACK alert "
+            "on the real recordings, so it bounds READBACK false alarms from above, and the failure taxonomy covers "
+            "RUNWAY alerts only.",
             "- Lenient recall credits any later alert on the injected runway, which favours noisier arms; compare it "
             "with strict recall.", ""]
     return "\n".join(out)
