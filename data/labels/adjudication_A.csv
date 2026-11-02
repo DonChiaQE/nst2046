@@ -1,0 +1,562 @@
+key,recording_id,type,runway,tx_id,arms,callsigns,context,verdict,notes
+35:RUNWAY:13:13667,35,RUNWAY,13,13667,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,sky / travel / nine / five / juliett / twin / star / eight / eight / seven; twin star eight eight seven,"   [pilot] ruzyne tower sky travel nine five juliett fully established ils one three
+   [controller] sky travel nine five juliett ruzyne tower continue approach runway one three departure ahead
+   [pilot] continue approaching runway one three sky travel nine five juliett
+>> [controller] twin star eight eight seven line up runway one three",parse_error,
+74:RUNWAY:31:3139,74,RUNWAY,31,3139,llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-gold,swedestar zero five two / swedestar zero five zulu; swedestar zero five two / swedestar zero five,"   [controller] swedestar zero five zulu line up runway three one
+   [pilot] line up runway three one swede
+   [mixed] adria four zero vacate via golf and contact ruzyne ground one two one decimal nine golf and one two one deci
+   [pilot] good afternoon lufthansa seven
+   [controller] lufthansa seven echo lima hello confirm ready for departure
+   [pilot] affirm ready in the
+   [controller] roger thank you
+   [controller] swedestar zero five two line up
+>> [controller] cleared for takeoff wind zero nine zero four knots",missing_release,
+74:RUNWAY:31:8797,74,RUNWAY,31,8797,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-gold,swedestar / zero / five / two; swedestar / zero / five / zulu; swedestar zero five zulu / swedestar zero five two,"   [controller] swedestar zero five zulu line up runway three one
+   [pilot] line up runway three one swede
+   [mixed] adria four zero vacate via golf and contact ruzyne ground one two one decimal nine golf and one two one deci
+   [pilot] good afternoon lufthansa seven
+   [controller] lufthansa seven echo lima hello confirm ready for departure
+   [pilot] affirm ready in the
+   [controller] roger thank you
+>> [controller] swedestar zero five two line up",engine_rule,I feel like coz of line up
+100:RUNWAY:31:1460,100,RUNWAY,31,1460,judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa nine six zero,"   [pilot] tower csa six three five establish localizer three one
+   [controller] six three five tower continue
+>> [mixed] csa nine six zero line up runway three one lining up three one csa nine six zero",parse_error,"Again, line up | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+100:RUNWAY:31:3391,100,RUNWAY,31,3391,judge-claude-haiku-5-5-sequence-asr,csa / nine / six / zero,"   [pilot] tower csa six three five establish localizer three one
+   [controller] six three five tower continue
+   [mixed] csa nine six zero line up runway three one lining up three one csa nine six zero
+   [controller] say seven six
+   [controller] contact ground one two one nine
+   [pilot] two one nine csa se
+>> [controller] csa nine six zero runway three one cleared for takeoff wind one six zero degrees three knots",missing_release,Should be? 
+141:RUNWAY:13:9345,141,RUNWAY,13,9345,judge-claude-haiku-5-5-sequence-asr,a / seven / zero / two,"   [pilot] ruzyne tower csa nine seven five visual approach runway one
+   [controller] csa nine seven five
+>> [controller] csa seven zero two runway one three cleared for takeoff wind zero six zero degrees",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+144:RUNWAY:13:12024,144,RUNWAY,13,12024,judge-claude-sonnet-5-sequence-gold,sky travel six one eight,"   [controller] sky travel eight two four cleared for takeoff runway
+   [pilot] for takeoff runway
+   [pilot] three sky travel
+   [pilot] sky travel six one eight ready in seque
+   [pilot] one eight line up run
+>> [pilot] lining up one three sky travel",engine_rule,Line up 
+157:RUNWAY:31:14736,157,RUNWAY,31,14736,judge-claude-haiku-5-5-sequence-gold,easy / four / nine / six / papa,"   [pilot] ruzyne tower csa six bravo charlie ils three one reducing one seven zero
+   [controller] csa six bravo charlie tower continue approach runway three one
+   [pilot] nue approach csa six bravo charlie
+   [mixed] jobair zero seven two contact ground one two one nine two one nine jobair zero s
+   [controller] csa six nine runway three one clear to land wind one seven zero degrees two knots
+   [pilot] clear to land runway three one c
+   [pilot] easy four nine six papa we are fully ready and we can take romeo
+>> [controller] easy four nine six papa roger use romeo and stop at holding point runway three one landing traffic",missing_release,"I think, I’m not sure again"
+175:RUNWAY:31:1585,175,RUNWAY,31,1585,judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,cimber three five two four,"   [pilot] zyne tower wizz air five november ils runway three one
+   [controller] wizz air five zero zero ruzyne
+   [controller] tower continue approach
+   [pilot] ntinue approach
+   [controller] britair five nine zero bravo contact ruzyne ground one two one decimal nine good bye
+   [pilot] one two one nine britair nine zero bravo good bye
+>> [controller] cimber three five two four runway three one cleared for takeoff wind one nine zero degrees three knots traffic four miles final good bye",parse_error,"Again, I think | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+189:RUNWAY:31:202,189,RUNWAY,31,202,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,lufthansa / nine / lima / charlie; swiss / one / two / four / alfa / lufthansa / nine / lima / charlie; lufthansa nine lima charlie; lufthansa nine lima charlie / swiss one two four alfa,"   [controller] swiss one two four alfa runway three one cleared to land wind one eight zero degrees three knots
+   [pilot] cleared to land three one swiss one two four alfa
+   [pilot] oscar kilo bravo yankee romeo
+   [pilot] bravo yankee romeo
+   [controller] b romeo yankee
+   [pilot] bravo yankee romeo
+>> [controller] lufthansa nine lima charlie line up runway three one and wait",engine_rule,I feel like it’s engine rule because it’s calling for a line up but I’m not too sure
+189:RUNWAY:31:2964,189,RUNWAY,31,2964,llm-claude-haiku-5-5-window-gold,lufthansa nine lima charlie / swiss one two four alfa,"   [controller] swiss one two four alfa runway three one cleared to land wind one eight zero degrees three knots
+   [pilot] cleared to land three one swiss one two four alfa
+   [pilot] oscar kilo bravo yankee romeo
+   [pilot] bravo yankee romeo
+   [controller] b romeo yankee
+   [pilot] bravo yankee romeo
+   [controller] lufthansa nine lima charlie line up runway three one and wait
+>> [pilot] line up and wait runway three one",engine_rule,"Again, line up and wait, feels like queue"
+195:RUNWAY:31:12745,195,RUNWAY,31,12745,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / one / nine / six / two / mike / echo / mike / lima / india; mike echo mike lima india,"   [controller] csa one nine six two line up runway three one
+   [pilot] line up runway three one csa one nine six two
+   [pilot] tower
+   [controller] romeo echo mike echo india ruzyne tower hello roger
+   [controller] csa one nine six two runway three one cleared for takeoff wind one nine zero degrees three knots
+   [pilot] runway three one cleared for takeoff csa one nine six two
+>> [controller] mike echo mike lima india line up runway three one and wait",engine_rule,"Again, line up and wait"
+210:RUNWAY:13:13220,210,RUNWAY,13,13220,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / six / papa / charlie / csa / seven / eight / eight; csa / six / papa / juliett / csa / seven / eight / eight; csa seven eight eight,"   [pilot] tower csa one delta zulu on the ils
+   [controller] csa one delta zulu ruzyne tower roger
+   [controller] sky travel nine five juliett contact ruzyne ground one two one decimal nine
+   [pilot] one two one nine sky travel nine five juliett
+   [mixed] csa six papa juliett runway one three cleared for takeoff wind zero five zero degrees four knots cleared for takeoff one three csa six
+   [pilot] papa charlie
+   [pilot] ruzyne tower csa seven e
+   [pilot] ready for departure
+>> [mixed] csa seven eight eight ruzyne tower roger line up runway one three be ready line up runway one t",engine_rule,"Same, line up and wait"
+216:RUNWAY:31:11351,216,RUNWAY,31,11351,llm-claude-sonnet-5-window-gold,german wings seven hotel / csa four nine three,"   [controller] camber three five two five contact ground one two one decimal nine good bye
+   [pilot] one two one nine camber three five two five by
+   [controller] csa four nine three runway three one clear to land wind zero seven zero degrees two knot
+   [pilot] clear to land runway
+   [pilot] three one csa four nine three
+   [controller] german wings seven hotel behind landing traffic short final boeing seven three seven line up runway three one behind
+   [pilot] german wings seven hotel behind landing
+   [pilot] three seven li
+>> [pilot] up and wait",engine_rule,"Same, line up and wait"
+216:RUNWAY:31:12840,216,RUNWAY,31,12840,judge-claude-haiku-5-5-sequence-asr; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,csa / four / nine / three / german / wings / seven / hotel; german wings seven hotel; german wings seven hotel / csa four nine three,"   [controller] camber three five two five contact ground one two one decimal nine good bye
+   [pilot] one two one nine camber three five two five by
+   [controller] csa four nine three runway three one clear to land wind zero seven zero degrees two knot
+   [pilot] clear to land runway
+   [pilot] three one csa four nine three
+>> [controller] german wings seven hotel behind landing traffic short final boeing seven three seven line up runway three one behind",engine_rule,"Same ,line up and wait"
+242:RUNWAY:31:455,242,RUNWAY,31,455,judge-claude-haiku-5-5-sequence-asr,swiss / one / two / five / victor,"   [pilot] ruzyne tower aero flot
+   [pilot] four two
+   [controller] aero flot one four two ruzyne tower
+>> [controller] swiss one two five victor runway three one cleared for immediate takeoff wind one seven zero degrees four knots traffic two and half miles final",parse_error,"I think, because no release was made for the runway | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+242:RUNWAY:31:2055,242,RUNWAY,31,2055,judge-claude-haiku-5-5-sequence-asr; judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold,csa / nine / six / one; csa nine six one; csa nine six one / swiss one two five victor,"   [pilot] ruzyne tower aero flot
+   [pilot] four two
+   [controller] aero flot one four two ruzyne tower
+   [controller] swiss one two five victor runway three one cleared for immediate takeoff wind one seven zero degrees four knots traffic two and half miles final
+   [pilot] cleared immediate takeoff runway three one swi
+   [pilot] one two five victor bye bye
+   [controller] csa five seven three contact ruzyne ground one two one decimal nine
+   [pilot] one two one decimal nine csa five
+   [pilot] ruzyne tower csa five victor papa ils three one
+   [controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one
+   [pilot] reducing speed one fifty csa five victor papa
+>> [controller] csa nine six one runway three one cleared to land wind one six zero degrees five knots",parse_error,"Missing release I think | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+242:RUNWAY:31:5199,242,RUNWAY,31,5199,llm-claude-haiku-5-5-window-asr,csa nine six one / swiss one two five victor,"   [pilot] ruzyne tower aero flot
+   [pilot] four two
+   [controller] aero flot one four two ruzyne tower
+   [controller] swiss one two five victor runway three one cleared for immediate takeoff wind one seven zero degrees four knots traffic two and half miles final
+   [pilot] cleared immediate takeoff runway three one swi
+   [pilot] one two five victor bye bye
+   [controller] csa five seven three contact ruzyne ground one two one decimal nine
+   [pilot] one two one decimal nine csa five
+   [pilot] ruzyne tower csa five victor papa ils three one
+   [controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one
+   [pilot] reducing speed one fifty csa five victor papa
+   [controller] csa nine six one runway three one cleared to land wind one six zero degrees five knots
+>> [pilot] runway three one cleared to land csa nine six one",parse_error,Idk
+245:RUNWAY:13:14159,245,RUNWAY,13,14159,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,turkish / one / seven / six / nine,"   [pilot] tower bline four zero victor approaching delta when ready
+   [controller] bline four zero victor ruzyne tower good afternoon report ready
+   [pilot] we are fully ready bline four zero victor
+   [controller] bline four zero victor roger hold short of runway one three
+   [pilot] holding short one three bline four zero victor
+>> [controller] turkish one seven six nine runway one three cleared to land wind zero three zero degrees two knots",parse_error,"i think | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+261:RUNWAY:13:5923,261,RUNWAY,13,5923,llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold,csa seven three charlie / speed bird eight six one,"   [pilot] three eight whiskey
+   [controller] speed bird eight six one runway one three cleared for immediate takeoff wind zero two zero degrees nine knots
+   [pilot] speed bird eight six one is ready
+   [controller] bye bye
+   [mixed] ruzyne tower csa zero two five ils one three csa zero two five continue approach
+   [pilot] wilco
+   [controller] air france one nine eight three i estimate two landings standby
+   [mixed] standing bye air france one nine eight three r thank you
+>> [controller] csa seven three charlie runway three one three clear to land wind zero two zero degrees nine knots",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+280:RUNWAY:31:304,280,RUNWAY,31,304,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / 516 / csa / 730; csa / five / one / six / csa / seven / three / zero; csa seven three zero,"   [controller] csa three sierra lima contact ruzyne ground one two one decimal nine
+   [pilot] ground one two one nine csa three sierra lima
+   [pilot] ruzyne tower csa seven three zero good morning again
+   [controller] tower break break csa five one six runway three one cleared for takeoff wind calm
+   [pilot] rwy three one cleared for takeoff csa five one six
+   [pilot] ruzyne tower c
+   [controller] csa eight zero five ruzyne tower
+   [mixed] csa seven three zero ready yeah we are ready csa seven three zero
+>> [mixed] line up runway three one lining up runway three one csa seven three zero",engine_rule,
+289:RUNWAY:31:10262,289,RUNWAY,31,10262,llm-claude-haiku-5-5-window-asr; llm-claude-sonnet-5-window-asr; rule-rules-none-asr; rule-rules-role-asr; rule-rules-window-asr,southern air eight five zero zero / sudanair eight five zero zero,"   [controller] southern air eight five zero zero ready for immediate
+   [pilot] yes ready for immediate sunair eight five zero zero
+   [mixed] southern air eight five zero zero roger line up runway three one line up and wait three one sunair eight five zero zero
+   [pilot] tower good morning nor shuttle one five zero ze
+   [controller] nor shuttle one five zero two ruyzne tower good afternoon continue approach speed one seven zero knots or less depar
+   [pilot] continue and reducing nor shuttle one five zero two
+>> [controller] southern air eight five zero zero runway three one cleared for takeoff wind two two zero degrees seven knots",missing_release,This one just feels like it’s missing release from the plane before southern air
+321:RUNWAY:31:350,321,RUNWAY,31,350,judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / eight / two / eight; csa four bravo echo,"   [pilot] hello tower csa four mike bravo lima ready in seque
+   [controller] csa four mike bravo ruzyne tower roger
+   [controller] easy five three kilo romeo contact ruzyne ground one two one decimal nine good bye
+   [pilot] two one nine easy five three kilo romeo bye
+   [mixed] csa eight two eight runway three one cleared for takeoff wind one eight zero degrees five knots three one cleared for takeoff
+>> [mixed] csa four bravo echo line up runway three one lining up runway three one csa four bravo echo",engine_rule,i think
+356:RUNWAY:13:3805,356,RUNWAY,13,3805,judge-claude-haiku-5-5-sequence-asr,csa / nine / five / six,"   [controller] csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots
+>> [controller] csa nine five six runway one three cleared for takeoff wind one five zero degrees three knots",missing_release,"None, the two lines are the same"
+356:RUNWAY:13:12594,356,RUNWAY,13,12594,judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / nine / five / six / csa / eight / two / six; csa eight two six,"   [controller] csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots
+   [controller] csa nine five six runway one three cleared for takeoff wind one five zero degrees three knots
+   [pilot] cleared for takeoff runway one three csa nine five six
+   [pilot] tower csa
+>> [mixed] two six and ready for departure csa eight two six ruzyne tower line up runway one three and wait",engine_rule,Line up?
+365:RUNWAY:31:14135,365,RUNWAY,31,14135,judge-claude-haiku-5-5-sequence-asr,lufthansa / seven / eight / seven,"   [controller] lufthansa seven eight seven second to the right
+   [controller] vacate via delta and contact ruzyne ground one two one decimal nine good bye
+   [pilot] seven eight seven right via delta and one two one nine see you later
+   [pilot] good morning this is air france one zero eight three approaching holding point lima ready
+   [controller] good day air france one zero eight t three ruzyne tower ready for immediate
+   [pilot] affirm we are ready
+>> [mixed] line up runway three one line up and wait runway three one air france one zero eight three",parse_error,"Line up? | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+470:RUNWAY:31:5353,470,RUNWAY,31,5353,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,wizz / air / five / three / zero; csa / wizz / air / five / three / zero,"   [pilot] ruzyne csa five one seven establsih
+   [pilot] three one
+   [controller] csa five one seven ruzyne tower continue approach
+   [pilot] five one seven
+   [controller] wizz air five three zero ready for departure
+>> [mixed] affirm five two zero wizz air five three zero behind landing airbus three one nine short final line up runway three one behi",parse_error,"Line up? | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+528:RUNWAY:13:7085,528,RUNWAY,13,7085,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,csa / three / eight / whiskey; csa three eight whiskey; csa eight three eight whiskey; csa three eight whiskey / air france one nine eight romeo,"   [controller] csa eight three eight whiskey reduce speed one sixty
+   [pilot] reducing one sixty csa eight eight whiskey
+   [pilot] tower air france one nine eight romeo just to precise do we have to backtrack runway one three
+   [controller] you need to backtrack yes
+   [mixed] confirm need to backtrack yes wah we need to backtrack runway one three air france one nine eight r
+   [controller] air france one nine eight romeo
+   [controller] roger that is copy it
+   [controller] later on expect to taxi via taxiway delta on the other side but standby i will call you
+   [pilot] roger maintaining holding point delta to one three and expect taxi via delta
+   [pilot] air france one nine
+   [pilot] eight romeo
+   [controller] air france one nine eight romeo now expedite cross runway one three continue via delta to hold short of runway two four
+   [pilot] thank you expedite and cross delta
+   [mixed] air france one nine eight romeo cross runway one three cross runway one three
+   [pilot] yeah runway one three air france one nine
+   [controller] csa eight two nine vacate to the left contact ruzyne ground one two one point nine
+>> [controller] csa three eight whiskey runway one three cleared to land wind zero three zero degrees seven knots expedite vacating",missing_release,
+533:RUNWAY:13:9611,533,RUNWAY,13,9611,rule-rules-none-gold; rule-rules-role-gold; rule-rules-window-gold,austrian seven one two zulu / ausrtian seven one two zulu,"   [pilot] tower good evening austrian seven one two zulu ready for departure
+   [controller] hello ausrtian seven one two zulu ruzyne tower roger line up runway one three
+   [pilot] line up one three austrian seven one two zulu
+   [pilot] ruzyne tower good evening air france one zero eig
+   [controller] hello air france one zero eight two ruzyne tower continue appro
+   [pilot] we continue
+>> [controller] austrian seven one two zulu runway one three cleared for takeoff wind one six zero degrees three knots bye bye",missing_release,I think Austrian was told to line up and France landed first
+537:RUNWAY:31:11729,537,RUNWAY,31,11729,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,sky / travel / one / zero / one / zero / air / france / one / seven / eight / two; air / france / one / seven / eight / two,"   [mixed] sky travel one zero one zero confirm ready for departure we are ready for departure one zero one zero
+   [controller] sky travel one zero one zero roger line up runway three one and wait
+   [pilot] we line up and wait three one sky travel one zero one zero
+   [pilot] ruzyne tower lufthan
+   [pilot] eight kilo alfa
+   [pilot] fully ready
+   [controller] lufthansa eight kilo alfa ruzyne tower roger
+>> [pilot] ruzyne tower good morning air france one seven eight two six miles final three one",missing_release,
+553:RUNWAY:31:658,553,RUNWAY,31,658,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,austrian / seven / zero / three / lufthansa / two / juliett / whiskey; austrian / seven / zero / three; lufthansa two juliett whiskey; lufthansa two juliett whiskey / austrian seven zero three,"   [controller] csa eight two seven speed one sixty or less departure ahead
+   [pilot] reducing speed one sixty or less csa
+   [mixed] austrian seven zero three runway three one clear to land wind two zero zero degrees three knots clear land three one austrian seven zero three
+>> [controller] lufthansa two juliett whiskey behind landing traffic short final dash line up runway three one behind",engine_rule,
+553:RUNWAY:31:7058,553,RUNWAY,31,7058,rule-rules-none-asr; rule-rules-none-gold,lufthansa two juliett whiskey / austrian seven zero three,"   [controller] csa eight two seven speed one sixty or less departure ahead
+   [pilot] reducing speed one sixty or less csa
+   [mixed] austrian seven zero three runway three one clear to land wind two zero zero degrees three knots clear land three one austrian seven zero three
+   [controller] lufthansa two juliett whiskey behind landing traffic short final dash line up runway three one behind
+>> [pilot] lufthansa two juliett whiskey behind landing traffic short final dash line up runway three one behind",engine_rule,
+601:RUNWAY:13:8587,601,RUNWAY,13,8587,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / eight / two / six; contract one romeo golf; csa eight two six / lima golf,"   [controller] csa eight two six runway one three cleared for takeoff wind one four zero degrees three knots
+   [pilot] runway one three cleared for takeoff csa eight two six
+   [pilot] ruzyne tower csa one eight
+   [pilot] three delta
+   [controller] csa one eight three correction one eight four ruzyne tower
+>> [controller] contact lima golf line up runway one three and wait",engine_rule,
+602:RUNWAY:13:14462,602,RUNWAY,13,14462,judge-claude-haiku-5-5-sequence-asr,lufthansa / nine / whiskey / tango,"   [pilot] tower air france two four eight two establish ils o
+   [controller] air france two four eight two two four eight two continue
+   [pilot] air france two fo
+   [pilot] tower good day lufthansa nine
+>> [controller] lufthansa nine whiskey tango perfect now line up runway one three",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+664:RUNWAY:31:3594,664,RUNWAY,31,3594,judge-claude-sonnet-5-sequence-asr,lufthansa eight lima l,"   [pilot] tower wizz air five three zero
+   [pilot] good morning approaching runway two two intersection romeo
+   [controller] good morning wizz air five three zero ruzyne tower roger
+   [pilot] ruzyne tower csa five zero five ils three one
+   [mixed] csa five zero five ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two zero ok reducing
+   [pilot] cing csa five zero
+>> [controller] lufthansa eight lima l line up runway three one be ready for immediate departure",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+697:RUNWAY:13:6682,697,RUNWAY,13,6682,judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr,bline / eight / hotel / sierra; easy six eight kilo papa,"   [pilot] tower bline eight hotel sierra is with you established on the
+   [pilot] ils one three and we need three sixty for problem
+   [controller] hello bline eight hotel sierra ruzyne tower roger approved
+   [pilot] roger three sixty is approved on the ils one three bline eight hotel sierra
+   [controller] easy six eight kilo papa
+>> [mixed] runway one three cleared for takeoff wind one seven zero degrees three knots bye bye cleared takeoff one three six eight sierra have a good day",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+716:RUNWAY:31:10325,716,RUNWAY,31,10325,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr,csa / six / two / two / csa / seven / nine / zero; csa / six / two / two; csa seven nine zero,"   [controller] csa six two two line up runway three one and wait you will be number two for departure number one atr romeo interesction
+   [pilot] ok line up runway three one and number two csa six two two
+>> [controller] csa seven nine zero line up runway three one number one",engine_rule,
+721:RUNWAY:31:4997,721,RUNWAY,31,4997,judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,beair five five one; b air five five one / b air five nine one; beair five five one / beair five nine one; b air five five one / beair five nine one,"   [pilot] ruzyne tower beair five
+   [controller] beair five nine one tower line up runway three one
+   [pilot] three one beair five
+   [controller] csa four nine five contact ground one two one nine
+   [pilot] one two one nine csa four nine five
+>> [controller] beair five five one runway three one cleared for takeoff wind one seven zero degrees four knots",missing_release,
+737:RUNWAY:13:5441,737,RUNWAY,13,5441,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / nine / seven / four / csa / five / three / six; csa five three six,"   [controller] csa nine seven four runway one three cleared for takeoff wind zero three zero degrees four knots
+   [pilot] runway one three cleared for takeoff csa nine seven four
+   [pilot] sa five three
+   [pilot] holding point runway one
+   [controller] csa five three six ruzyne tower ready for departure
+>> [mixed] csa five three six roger line up runway one three line up runway one three cs",engine_rule,
+812:RUNWAY:31:1025,812,RUNWAY,31,1025,judge-claude-haiku-5-5-sequence-asr,swiss / four / eight / seven / november,"   [pilot] oscar kilo hotel uniform u
+   [controller] oscar kilo hotel uniform u
+   [pilot] oscar kilo hotel uniform u zephyr
+   [pilot] tower hello swiss four eight seven november approaching holding point three one and read
+>> [controller] good morning break shamrock six four five now line up runway three one and cleared for takeoff wind one two zero degrees five knots",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+812:RUNWAY:28:3346,812,RUNWAY,28,3346,judge-claude-haiku-5-5-sequence-asr,lufthansa / seven / uniform / u,"   [pilot] oscar kilo hotel uniform u
+   [controller] oscar kilo hotel uniform u
+>> [pilot] oscar kilo hotel uniform u zephyr",parse_error,"Makes no sense here | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+813:RUNWAY:31:7836,813,RUNWAY,31,7836,judge-claude-haiku-5-5-sequence-asr,csa / seven / five / nine / hotel / zulu / mike / sierra / four,"   [pilot] ruzyne tower csa seven five nine ils approach runway three one establish reducing one six
+   [controller] seven five nine continue
+>> [controller] hotel zulu mike sierra four runway three one cleared for takeoff wind one eight zero degrees seven knots good bye",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+862:RUNWAY:31:12640,862,RUNWAY,31,12640,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,lufthansa / two / juliett / whiskey / csa / eight / two / seven; csa / eight / two / seven / lufthansa / two / juliett / whiskey; csa eight two seven; csa eight two seven / lufthansa two juliett whiskey,"   [controller] austrian seven zero three vacate via golf to the right and contact ruzyne ground one two one decimal nine good bye
+   [pilot] to golf
+   [pilot] seven zero three good bye
+   [controller] lufthansa two juliett whiskey runway three one cleared for takeoff wind one seven zero degrees three knots good bye
+   [pilot] lufthansa two juliett whiskey runway three one clear takeoff bye bye
+   [pilot] ruzyne tower aerosvit two zero nine good morn
+   [pilot] stablished localizer ils runway
+   [pilot] three one
+   [controller] good morning aerosvit two zero nine ruzy
+   [controller] aerosvit two zero nine slowly reduce speed one six zero knot till four miles final
+   [pilot] speed one six zero knots aerosvit two zero nine
+   [pilot] ruzyne tower csa four echo holding point three one ready
+   [controller] csa four echo ruzyne tower roger
+>> [controller] csa eight two seven runway three one clear to land wind one eight zero degrees three knots",missing_release,
+870:RUNWAY:31:4786,870,RUNWAY,31,4786,judge-claude-haiku-5-5-sequence-asr,lot / five / two / si,"   [pilot] lining up runway one three lot five two si
+   [pilot] ruzyne tower from csa seven zero two
+   [pilot] we are
+   [pilot] shortly ready for
+   [controller] csa five zero nine papa ground
+   [pilot] pa one two one nine csa five zero nine
+   [controller] lot five two si
+>> [pilot] cleared for takeoff runway one three lot five two six",missing_release,
+902:RUNWAY:31:2235,902,RUNWAY,31,2235,rule-rules-none-asr; rule-rules-none-gold,csa eight mike three / csa six eight eight; csa eight five three / csa six eight eight,"   [controller] csa six eight eight runway three one cleared for takeoff wind one seven zero degrees four knots traffic four miles final
+   [pilot] runway three one cleared for takeoff csa six eight eight
+   [controller] wizz air five zero zero contact ruzyne ground one two one decimal nin
+   [pilot] one two one nine wizz air five one one bye
+   [controller] csa eight mike three runway three one cleared to land wind one seven zero degrees three knots
+>> [pilot] cleared to land runway three one csa eight five three",missing_release,
+902:RUNWAY:31:13486,902,RUNWAY,31,13486,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,csa / six / eight / eight; csa eight mike three; csa eight mike three / csa six eight eight,"   [controller] csa six eight eight runway three one cleared for takeoff wind one seven zero degrees four knots traffic four miles final
+   [pilot] runway three one cleared for takeoff csa six eight eight
+   [controller] wizz air five zero zero contact ruzyne ground one two one decimal nin
+   [pilot] one two one nine wizz air five one one bye
+>> [controller] csa eight mike three runway three one cleared to land wind one seven zero degrees three knots",missing_release,
+918:RUNWAY:13:1198,918,RUNWAY,13,1198,rule-rules-none-gold,csa five six zero / runway two,"   [pilot] tower csa six one eight good afternoon approaching holding point runway two four
+   [controller] csa six one eight ruzyne tower dobre odpoledne taxi via runway two four and hold short of runway one three
+   [pilot] short of runway one three csa six one eight lin line up runway two
+   [pilot] ruzyne tower csa two mike delta
+   [controller] csa two mike delta ruzyne tower
+>> [controller] csa five six zero runway one three cleared for takeoff wind zero six zero degrees six kdnots",missing_release,
+943:RUNWAY:31:9083,943,RUNWAY,31,9083,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / zero / two / four; csa / zero / two / four / csa / four / kilo / papa; csa four kilo papa,"   [controller] csa zero two four runway three one cleared for takeoff wind one eight zero degrees four knots
+   [pilot] runway three one
+   [pilot] csa zero two fo
+>> [controller] csa four kilo papa line up runway three one",engine_rule,
+962:RUNWAY:13:1432,962,RUNWAY,13,1432,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / five / three / six / csa / five / alfa / juliett; csa five alfa juliett,"   [controller] csa five three six runway one three cleared for takeoff wind zero five zero degrees five knots
+   [pilot] go runway one three csa five three si
+>> [controller] csa five alfa juliett line up runway one three",engine_rule,
+1002:RUNWAY:31:1347,1002,RUNWAY,31,1347,judge-claude-haiku-5-5-sequence-asr,csa / nine / delta / sierra,"   [pilot] ruzyne tower csa eight nine delta sierra ils three one
+   [pilot] csa nine delta sierra ruzyne tower
+   [controller] continue approach
+   [pilot] nine delta sierra copied
+   [controller] sky travel one zero three four you
+   [controller] sky travel one zero three four ready for departure
+>> [mixed] confirm ready for departure sky travel one three one zero three four roger line up runway three one cleared for takeoff wind is calm",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1002:RUNWAY:31:8672,1002,RUNWAY,31,8672,judge-claude-sonnet-5-sequence-gold,hotel november five one one,"   [pilot] ruzyne tower csa eight nine delta sierra ils three one
+   [pilot] csa nine delta sierra ruzyne tower
+   [controller] continue approach
+   [pilot] nine delta sierra copied
+   [controller] sky travel one zero three four you
+   [controller] sky travel one zero three four ready for departure
+   [mixed] confirm ready for departure sky travel one three one zero three four roger line up runway three one cleared for takeoff wind is calm
+   [pilot] clear to line up runway
+   [pilot] runway three one sky travel one zero three four
+>> [pilot] hotel november five one one we are in runway two",engine_rule,Still doesn’t make sense
+1041:RUNWAY:13:13100,1041,RUNWAY,13,13100,rule-rules-none-asr; rule-rules-none-gold,csa six zero five / six zero five zero,"   [pilot] request taxi csa two eight six
+   [controller] csa two eight six taxi bravo delta hold
+   [pilot] bravo delta
+   [pilot] one minute for for departure
+   [controller] ok delta and lima
+   [pilot] bravo delta lima hold short two four two eight six
+   [pilot] sky travel six eight two ready for taxi
+   [controller] sky travel six eight two taxi zulu bravo delta lima holding point ru
+   [pilot] taxiing zulu bravo delta lima hold short of runway two four we are able from foxtrot sky travel six eight two
+   [controller] ok
+   [controller] bravo
+   [pilot] taxiing zulu bravo delta holding point one three sky travel six eight two
+   [pilot] csa six zero five zero ready for departure
+   [controller] six zero five zero line up runway one three
+   [controller] and wind two three zero degrees
+>> [pilot] line up and cleared for takeoff runway one three csa six zero five",engine_rule,
+1065:RUNWAY:31:1472,1065,RUNWAY,31,1472,judge-claude-haiku-5-5-sequence-asr; llm-claude-haiku-5-5-window-asr; rule-rules-none-asr,condor / sierra / delta / mike / two / two / two; sierra delta mike two two two / condor; sierra delta mike two two two / mike two two two,"   [controller] ruzyne tower good morning two two two holding point runway three one
+   [mixed] russia two two two hello ruzyne tower are you ready ready for departu
+   [pilot] three one sierra mike two two two
+>> [controller] roger sierra delta mike two two two line up runway three one",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1065:RUNWAY:31:3204,1065,RUNWAY,31,3204,judge-claude-haiku-5-5-sequence-gold,sierra / delta / mike / lufthansa / seven / kilo / hotel,"   [controller] ruzyne tower good morning two two two holding point runway three one
+   [mixed] russia two two two hello ruzyne tower are you ready ready for departu
+   [pilot] three one sierra mike two two two
+   [controller] roger sierra delta mike two two two line up runway three one
+   [pilot] ine up runway three one sierra delta mike
+   [pilot] hello lufthansa seven kilo hotel fully ready
+>> [controller] lufthansa seven kilo hotel hello tower roger expect one landing",missing_release,
+1065:RUNWAY:31:11134,1065,RUNWAY,31,11134,rule-rules-none-asr,sierra delta mike three / mike two two two,"   [controller] ruzyne tower good morning two two two holding point runway three one
+   [mixed] russia two two two hello ruzyne tower are you ready ready for departu
+   [pilot] three one sierra mike two two two
+   [controller] roger sierra delta mike two two two line up runway three one
+>> [pilot] ine up runway three one sierra delta mike",engine_rule,
+1065:RUNWAY:31:13355,1065,RUNWAY,31,13355,judge-claude-sonnet-5-sequence-asr,condor,"   [controller] ruzyne tower good morning two two two holding point runway three one
+   [mixed] russia two two two hello ruzyne tower are you ready ready for departu
+>> [pilot] three one sierra mike two two two",parse_error,"Dont make sense here | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1066:RUNWAY:31:5187,1066,RUNWAY,31,5187,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,csa / nine / zero / one; csa / nine / one / six,"   [pilot] tower csa nine one six holding point three one ready for depar
+>> [controller] csa nine one six line up three one",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1066:RUNWAY:31:5810,1066,RUNWAY,31,5810,judge-claude-sonnet-5-sequence-gold,csa nine one six,"   [pilot] tower csa nine one six holding point three one ready for depar
+   [controller] csa nine one six line up three one
+   [pilot] line up three one csa nine one
+   [controller] fraction five five alfa two reduce final departure ahead airbus three twenty
+   [pilot] fraction five five two roger
+   [pilot] ruzyne tower
+   [pilot] eight zero two ready
+   [controller] csa eight zero two tower
+>> [controller] csa nine one six runway three one cleared for takeoff wind two zero zero degrees two knots landing traffic three and half miles",missing_release,
+1182:RUNWAY:13:1989,1182,RUNWAY,13,1989,judge-claude-sonnet-5-sequence-gold,csa five three seven,"   [controller] csa seven two six line up runway one three
+   [pilot] up runway one three csa seven two
+>> [pilot] zyne tower csa five three seven established ils approach runway one three",missing_release,Dont make sense here
+1182:RUNWAY:13:11486,1182,RUNWAY,13,11486,judge-claude-haiku-5-5-sequence-asr,csa / seven / two / six,"   [controller] csa seven two six line up runway one three
+   [pilot] up runway one three csa seven two
+   [pilot] zyne tower csa five three seven established ils approach runway one three
+   [controller] csa five three seven no speed limit
+   [pilot] no speed limit csa
+>> [controller] csa seven two six runway one three cleared for takeoff wind zero six zero degrees four knots",missing_release,
+1194:RUNWAY:31:10817,1194,RUNWAY,31,10817,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / four / bravo / echo / csa / nine / two / two; csa / four / bravo / echo; csa nine two two,"   [controller] csa four bravo echo runway three one cleared for takeoff wind one nine zero degrees five knots
+   [pilot] ready to takeoff runway three one csa four bravo echo
+>> [controller] csa nine two two line up runway three one",engine_rule,
+1201:RUNWAY:13:6330,1201,RUNWAY,13,6330,judge-claude-haiku-5-5-sequence-asr,turkish / one / seven / six / nine,"   [pilot] tower good afternoon turkish one seven six nine fully established ils one three
+   [controller] turkish one seven six nine ruzyne tower good afternoon continue approach
+   [pilot] continue approach turkish one seven six nine
+   [controller] lufthansa five yankee victor contact ruzyne ground one two one decimal nine bye bye
+   [pilot] lufthansa five yankee victor ruzyne ground one two one decimal nine good by
+>> [controller] csa four charlie zulu runway one three cleared for takeoff wind zero three zero degrees",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1238:RUNWAY:31:12033,1238,RUNWAY,31,12033,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,hotel / zulu / mike / sierra / four; csa / eight / five / six / tel / seven / mike / sierra / four; hotel zulu mike sierra four; tel seven mike sierra four,"   [controller] csa eight five six runway three one cleared for takeoff wind one six zero degrees five knots
+   [pilot] runway three one cleared for takeoff csa eight five six
+>> [controller] tel seven mike sierra four line up runway three one",engine_rule,
+1279:RUNWAY:31:5689,1279,RUNWAY,31,5689,judge-claude-haiku-5-5-sequence-gold,csa / seven / seven / two,"   [pilot] ruzyne tower wizz air four papa uniform ready for depar
+   [controller] wizz air four papa uniform tower roger
+   [controller] csa seven seven two you may expect
+   [controller] right turn and runway three one cleared for takeoff wind one six zero degrees four knots
+   [pilot] cleared for takeoff runway three one
+   [mixed] tower csa seven whiskey india approaching holding three one ready csa seven whiskey india tower
+>> [mixed] to confirm cleared for takeoff runway three one csa seven seven two affirm clear takeoff three one wind one seven zero degrees five knots",missing_release,
+1279:RUNWAY:31:11556,1279,RUNWAY,31,11556,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,wizz / air / four / papa / uniform; csa seven seven two / wizz air four papa uniform; wizz air four papa uniform,"   [pilot] ruzyne tower wizz air four papa uniform ready for depar
+   [controller] wizz air four papa uniform tower roger
+   [controller] csa seven seven two you may expect
+   [controller] right turn and runway three one cleared for takeoff wind one six zero degrees four knots
+   [pilot] cleared for takeoff runway three one
+   [mixed] tower csa seven whiskey india approaching holding three one ready csa seven whiskey india tower
+   [mixed] to confirm cleared for takeoff runway three one csa seven seven two affirm clear takeoff three one wind one seven zero degrees five knots
+   [mixed] calibra six whiskey via fully ready via r
+   [controller] finn air seven one six whiskey tower good morning roger use runway two two hold short of three one
+   [pilot] use runway two two hold short of three one finn air seven one six
+>> [controller] wizz air four papa uniform line up runway three one and cleared for takeoff wind one eight zero degrees six knots",engine_rule,
+1279:RUNWAY:31:14572,1279,RUNWAY,31,14572,judge-claude-haiku-5-5-sequence-asr,csa / seven / seven / two,"   [pilot] ruzyne tower wizz air four papa uniform ready for depar
+   [controller] wizz air four papa uniform tower roger
+   [controller] csa seven seven two you may expect
+>> [controller] right turn and runway three one cleared for takeoff wind one six zero degrees four knots",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1296:RUNWAY:31:10839,1296,RUNWAY,31,10839,judge-claude-sonnet-5-sequence-asr,csa three sierra alfa,"   [mixed] nor shuttle three five eight zero contact ground one two one nine good bye one two one nine bye nor shuttle three
+   [controller] finn air seven one six whiskey runway three one cleared for takeoff wind one seven zero degrees six knots good bye
+   [pilot] clear takeoff runway three one finn air seven one six whiskey
+   [controller] csa three seven alfa line up runway three one
+   [controller] csa three seven alfa line up runway three one
+>> [pilot] lining up three one csa three seven alfa",engine_rule,
+1296:RUNWAY:31:14650,1296,RUNWAY,31,14650,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-gold,finn / air / seven / one / six / whiskey; csa three seven alfa,"   [mixed] nor shuttle three five eight zero contact ground one two one nine good bye one two one nine bye nor shuttle three
+   [controller] finn air seven one six whiskey runway three one cleared for takeoff wind one seven zero degrees six knots good bye
+   [pilot] clear takeoff runway three one finn air seven one six whiskey
+>> [controller] csa three seven alfa line up runway three one",engine_rule,
+1296:RUNWAY:31:14753,1296,RUNWAY,31,14753,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,finn / air / seven / one / six / whiskey; csa / three / seven / alfa,"   [mixed] nor shuttle three five eight zero contact ground one two one nine good bye one two one nine bye nor shuttle three
+   [controller] finn air seven one six whiskey runway three one cleared for takeoff wind one seven zero degrees six knots good bye
+   [pilot] clear takeoff runway three one finn air seven one six whiskey
+   [controller] csa three seven alfa line up runway three one
+   [controller] csa three seven alfa line up runway three one
+   [pilot] lining up three one csa three seven alfa
+>> [controller] csa eight five six line up three one and wait number two interception departure from romeo",engine_rule,
+1380:RUNWAY:31:11477,1380,RUNWAY,31,11477,judge-claude-haiku-5-5-sequence-asr,csa / six / three / one,"   [pilot] ruzyne tower turkish one seven six seven runway vacate
+   [controller] break break sky
+>> [controller] ytravel one two zero zero runway three one cleared for immediate takeoff wind one five zero degrees four knots traffic three and half miles final",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1449:RUNWAY:31:5518,1449,RUNWAY,31,5518,judge-claude-haiku-5-5-sequence-asr,austrian / seven / zero / eight / papa,>> [controller] austrian seven zero eight papa runway three one cleared for takeoff wind one one zero five knots,parse_error,"Make no sense | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1473:RUNWAY:13:6281,1473,RUNWAY,13,6281,judge-claude-haiku-5-5-sequence-asr; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,aero / flot / one / four / three / speed / bird / three / zero / charlie; speed bird three zero charlie,"   [mixed] ruzyne tower good evening aero flot one four three ils established runway one three aero flot one four three good evening continue approach
+   [pilot] continue approach aero flot one
+   [pilot] tower speed bird three zero charlie ready
+   [controller] speed bird three zero charlie roger ready immediately
+>> [controller] line up runway one three cleared for immediate takeoff wind zero six zero seven knots",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1493:RUNWAY:31:13224,1493,RUNWAY,31,13224,judge-claude-sonnet-5-sequence-gold,wizz air five five six,"   [pilot] ruzyne tower csa nine seven nine establish ils three o
+   [controller] nine ruzyne tower
+>> [mixed] wizz air five five six is holding point runway three one fully ready wizz air five five six line up runway three one",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1519:RUNWAY:31:3168,1519,RUNWAY,31,3168,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,klm / five / five / tango / britair / nine / zero / two / delta; britair nine zero two delta,"   [controller] easy two five eight quebec runway three one cleared for takeoff wind one one zero degrees and three knots have a good day
+   [pilot] clear takeoff runway three one good day to you easy two five echo
+   [pilot] tower klm five five tango ils three one
+   [controller] klm five five tango tower continue approach speed one six zero until four miles final expect departure ahead
+   [pilot] one sixty until four and continue approach klm five five tango roger tower hello britair nine zero two delta holding poin
+   [pilot] three one ready
+>> [mixed] hello britair nine zero two delta ruzyne tower roger line up runway three one line up runway",engine_rule,
+1579:RUNWAY:13:6387,1579,RUNWAY,13,6387,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,csa / six / three / bravo,"   [pilot] tower csa seven four two holding point runway one three ready
+   [controller] csa seven four two ruzyne tower roger
+>> [controller] csa six three bravo line up runway one three",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1612:RUNWAY:31:9787,1612,RUNWAY,31,9787,llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,klm one three five two / kilo one three five; klm one three five / kilo one three five,"   [controller] kilo one three five you can use runway two two and line up runway three one
+   [pilot] via two two line up three one klm one three five two
+>> [controller] klm one three five two runway three one cleared for takeoff wind one seven zero degrees two knots good by",missing_release,
+1612:RUNWAY:31:10274,1612,RUNWAY,31,10274,judge-claude-sonnet-5-sequence-asr,klm one three five two,"   [controller] kilo one three five you can use runway two two and line up runway three one
+   [pilot] via two two line up three one klm one three five two
+   [controller] klm one three five two runway three one cleared for takeoff wind one seven zero degrees two knots good by
+>> [pilot] cleared takeoff three one klm one three five two",missing_release,
+1612:RUNWAY:31:14254,1612,RUNWAY,31,14254,judge-claude-haiku-5-5-sequence-asr; judge-claude-sonnet-5-sequence-gold; llm-claude-sonnet-5-window-asr,csa / seven / three / two / one; csa seven three two one; csa seven three two one / kilo one three five; csa seven three two one / klm one three five,"   [controller] kilo one three five you can use runway two two and line up runway three one
+   [pilot] via two two line up three one klm one three five two
+   [controller] klm one three five two runway three one cleared for takeoff wind one seven zero degrees two knots good by
+   [pilot] cleared takeoff three one klm one three five two
+>> [controller] csa seven three two one tower continue approach runway three one",missing_release,
+1650:RUNWAY:31:4219,1650,RUNWAY,31,4219,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / 921 / lufthansa / six / mike / alfa; lufthansa six mike alfa,"   [controller] csa nine two one runway three one clear to land
+   [pilot] clear to land runway three one csa nine two one
+   [pilot] tower jobair zero five papa on i
+   [controller] hello
+   [controller] three five delta taxi via golf bravo zulu alfa va
+   [pilot] golf bravo zulu alfa number three csa three five delta
+   [controller] lufthansa six mike alfa ready
+   [pilot] lufthansa six mike alfa ready
+>> [controller] roger line up runway three one",engine_rule,
+1656:RUNWAY:13:2855,1656,RUNWAY,13,2855,judge-claude-haiku-5-5-sequence-asr; judge-claude-sonnet-5-sequence-asr; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,csa / zero / two / seven; csa zero two seven; csa zero two seven / lady rasim three one three,"   [controller] lady rasim three one three runway one three cleared for takeoff wind zero six zero five knots
+   [pilot] runway one three
+   [pilot] tower csa zero two seven establish ils one three
+>> [controller] csa zero two seven roger runway one three clear to land wind zero six zero five knots",missing_release,
+1656:RUNWAY:13:5035,1656,RUNWAY,13,5035,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,lady / rasim / three / one / three,>> [controller] lady rasim three one three runway one three cleared for takeoff wind zero six zero five knots,parse_error,"No sense | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1749:RUNWAY:31:6780,1749,RUNWAY,31,6780,judge-claude-haiku-5-5-sequence-gold,csa / six / three / alfa,"   [pilot] ruzyne tower csa six three alfa approaching holding point runway three one and ready for departure
+   [controller] csa six three alfa ruzyne tower line up runway three one
+   [pilot] ning up runway three one csa six three alfa
+   [pilot] tower csa seven six echo on lima
+   [controller] csa seven six echo ruzyne tow
+>> [mixed] csa six three alfa runway three one cleared for takeoff wind calm cleared for takeoff runway three one csa six three alfa",missing_release,
+1969:RUNWAY:31:5017,1969,RUNWAY,31,5017,llm-claude-sonnet-5-window-asr,britair five nine zero bravo / aero flot one four two,"   [pilot] four two ready for immediate
+   [controller] aero flot one four two behind landing atr short final line up runway three one be ready for immediate departure
+   [controller] lining up
+   [pilot] three one
+   [pilot] after landing aircraft aero flot one
+>> [pilot] tower hello britair five nine zero final three one",missing_release,
+1969:RUNWAY:31:5668,1969,RUNWAY,31,5668,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,aero / flot / one / four / two / britair / five / nine / zero / bravo; aero / flot / one / four / two,"   [pilot] four two ready for immediate
+>> [controller] aero flot one four two behind landing atr short final line up runway three one be ready for immediate departure",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+1984:RUNWAY:31:3894,1984,RUNWAY,31,3894,judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa four echo,"   [mixed] csa five seven two one line up runway three one lining up runway three one c
+>> [controller] csa four echo line up runway three one and wait number two for departure number one atr intersection romeo",engine_rule,
+1984:RUNWAY:31:7331,1984,RUNWAY,31,7331,judge-claude-haiku-5-5-sequence-gold; llm-claude-haiku-5-5-window-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold; rule-rules-none-asr; rule-rules-none-gold; rule-rules-role-asr; rule-rules-role-gold; rule-rules-window-asr; rule-rules-window-gold,csa / four / echo; csa five seven two / csa four echo; csa five seven two / csa five seven two one,"   [mixed] csa five seven two one line up runway three one lining up runway three one c
+   [controller] csa four echo line up runway three one and wait number two for departure number one atr intersection romeo
+   [pilot] csa four echo line up runway three one and wait number two for de departure
+   [pilot] ruzyne tower csa seven tango ready
+   [controller] csa seven tango ruzyne tower
+   [controller] csa eight two seven ground one two one decimal nine
+   [pilot] one two one nine
+>> [controller] csa five seven two runway three one cleared for takeoff wind one eight zero degrees",missing_release,
+1984:RUNWAY:31:10785,1984,RUNWAY,31,10785,judge-claude-sonnet-5-sequence-asr; llm-claude-haiku-5-5-window-gold; llm-claude-sonnet-5-window-asr; rule-rules-none-asr; rule-rules-role-asr; rule-rules-window-asr,romeo; csa five seven two / csa five seven two one; csa five seven two / csa four echo; romeo / csa four echo,"   [mixed] csa five seven two one line up runway three one lining up runway three one c
+   [controller] csa four echo line up runway three one and wait number two for departure number one atr intersection romeo
+   [pilot] csa four echo line up runway three one and wait number two for de departure
+   [pilot] ruzyne tower csa seven tango ready
+   [controller] csa seven tango ruzyne tower
+   [controller] csa eight two seven ground one two one decimal nine
+   [pilot] one two one nine
+   [controller] csa five seven two runway three one cleared for takeoff wind one eight zero degrees
+>> [mixed] runway three one cleared for takeoff",missing_release,
+2003:RUNWAY:31:9116,2003,RUNWAY,31,9116,judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa five bravo b,"   [pilot] ruzyne tower one zero turn papa
+   [pilot] descending four thousand established on ils runway three one
+   [controller] break break csa seven six echo runway three one cleared for takeoff wind calm
+   [pilot] for takeoff runway three one csa seven six echo
+   [controller] good morning smart wings one zero seven papa roger
+   [controller] tinue approach
+   [pilot] approach three one smart wings one zero seven papa
+   [pilot] hello reporting delta papa ready
+   [controller] csa four victor papa ruzyne tower roger
+>> [controller] csa five bravo b line up runway",engine_rule,
+2003:RUNWAY:31:10385,2003,RUNWAY,31,10385,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,csa / seven / six / echo,"   [pilot] ruzyne tower one zero turn papa
+   [pilot] descending four thousand established on ils runway three one
+>> [controller] break break csa seven six echo runway three one cleared for takeoff wind calm",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+2003:RUNWAY:31:14345,2003,RUNWAY,31,14345,judge-claude-haiku-5-5-sequence-asr,smart / wings / one / zero / seven / papa,"   [pilot] ruzyne tower one zero turn papa
+   [pilot] descending four thousand established on ils runway three one
+   [controller] break break csa seven six echo runway three one cleared for takeoff wind calm
+   [pilot] for takeoff runway three one csa seven six echo
+   [controller] good morning smart wings one zero seven papa roger
+>> [controller] tinue approach",missing_release,
+2042:RUNWAY:13:11140,2042,RUNWAY,13,11140,judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa five zero eight,"   [controller] csa one delta zulu vacate via runway zero four contact ruzyne ground one two one decimal nine
+   [pilot] runway zero four one two one decimal nine csa one delta zulu
+   [mixed] csa six three bravo runway one three cleared for takeoff wind zero three zero degrees four knots cleared for takeoff one
+>> [mixed] csa five zero eight line up runway one three lining up runway one three csa five zero eight",engine_rule,
+2306:RUNWAY:31:12037,2306,RUNWAY,31,12037,judge-claude-sonnet-5-sequence-gold; llm-claude-sonnet-5-window-asr,csa nine two delta; csa nine two delta / wizz air five seven zero,"   [pilot] tower wizz air five
+   [controller] lufthansa five mike echo contact ground one two one nine bye
+   [pilot] one two one nine lufthansa five mike echo bye bye
+   [controller] wizz air five seven zero good morning tower continue approach runway three one
+>> [mixed] csa nine two delta runway three one cleared for takeoff wind one eight zero degrees three knots cleared for takeoff runway three one csa nine two delta",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+2521:RUNWAY:31:14746,2521,RUNWAY,31,14746,judge-claude-haiku-5-5-sequence-asr,csa / five / one / six,"   [pilot] ruzyne tower csa five one six ready for departure
+>> [controller] csa five one six ruzyne tower roger behind landing traffic short final boeing seven three seven line up runway three one behind",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+2595:RUNWAY:13:14738,2595,RUNWAY,13,14738,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / five / zero / eight / csa / seven / four / two; csa seven four two,"   [controller] csa five zero eight runway one three cleared for takeoff wind zero six zero degrees three knots
+   [pilot] cleared for takeoff runway one three csa five zero eight
+>> [mixed] csa seven four two line up runway one three line up runway",engine_rule,
