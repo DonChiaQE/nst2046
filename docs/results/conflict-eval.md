@@ -1,4 +1,4 @@
-# Conflict detection, Level 2 (02 Nov 2026)
+# Conflict detection, Level 2 (03 Nov 2026)
 
 Positives are synthetic conflicts injected into real tower recordings and accepted by a human check; negatives are the unperturbed real recordings. Recall is lenient (an alert on the injected runway at or after the trigger transmission) unless marked strict (at the trigger). A false alarm is an alert on a negative that adjudication did not find genuine; rates are per hour of recording span. Intervals are 95% percentile bootstrap intervals over recordings (2,000 resamples, seed 0).
 
@@ -91,7 +91,7 @@ The Whisper model was fine-tuned on the corpus's train split, so ASR over train-
 
 ## Agreement and generator precision
 
-Adjudication agreement: no alert has been labelled by both adjudicators yet.
+Adjudication agreement: Cohen's kappa 0.80 over 31 alerts labelled by both adjudicators.
 
 | Injection kind | Accepted | Rejected | Not checked |
 |---|---:|---:|---:|
