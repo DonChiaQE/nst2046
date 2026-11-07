@@ -13,8 +13,12 @@ Usage:
     python scripts/score_pair_events.py --labels ~/Downloads/readback_sheet_A.csv --dry-run
     python scripts/score_pair_events.py --labels ~/Downloads/readback_sheet_A.csv [--model rules] [--workers 8]
 
+    python scripts/score_pair_events.py --cases
+
 Writes data/labels/pair_events_A.csv (the converted labels) and data/eval/pair_events/<model>.jsonl (per-pair rows).
-`--model` is repeatable; without it, the rules parser and both Claude models are scored.
+`--model` is repeatable; without it, the rules parser and both Claude models are scored. Every run, and `--cases` alone
+(no parsing, free), also writes docs/results/extraction-pair-events-cases.csv: each instruction's outcome under every
+model that has rows, with kinds and runways but no transcript text or callsigns, since the per-pair rows are git-ignored.
 """
 import argparse
 import csv
@@ -114,6 +118,30 @@ def write_converted(pairs: list[dict], path: Path) -> None:
             w.writerow([p["pair_id"], p["tx"].id, p["recording_id"], p["tx"].text, p["cell"], p["notes"]])
 
 
+CASES = ROOT / "docs/results/extraction-pair-events-cases.csv"
+CALLSIGN_RE = re.compile(r" \[[^\]]*\]")
+
+
+def write_cases(out_dir: Path, path: Path = CASES) -> None:
+    """One row per instruction: `exact`, or what the model missed and invented (kind and runway, callsign dropped)."""
+    by_model = {f.stem: {r["pair_id"]: r for r in map(json.loads, f.open())} for f in sorted(out_dir.glob("*.jsonl"))}
+    pair_ids = sorted(set().union(*by_model.values())) if by_model else []
+
+    def cell(r: dict | None) -> str:
+        if r is None:
+            return "not_run"
+        parts = [f"{label} {CALLSIGN_RE.sub('', e)}" for label, key_ in (("missed", "missed"), ("invented", "extra"))
+                 for e in r[key_]]
+        return "; ".join(parts) or "exact"
+
+    with path.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["pair_id", *by_model])
+        for pid in pair_ids:
+            w.writerow([pid, *(cell(rows.get(pid)) for rows in by_model.values())])
+    print(f"wrote {path} ({len(pair_ids)} instructions, {len(by_model)} models)")
+
+
 def report(model: str, results: list[dict]) -> None:
     tp, fn, fp = Counter(), Counter(), Counter()
     cs_ok = cs_n = to_ok = to_n = 0
@@ -150,13 +178,20 @@ def report(model: str, results: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--labels", type=Path, required=True)
+    ap.add_argument("--labels", type=Path)
     ap.add_argument("--db", type=Path, default=ROOT / "data/atc.sqlite")
     ap.add_argument("--model", action="append", choices=MODELS)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--cases", action="store_true", help="only rebuild the case table from the stored rows")
     args = ap.parse_args()
     models = args.model or list(MODELS)
+    out_dir = ROOT / "data/eval/pair_events"
+    if args.cases:
+        write_cases(out_dir)
+        return
+    if args.labels is None:
+        ap.error("--labels is required unless --cases")
 
     conn = connect(args.db)
     pairs = load_pairs(conn, args.labels)
@@ -176,7 +211,6 @@ def main() -> None:
             c.close()
         return {**p, "pred": pred, "score": score_pair(p["gold"], pred)}
 
-    out_dir = ROOT / "data/eval/pair_events"
     out_dir.mkdir(parents=True, exist_ok=True)
     for model in models:
         with ThreadPoolExecutor(args.workers) as pool:
@@ -189,6 +223,7 @@ def main() -> None:
                                      "missed": [describe(e) for e in s["missed"]],
                                      "extra": [describe(e) for e in s["extra"]]}) + "\n")
         report(model, results)
+    write_cases(out_dir)
 
 
 if __name__ == "__main__":

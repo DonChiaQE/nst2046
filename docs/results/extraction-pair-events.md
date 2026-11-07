@@ -8,6 +8,8 @@ A supplementary extraction check, not the Level 1 measure. The 200 controller in
 are not a uniform sample and most come from approach and radar recordings, not tower. One labeller, so no kappa.
 Gold transcripts, `role` context (the parser sees the speaker's role, no history). Reproduce with
 `python scripts/score_pair_events.py --labels ~/Downloads/readback_sheet_A.csv` (free: every parse is cached).
+Each instruction's outcome per parser, kinds and runways only, is in `extraction-pair-events-cases.csv`; join it to
+`data/labels/pair_events_A.csv` on `pair_id` for the text and label (rebuild it with `--cases`).
 
 ## Runway events (what the conflict engine uses)
 

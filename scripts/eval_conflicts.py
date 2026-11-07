@@ -25,7 +25,9 @@ ground or apron) or engine_rule (extraction right, the matrix is too strict). Re
 lenient recall and raw negative alerts per value. A finding only: engine.STALE_S is not changed.
 
 `report` writes the results doc from the arms' rows, the adjudication sheets and the injection check verdicts. An
-arm's RUNWAY false-alarm rate shows as pending until each of its RUNWAY alerts has a verdict on sheet A.
+arm's RUNWAY false-alarm rate shows as pending until each of its RUNWAY alerts has a verdict on sheet A. Beside the doc
+it writes conflict-cases-positives.csv and conflict-cases-negatives.csv, each recording's outcome under every arm with
+no corpus text, so the case-by-case comparison does not need the git-ignored rows.
 """
 import argparse
 import csv
@@ -36,7 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.eval_report import render, summarize  # noqa: E402
+from atcdb.eval_report import case_tables, render, summarize  # noqa: E402
 from atcdb.evaluate import (ADJUDICATION_COLUMNS, ARMS, JUDGE_ARMS, SWEEP_VALUES, adjudication_kappa,  # noqa: E402
                             adjudication_rows, evaluation_sets, merge_rows, overlap_rows, read_rows, read_verdicts, run_arm,
                             sweep, uncached, write_rows)
@@ -124,10 +126,20 @@ def cmd_report(args: argparse.Namespace) -> None:
     sheet_a, sheet_b = read_sheet(args.sheet_a), read_sheet(args.sheet_b)
     both = set(read_verdicts(sheet_a)) & set(read_verdicts(sheet_b))
     kappa = adjudication_kappa(sheet_a, sheet_b) if both else None
-    summary = summarize(arm_rows(args.out), read_verdicts(sheet_a), synthetic_recordings(init_db(args.db)), kappa)
+    rows, verdicts, injections = arm_rows(args.out), read_verdicts(sheet_a), synthetic_recordings(init_db(args.db))
+    summary = summarize(rows, verdicts, injections, kappa)
     args.doc.parent.mkdir(parents=True, exist_ok=True)
     args.doc.write_text(render(summary, datetime.date.today().strftime("%d %b %Y")))
     print(f"wrote {args.doc}")
+    for set_name, table in case_tables(rows, verdicts, injections).items():
+        if not table:
+            continue
+        path = args.doc.parent / f"conflict-cases-{set_name}.csv"
+        with path.open("w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(table[0]))
+            w.writeheader()
+            w.writerows(table)
+        print(f"wrote {path} ({len(table)} recordings)")
 
 
 def main() -> None:

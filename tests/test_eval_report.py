@@ -1,4 +1,4 @@
-from atcdb.eval_report import arm_summary, primary_differences, render, summarize, taxonomy
+from atcdb.eval_report import arm_summary, case_tables, primary_differences, render, summarize, taxonomy
 from atcdb.evaluate import PRIMARY
 
 TRUTH = {"runway": "31", "trigger_tx": 3, "edit_kind": "splice"}
@@ -39,6 +39,9 @@ def test_primary_differences_are_paired_over_common_recordings():
     assert d["recall"][0] == -0.5 and d["recall_n"] == 2
     assert d["fa"][0] == 1.0 and d["fa_n"] == 2
     assert primary_differences(RULES, SONNET, {})["fa"] is None
+    # case by case: recording 1 both hit, recording 2 only the second; negative 10 only the first alarms, 11 neither
+    assert d["recall_cases"] == {"both": 1, "first only": 0, "second only": 1, "neither": 0}
+    assert d["fa_cases"] == {"both": 0, "first only": 1, "second only": 0, "neither": 1}
 
 
 def test_taxonomy_counts_verdicts_of_the_arms_own_alerts():
@@ -60,6 +63,8 @@ def test_the_report_covers_every_section_and_uses_no_em_dash():
                     "Agreement and generator precision", "staleness sensitivity", "Caveats"):
         assert heading in text
     assert "Cohen's kappa 0.80 over 12 alerts" in text and "-50 pts" in text
+    assert "both 1, rule-rules-window-gold only 0, llm-claude-sonnet-5-window-gold only 1, neither 0" in text
+    assert "conflict-cases-positives.csv" in text and "conflict-cases-negatives.csv" in text
     assert "| Arm | genuine | parse_error | missing_release | other_frequency | engine_rule | unadjudicated |" in text
     assert "READBACK alerts / h, not adjudicated" in text and "READBACK alerts were not adjudicated" in text
     assert "\u2014" not in text
@@ -95,3 +100,16 @@ def test_positives_no_longer_accepted_are_dropped_and_counted():
     summary = summarize({PRIMARY[0].name: RULES}, VERDICTS, VALID[:1] + [{**VALID[1], "valid": "no"}], None)
     assert summary["arms"][PRIMARY[0].name]["recall"]["n"] == 1 and summary["stale_positives"] == {PRIMARY[0].name: 1}
     assert f"{PRIMARY[0].name} 1" in render(summary, "29 Sep 2026")
+
+
+def test_case_tables_give_each_recordings_outcome_under_every_arm_and_no_text():
+    unusable = {**SONNET[3], "incomplete": True}
+    rows = {"rules": RULES, "sonnet": SONNET[:3] + [unusable]}
+    tables = case_tables(rows, VERDICTS, VALID[:1] + [{**VALID[1], "valid": "no"}])
+    assert tables["positives"] == [{"recording_id": 1, "edit_kind": "splice", "runway": "31", "clean_asr": True,
+                                    "rules": "strict", "sonnet": "strict"}]   # recording 2 is no longer accepted
+    assert tables["negatives"] == [{"recording_id": 10, "span_s": 1800.0, "rules": 1, "sonnet": 0},
+                                   {"recording_id": 11, "span_s": 1800.0, "rules": 0, "sonnet": "not_scored"}]
+    assert case_tables(rows, {}, VALID)["negatives"][0]["rules"] == "pending"   # an alert without a verdict
+    assert case_tables({"rules": RULES}, VERDICTS, VALID)["positives"][1]["rules"] == "miss"
+    assert not any("callsigns" in r or "events" in r for t in tables.values() for r in t)

@@ -1,4 +1,4 @@
-# Conflict detection, Level 2 (03 Nov 2026)
+# Conflict detection, Level 2 (07 Nov 2026)
 
 Positives are synthetic conflicts injected into real tower recordings and accepted by a human check; negatives are the unperturbed real recordings. Recall is lenient (an alert on the injected runway at or after the trigger transmission) unless marked strict (at the trigger). A false alarm is an alert on a negative that adjudication did not find genuine; rates are per hour of recording span. Intervals are 95% percentile bootstrap intervals over recordings (2,000 resamples, seed 0).
 
@@ -8,6 +8,8 @@ Positives are synthetic conflicts injected into real tower recordings and accept
 |---|---|---|---|
 | Lenient recall | 87% (80% to 93%) | 90% (84% to 95%) | -3 pts (-9 pts to +2 pts) over 98 positives |
 | RUNWAY false alarms / h | 4.1 (1.9 to 6.6) | 4.9 (2.3 to 7.8) | -0.8 (-2.3 to +0.7) over 309 negatives |
+
+Case by case, positives caught: both 83, rule-rules-window-gold only 2, llm-claude-sonnet-5-window-gold only 5, neither 8. Negatives with a RUNWAY false alarm: both 10, rule-rules-window-gold only 1, llm-claude-sonnet-5-window-gold only 2, neither 296.
 
 ## All arms, human and ASR transcripts
 
@@ -29,6 +31,8 @@ Positives are synthetic conflicts injected into real tower recordings and accept
 | rule-rules-window-gold | 98 | 85 | 87% (80% to 93%) | 13 | 4.1 (1.9 to 6.6) | 10.2 (6.6 to 14.0) | 2.65 | 0 | 0 |
 
 Positives whose injection the check no longer accepts, not scored: none.
+
+Each recording's outcome under every arm, ids and outcomes only (no corpus text), is in `conflict-cases-positives.csv` and `conflict-cases-negatives.csv` beside this doc.
 
 ## ASR headline: recordings in the ASR model's test split
 

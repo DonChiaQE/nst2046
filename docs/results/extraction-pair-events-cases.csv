@@ -1,0 +1,201 @@
+pair_id,claude-haiku-4-5,claude-haiku-5-5,claude-sonnet-5,rules
+15,invented HANDOFF approach,invented HANDOFF tower,invented HANDOFF tower,exact
+37,exact,exact,exact,exact
+38,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+85,exact,exact,exact,exact
+119,exact,exact,exact,missed HANDOFF tower
+123,invented HANDOFF approach,exact,invented LAND 13,exact
+150,exact,exact,exact,exact
+163,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF departure,exact
+164,exact,exact,exact,missed HANDOFF tower
+166,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+178,exact,exact,exact,exact
+189,invented HANDOFF approach,exact,exact,exact
+202,exact,exact,exact,exact
+250,exact,exact,exact,exact
+279,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF ground,exact
+289,exact,exact,exact,exact
+381,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+393,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+455,exact,exact,exact,exact
+466,exact,exact,exact,exact
+484,exact,exact,exact,exact
+531,exact,exact,exact,exact
+541,exact,exact,exact,exact
+562,invented HANDOFF ground,invented HANDOFF ground,invented HANDOFF ground,invented HANDOFF ground
+571,exact,exact,exact,exact
+589,invented HANDOFF approach,exact,invented HANDOFF approach,exact
+649,exact,exact,exact,exact
+656,exact,exact,exact,exact
+669,exact,exact,exact,exact
+683,invented HANDOFF tower,invented HANDOFF tower,exact,exact
+699,exact,exact,exact,exact
+719,exact,exact,exact,exact
+729,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+735,exact,exact,exact,exact
+753,exact,exact,exact,exact
+773,exact,exact,exact,exact
+811,exact,exact,exact,exact
+819,exact,exact,exact,exact
+869,invented HANDOFF departure,invented HANDOFF tower,invented HANDOFF tower,exact
+872,exact,exact,exact,exact
+873,invented HANDOFF approach,exact,exact,exact
+876,exact,exact,exact,exact
+879,exact,exact,exact,exact
+955,exact,exact,exact,exact
+966,exact,exact,exact,exact
+969,exact,exact,exact,exact
+1000,exact,exact,exact,exact
+1002,exact,exact,exact,exact
+1005,invented HANDOFF approach,exact,invented HANDOFF approach,exact
+1022,exact,invented LAND 13,invented LAND 13,exact
+1038,invented HANDOFF approach,exact,exact,exact
+1061,exact,exact,exact,exact
+1076,exact,exact,exact,exact
+1088,exact,exact,exact,exact
+1095,exact,exact,exact,exact
+1102,exact,exact,exact,exact
+1131,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF departure,exact
+1156,invented HANDOFF approach,exact,exact,exact
+1173,exact,exact,exact,exact
+1227,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+1260,exact,exact,exact,exact
+1314,exact,exact,exact,exact
+1323,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact
+1350,invented HANDOFF tower,invented HANDOFF tower,invented HANDOFF tower,invented HANDOFF tower
+1417,exact,exact,exact,exact
+1477,exact,exact,exact,exact
+1499,exact,exact,exact,exact
+1508,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+1551,exact,exact,exact,exact
+1583,invented UNRESOLVED,invented UNRESOLVED,exact,exact
+1608,exact,exact,exact,exact
+1620,invented HANDOFF approach,exact,exact,exact
+1677,invented LAND 13,exact,invented LAND 13,exact
+1694,exact,exact,exact,exact
+1706,invented HANDOFF approach,exact,exact,exact
+1727,exact,exact,exact,exact
+1732,exact,exact,exact,exact
+1765,exact,exact,exact,exact
+1785,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact
+1791,exact,exact,exact,exact
+1851,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF departure,exact
+1864,exact,exact,exact,exact
+1889,exact,exact,exact,exact
+1916,exact,exact,exact,exact
+1927,invented HANDOFF approach,exact,exact,exact
+1952,exact,exact,exact,exact
+1974,exact,exact,exact,exact
+2012,invented HANDOFF departure,exact,exact,exact
+2014,exact,exact,exact,exact
+2017,exact,exact,exact,exact
+2033,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+2060,exact,exact,exact,exact
+2061,exact,invented LAND 13,invented LAND 13,exact
+2087,missed HOLD_SHORT 04; invented LUAW 04,missed HOLD_SHORT 04,exact,missed HOLD_SHORT 04
+2092,exact,exact,exact,exact
+2104,exact,exact,exact,exact
+2107,exact,exact,exact,exact
+2118,exact,invented LAND 31,invented LAND 31,exact
+2125,exact,exact,exact,exact
+2167,exact,exact,exact,exact
+2225,exact,exact,exact,exact
+2258,exact,exact,exact,exact
+2266,exact,exact,exact,exact
+2297,exact,exact,exact,exact
+2307,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+2317,invented HANDOFF approach,exact,exact,exact
+2340,exact,exact,exact,exact
+2359,exact,exact,exact,missed HANDOFF ground
+2375,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+2416,exact,invented UNRESOLVED,exact,exact
+2427,exact,exact,exact,exact
+2436,invented VACATED,exact,invented VACATED,exact
+2437,invented HANDOFF approach,exact,exact,exact
+2439,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+2446,invented HANDOFF approach,exact,exact,exact
+2450,exact,exact,invented LAND 13,exact
+2465,invented HANDOFF approach,exact,exact,exact
+2467,invented HANDOFF approach,exact,exact,exact
+2474,exact,exact,exact,exact
+2500,exact,exact,exact,exact
+2583,invented VACATED,exact,invented VACATED,exact
+2681,exact,exact,exact,exact
+2685,exact,exact,exact,missed TAKEOFF 13
+2751,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+2752,exact,exact,exact,exact
+2758,exact,exact,exact,exact
+2792,exact,exact,exact,exact
+2794,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF tower,exact
+2806,exact,exact,exact,missed HANDOFF tower
+2812,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF approach,exact
+2827,exact,exact,exact,exact
+2846,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+2872,exact,exact,exact,exact
+2911,exact,exact,exact,exact
+2912,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+2974,invented HANDOFF departure,invented HANDOFF tower,invented HANDOFF tower,exact
+3044,exact,exact,exact,exact
+3058,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact
+3144,exact,exact,exact,exact
+3197,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+3227,exact,exact,exact,exact
+3286,exact,invented LAND 13,exact,exact
+3290,exact,exact,exact,exact
+3296,invented HANDOFF approach,exact,exact,exact
+3325,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact
+3330,exact,exact,exact,exact
+3364,exact,exact,exact,exact
+3402,invented HANDOFF approach,exact,exact,exact
+3427,invented TAKEOFF 31,exact,exact,exact
+3484,exact,exact,exact,exact
+3485,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF approach,exact
+3495,exact,exact,exact,exact
+3508,exact,exact,exact,exact
+3510,exact,exact,exact,exact
+3538,exact,exact,exact,exact
+3539,exact,exact,exact,exact
+3557,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+3558,exact,exact,exact,exact
+3591,exact,exact,exact,exact
+3602,exact,exact,exact,exact
+3628,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+3631,exact,exact,exact,exact
+3642,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact
+3682,exact,exact,exact,exact
+3697,invented VACATED,exact,exact,exact
+3713,exact,exact,exact,exact
+3715,invented HANDOFF approach,invented HANDOFF tower,invented HANDOFF approach,exact
+3718,exact,exact,exact,exact
+3726,invented HANDOFF approach,exact,exact,exact
+3751,exact,exact,exact,exact
+3752,exact,exact,exact,exact
+3798,exact,exact,exact,exact
+3811,exact,exact,exact,exact
+3828,exact,exact,exact,exact
+3841,exact,exact,exact,missed HANDOFF approach
+3858,exact,exact,exact,exact
+3860,exact,exact,exact,exact
+3896,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF approach,exact
+3916,exact,exact,exact,exact
+3942,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF approach,exact
+3964,exact,exact,exact,exact
+3984,exact,exact,exact,exact
+3985,exact,exact,exact,exact
+3992,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF approach,exact
+4009,exact,exact,exact,exact
+4035,exact,exact,exact,exact
+4044,exact,exact,exact,exact
+4048,exact,exact,exact,exact
+4074,exact,exact,exact,missed HANDOFF tower
+4089,invented HANDOFF approach,exact,invented LAND 31,exact
+4123,invented HANDOFF tower,invented HANDOFF tower,invented HANDOFF tower,invented HANDOFF tower
+4184,invented HANDOFF departure,exact,exact,exact
+4208,invented HANDOFF approach,invented HANDOFF departure,invented HANDOFF tower,exact
+4217,exact,exact,exact,exact
+4223,exact,exact,exact,exact
+4232,exact,exact,exact,exact
+4236,exact,exact,exact,exact
+4258,invented HANDOFF approach,exact,exact,exact
+4263,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact
+4264,invented HANDOFF approach,invented HANDOFF approach,invented HANDOFF approach,exact

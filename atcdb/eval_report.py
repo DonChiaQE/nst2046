@@ -52,19 +52,64 @@ def arm_summary(rows: list[dict], verdicts: dict[str, str]) -> dict:
     return out
 
 
+def _cases(pairs: list[tuple[bool, bool]]) -> dict[str, int]:
+    """How many recordings both arms, only the first, only the second or neither got (a hit, or a false alarm)."""
+    out = {"both": 0, "first only": 0, "second only": 0, "neither": 0}
+    for a, b in pairs:
+        out["both" if a and b else "first only" if a else "second only" if b else "neither"] += 1
+    return out
+
+
 def primary_differences(rows_a: list[dict], rows_b: list[dict], verdicts: dict[str, str]) -> dict:
     """Paired (point, low, high) differences, first arm minus second, over the recordings both arms scored: lenient
-    recall, and RUNWAY false alarms per hour (None while pending)."""
+    recall, and RUNWAY false alarms per hour (None while pending); and the case-by-case counts behind each."""
     ha, hb = _recall_units(rows_a), _recall_units(rows_b)
     common = sorted(set(ha) & set(hb))
-    out = {"recall": paired_bootstrap([(ha[k], hb[k]) for k in common], rate) if common else None, "recall_n": len(common)}
+    out = {"recall": paired_bootstrap([(ha[k], hb[k]) for k in common], rate) if common else None, "recall_n": len(common),
+           "recall_cases": _cases([(ha[k] > 0, hb[k] > 0) for k in common])}
     fa, fb = _fa_units(rows_a, verdicts, "RUNWAY"), _fa_units(rows_b, verdicts, "RUNWAY")
     if fa is None or fb is None:
-        out["fa"], out["fa_n"] = None, 0
+        out["fa"], out["fa_n"], out["fa_cases"] = None, 0, None
     else:
         both = sorted(set(fa) & set(fb))
         out["fa"] = paired_bootstrap([(fa[k], fb[k]) for k in both], per_hour) if both else None
         out["fa_n"] = len(both)
+        out["fa_cases"] = _cases([(fa[k][0] > 0, fb[k][0] > 0) for k in both])
+    return out
+
+
+def case_tables(rows_by_arm: dict[str, list[dict]], verdicts: dict[str, str], injections: list[dict]) -> dict[str, list[dict]]:
+    """Each recording's outcome under every arm, ids and outcomes only (no corpus text), for case-by-case comparison.
+    `positives`: an accepted injection's kind, runway and clean_asr flag, then each arm's detection. `negatives`: the
+    span, then each arm's RUNWAY false alarms, `pending` while one of its alerts has no verdict. A row an arm could not
+    score (or did not run) is `not_scored`."""
+    valid = {i["recording_id"] for i in injections if i.get("valid") == "yes"}
+    by_arm = {name: {(r["set"], r["recording_id"]): r for r in rows} for name, rows in sorted(rows_by_arm.items())}
+    first: dict[tuple[str, int], dict] = {}
+    for rows in by_arm.values():
+        for k, r in rows.items():
+            first.setdefault(k, r)
+
+    def positive(r: dict | None) -> str:
+        return detection(r) if r and usable(r) else "not_scored"
+
+    def negative(r: dict | None) -> int | str:
+        if not r or not usable(r):
+            return "not_scored"
+        keys = alert_keys(r, "RUNWAY")
+        if any(k not in verdicts for k in keys):
+            return "pending"
+        return sum(verdicts[k] != "genuine" for k in keys)
+
+    out = {"positives": [], "negatives": []}
+    for (set_name, rid), r in sorted(first.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        if set_name == "positives" and rid in valid:
+            out["positives"].append({"recording_id": rid, "edit_kind": r["truth"]["edit_kind"], "runway": r["truth"]["runway"],
+                                     "clean_asr": r.get("clean_asr"),
+                                     **{name: positive(rows.get(("positives", rid))) for name, rows in by_arm.items()}})
+        elif set_name == "negatives":
+            out["negatives"].append({"recording_id": rid, "span_s": r["span_s"],
+                                     **{name: negative(rows.get(("negatives", rid))) for name, rows in by_arm.items()}})
     return out
 
 
@@ -133,6 +178,12 @@ def _diff_cell(d: tuple[float, float, float] | None, pct: bool) -> str:
     return f"{fmt(d[0])} ({fmt(d[1])} to {fmt(d[2])})"
 
 
+def _cases_text(c: dict[str, int] | None, a: str, b: str) -> str:
+    if c is None:
+        return "pending"
+    return f"both {c['both']}, {a} only {c['first only']}, {b} only {c['second only']}, neither {c['neither']}"
+
+
 def _arm_table(arms: dict[str, dict]) -> list[str]:
     lines = ["| Arm | Positives | Strict | Lenient recall (95% CI) | Warning only | RUNWAY false alarms / h (95% CI) "
              "| READBACK alerts / h, not adjudicated (95% CI) | Hours | Incomplete | Not scored |",
@@ -160,12 +211,16 @@ def render(summary: dict, date: str) -> str:
                 f"| Lenient recall | {_recall_cell(sa)} | {_recall_cell(sb)} | {_diff_cell(d['recall'], True)} "
                 f"over {d['recall_n']} positives |",
                 f"| RUNWAY false alarms / h | {_fa_cell(sa)} | {_fa_cell(sb)} | {_diff_cell(d['fa'], False)} "
-                f"over {d['fa_n']} negatives |", ""]
+                f"over {d['fa_n']} negatives |", "",
+                f"Case by case, positives caught: {_cases_text(d['recall_cases'], a, b)}. Negatives with a RUNWAY "
+                f"false alarm: {_cases_text(d['fa_cases'], a, b)}.", ""]
     else:
         out += ["## Primary comparison (pre-registered)", "", "Not run yet: both primary arms are needed.", ""]
     stale = ", ".join(f"{name} {n}" for name, n in summary["stale_positives"].items() if n) or "none"
     out += ["## All arms, human and ASR transcripts", ""] + _arm_table(summary["arms"]) + [""]
-    out += [f"Positives whose injection the check no longer accepts, not scored: {stale}.", ""]
+    out += [f"Positives whose injection the check no longer accepts, not scored: {stale}.", "",
+            "Each recording's outcome under every arm, ids and outcomes only (no corpus text), is in "
+            "`conflict-cases-positives.csv` and `conflict-cases-negatives.csv` beside this doc.", ""]
     leakage = summary["leakage"]
     share = (f"In the real recordings, {leakage[0]} of the {leakage[1]} transmissions ({_pct(leakage[0] / leakage[1])}) "
              f"are test split; the other {_pct(1 - leakage[0] / leakage[1])} were in its training data. "
