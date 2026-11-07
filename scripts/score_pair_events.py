@@ -18,7 +18,7 @@ Usage:
 Writes data/labels/pair_events_A.csv (the converted labels) and data/eval/pair_events/<model>.jsonl (per-pair rows).
 `--model` is repeatable; without it, the rules parser and both Claude models are scored. Every run, and `--cases` alone
 (no parsing, free), also writes docs/results/extraction-pair-events-cases.csv: each instruction's outcome under every
-model that has rows, with kinds and runways but no transcript text or callsigns, since the per-pair rows are git-ignored.
+model that has rows, with kinds and runways but no transcript text or callsigns.
 """
 import argparse
 import csv

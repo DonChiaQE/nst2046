@@ -27,7 +27,7 @@ lenient recall and raw negative alerts per value. A finding only: engine.STALE_S
 `report` writes the results doc from the arms' rows, the adjudication sheets and the injection check verdicts. An
 arm's RUNWAY false-alarm rate shows as pending until each of its RUNWAY alerts has a verdict on sheet A. Beside the doc
 it writes conflict-cases-positives.csv and conflict-cases-negatives.csv, each recording's outcome under every arm with
-no corpus text, so the case-by-case comparison does not need the git-ignored rows.
+no corpus text.
 """
 import argparse
 import csv

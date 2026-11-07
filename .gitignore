@@ -1,6 +1,7 @@
 .venv/
 data/*
 !data/labels/
+!data/eval/
 __pycache__/
 *.pyc
 .DS_Store
