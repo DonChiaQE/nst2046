@@ -8,7 +8,8 @@ rules parser's (`atcdb/parse_rules` stays frozen): no `runway` token is needed b
 and a single digit is a runway.
 
 Kinds (A = anchor site, B = trigger site, R = A's runway):
-- runway_swap:        B is a clearance to another runway; its designator becomes R's.
+- runway_swap:        B is a clearance to another strip (not R's other end, which already conflicts); its designator
+                      becomes R's.
 - holdshort_to_cross: B is `hold short (of) (runway) X`; it becomes `cross runway R`.
 - verb_upgrade:       A is a landing clearance on R and B a line-up or landing clearance on R; B's verb becomes
                       `cleared for takeoff`.
@@ -25,7 +26,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 
-from atcdb.engine import MATRIX, RESERVATION_KINDS, STALE_S, normalize_runway
+from atcdb.engine import MATRIX, RESERVATION_KINDS, STALE_S, normalize_runway, reciprocal
 from atcdb.parsing import Transmission
 from atcdb.replay import SYNTHETIC_SOURCE, default_transcript_model, load_recording
 
@@ -138,7 +139,7 @@ def candidates(recording_id: int, txs: list[Transmission]) -> list[Injection]:
                 continue
             text = txs[b.index].text
             between = _releases(sites, a.kind, a.index, b.index)
-            if not between and b.kind in RESERVATION_KINDS and b.runway != a.runway and MATRIX[(b.kind, a.kind)] == "alert":
+            if not between and b.kind in RESERVATION_KINDS and b.runway not in (a.runway, reciprocal(a.runway)) and MATRIX[(b.kind, a.kind)] == "alert":
                 out.append(Injection(recording_id, "runway_swap", a.index, b.index, a.runway,
                                      _replace(text, b.rwy_span, a.words)))
             if not between and b.kind == "HOLD_SHORT" and MATRIX[("CROSS", a.kind)] == "alert":

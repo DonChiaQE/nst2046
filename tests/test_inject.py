@@ -39,6 +39,8 @@ def _seed(conn, turns, external_id="r1", asr=False, airport="LKPR"):
 LAND_31 = ("controller", "csa one two three runway three one cleared to land wind calm")
 LINEUP_13 = ("controller", "lufthansa four five six line up runway one three")
 LINEUP_31 = ("controller", "lufthansa four five six line up runway three one")
+# another strip: 13 is the other end of 31, so a swap from 13 would inject nothing (one strip is one runway)
+LINEUP_22 = ("controller", "lufthansa four five six line up runway two two")
 HOLD_13 = ("controller", "lufthansa four five six hold short of runway one three")
 TO_31 = ("controller", "lufthansa four five six runway three one cleared for takeoff")
 GROUND = ("controller", "csa one two three contact ruzyne ground one two one nine")
@@ -67,7 +69,7 @@ def test_scan_ignores_pilot_clearances_and_bare_numbers_without_a_side():
 
 
 def test_runway_swap_moves_a_later_clearance_onto_the_anchor_runway():
-    txs = _txs(LAND_31, READBACK, LINEUP_13)
+    txs = _txs(LAND_31, READBACK, LINEUP_22)
     [inj] = [c for c in candidates(7, txs) if c.edit_kind == "runway_swap"]
     assert inj == Injection(7, "runway_swap", 0, 2, "31", "lufthansa four five six line up runway three one")
 
@@ -121,7 +123,7 @@ def test_select_is_seeded_stratified_and_takes_one_per_recording_and_kind():
 
 def test_a_stored_injection_differs_from_its_original_only_at_the_trigger(tmp_path):
     conn = init_db(tmp_path / "t.sqlite")
-    rid = _seed(conn, [LAND_31, READBACK, LINEUP_13, ("pilot", "lining up one three lufthansa four five six")], asr=True)
+    rid = _seed(conn, [LAND_31, READBACK, LINEUP_22, ("pilot", "lining up two two lufthansa four five six")], asr=True)
     [inj] = [c for c in generate(conn, [rid], n=10, seed=3) if c.edit_kind == "runway_swap"]
     sid = write_injection(conn, inj, seed=3, ordinal=0)
     assert write_injection(conn, inj, seed=3, ordinal=0) == sid   # idempotent
@@ -139,7 +141,7 @@ def test_a_stored_injection_differs_from_its_original_only_at_the_trigger(tmp_pa
     assert edited == "synthetic"
     [meta] = synthetic_recordings(conn)
     assert (meta["recording_id"], meta["edit_kind"], meta["runway"], meta["before"], meta["after"]) == (
-        sid, "runway_swap", "31", LINEUP_13[1], inj.after)
+        sid, "runway_swap", "31", LINEUP_22[1], inj.after)
     assert (meta["anchor_tx"], meta["trigger_tx"]) == (synth[0].id, synth[2].id) and meta["deleted"] is None
 
 
@@ -152,9 +154,17 @@ def test_release_delete_drops_the_release_transmission(tmp_path):
     assert synthetic_recordings(conn)[0]["deleted"] == GROUND[1]
 
 
-def test_the_injected_conflict_is_what_the_rules_parser_then_sees(tmp_path):
+def test_a_runway_swap_never_starts_from_the_other_end_of_the_anchor_strip(tmp_path):
+    """Crossing at 13 while a landing holds 31 is already a conflict (13 and 31 are one strip), so swapping 13 for 31
+    would inject nothing the recording did not already contain."""
     conn = init_db(tmp_path / "t.sqlite")
     rid = _seed(conn, [LAND_31, READBACK, ("controller", "lufthansa four five six cross runway one three")])
+    assert [c for c in generate(conn, [rid], n=10, seed=0) if c.edit_kind == "runway_swap"] == []
+
+
+def test_the_injected_conflict_is_what_the_rules_parser_then_sees(tmp_path):
+    conn = init_db(tmp_path / "t.sqlite")
+    rid = _seed(conn, [LAND_31, READBACK, ("controller", "lufthansa four five six cross runway two two")])
     [inj] = [c for c in generate(conn, [rid], n=10, seed=0) if c.edit_kind == "runway_swap"]
     sid = write_injection(conn, inj, seed=0, ordinal=0)
     assert not [c for s in build_timeline(conn, rid).steps for c in s.conflicts]
@@ -197,7 +207,7 @@ def test_splices_pair_recordings_from_one_airport_and_store_both_halves(tmp_path
 
 def test_the_check_sheet_round_trips_verdicts(tmp_path):
     conn = init_db(tmp_path / "t.sqlite")
-    rid = _seed(conn, [LAND_31, READBACK, LINEUP_13, HOLD_13])
+    rid = _seed(conn, [LAND_31, READBACK, LINEUP_22, HOLD_13])
     for i, inj in enumerate(generate(conn, [rid], n=10, seed=0)):
         write_injection(conn, inj, seed=0, ordinal=i)
     rows = check_rows(conn)

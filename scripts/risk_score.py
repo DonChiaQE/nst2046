@@ -23,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from atcdb.engine import reciprocal  # noqa: E402  (re-exported: the other end of the same strip)
 from atcdb.evaluate import alert_key, detection, refold, usable  # noqa: E402
 
 ROWS = Path("data/eval/conflicts")
@@ -34,18 +35,6 @@ RELEASES = ("VACATED", "GOAROUND", "HANDOFF")
 NEXT_KIND = {"LAND": "TAKEOFF", "TAKEOFF": "LUAW", "LUAW": "CROSS", "CROSS": "LAND"}
 
 KINDS = ("wrong_runway", "wrong_type", "wrong_callsign", "dropped", "spurious_inuse", "spurious_other")
-
-
-def reciprocal(runway: str) -> str:
-    """The other end of the same strip: 13 -> 31, 18L -> 36R. This is the realistic runway confusion (an ASR digit
-    error, or a parser reading the wrong end), and the engine treats the two ends as unrelated runways, so it is also
-    the perturbation most likely to matter."""
-    digits = "".join(c for c in runway if c.isdigit())
-    side = runway[len(digits):].upper()
-    if not digits:
-        return runway
-    n = ((int(digits) + 18 - 1) % 36) + 1
-    return f"{n:02d}{ {'L': 'R', 'R': 'L'}.get(side, side) }".replace(" ", "")
 
 
 def perturbations(row: dict) -> list[tuple[str, list[list]]]:
@@ -67,7 +56,7 @@ def perturbations(row: dict) -> list[tuple[str, list[list]]]:
     for i, step in enumerate(events):
         for j, (kind, callsign, runway, extra) in enumerate(step):
             if kind in RESERVATIONS or kind == "HOLD_SHORT":
-                if runway:
+                if runway:   # the other end of the same strip: the realistic confusion (an ASR digit error)
                     out.append(("wrong_runway", edited(i, j, [kind, callsign, reciprocal(runway), extra])))
                 if kind in RESERVATIONS:
                     out.append(("wrong_type", edited(i, j, [NEXT_KIND[kind], callsign, runway, extra])))
@@ -79,10 +68,11 @@ def perturbations(row: dict) -> list[tuple[str, list[list]]]:
 
     # A spurious event is an invented clearance on a line that carried none: the LLM's observed failure (an approach
     # clearance read as a landing clearance). Inserted as a LAND for the nearest callsign the engine has already heard,
-    # on a transmission whose events are all non-runway. Where the invention lands decides almost everything, and we
-    # cannot know that in general, so both ends are measured: `_inuse` puts it on the recording's busiest runway (the
-    # worst case, most likely to meet an open reservation) and `_other` on that runway's reciprocal, which these
-    # recordings never use (the floor). The real rate for any given extractor sits between them.
+    # on a transmission whose events are all non-runway. `_inuse` puts it on the recording's busiest runway designator
+    # and `_other` on that designator's reciprocal: the same strip entered from its other end, which the engine checks
+    # against the same reservations (head-on for two landings). Before the engine treated the two ends as one strip,
+    # `_other` met no reservation at all and read as a 0% floor; on a corpus of one strip there is no genuinely unused
+    # runway to put an invention on.
     if primary:
         seen = ""
         for i, step in enumerate(events):
