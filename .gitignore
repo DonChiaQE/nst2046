@@ -12,9 +12,10 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 
-# The report draft and its figures are written outside the repo; the results docs
-# under docs/results/ are the tracked evidence they cite.
-docs/milestone2-report-draft.md
+# The report drafts and their figures are not tracked; the results docs under
+# docs/results/ are the tracked evidence they cite, and the submitted report is
+# compiled outside the repo. The glob covers every draft, not just the first two.
+docs/milestone2-report-draft*.md
 docs/figures/
 
 # Papers we read, not ours to redistribute.
