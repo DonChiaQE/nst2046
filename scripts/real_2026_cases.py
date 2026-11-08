@@ -59,10 +59,19 @@ def recording_path(model: str) -> Path:
     return RECORDED / f"events-{model}.json"
 
 
+# How a recording's events came to be. A recording seeded by hand from a run someone pasted into a session holds
+# real output, but it is a transcription: it can carry a typo, and the terminal view it was read from is lossy (it
+# prints `runway or to`, so the two fields have to be inferred back). Anything citing a recording needs to be able to
+# tell the difference, and `--record` is what turns a transcribed one into an API-written one.
+PROVENANCE_API = "api"
+PROVENANCE_TRANSCRIBED = "transcribed"
+
+
 def derive(model: str, by_case: dict[str, list[Transmission]]) -> dict:
     """Call the API and shape the reply exactly as a recording, so --record and --verify share one derivation."""
     parse = parse_llm.make_parser(model)
-    out = {"model": model, "parse_version": parse_llm.VERSION, "sheet": SHEET.name, "cases": {}}
+    out = {"model": model, "parse_version": parse_llm.VERSION, "sheet": SHEET.name,
+           "provenance": PROVENANCE_API, "cases": {}}
     for case, txs in by_case.items():
         out["cases"][case] = [{"text": tx.text, "role": tx.role,
                                "events": [event_dict(e) for e in events if not isinstance(e, NoOp)]}
@@ -116,6 +125,9 @@ def load_recorded(model: str) -> dict | None:
     if data.get("parse_version") != parse_llm.VERSION:
         print(f"  ! {path.name} was recorded under parse version {data.get('parse_version')!r}, "
               f"but parse_llm.VERSION is {parse_llm.VERSION!r}: re-record before citing it.")
+    if data.get("provenance") != PROVENANCE_API:
+        print(f"  ! {path.name} is a {data.get('provenance')!r} recording, not written by this script against the "
+              f"API. Its events are real output but transcribed by hand; run --record to replace it.")
     return data
 
 

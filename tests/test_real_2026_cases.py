@@ -16,8 +16,8 @@ from atcdb.engine import RESERVATION_KINDS, ClearTakeoff, HoldShort
 from atcdb.incidents import fold_window as fold
 from atcdb.parsing import KINDS
 from scripts.real_2026_cases import (
-    SHEET, cases, derive, drift, load_recorded, record, recording_path,
-    reservations_in, show,
+    PROVENANCE_API, PROVENANCE_TRANSCRIBED, SHEET, cases, derive, drift, load_recorded,
+    record, recording_path, reservations_in, show,
 )
 
 
@@ -165,3 +165,42 @@ def test_a_hold_short_is_not_a_reservation_so_sonnets_real_output_passes():
         {"text": "taxi via november two hold at holding point runway zero eight", "role": "controller",
          "events": [{"kind": "HOLD_SHORT", "callsign": "", "runway": "08", "to": None}]}]}}
     assert reservations_in(fresh) == []
+
+
+# --- provenance: a hand-seeded recording must never pass as an API-written one --------------------
+
+def test_the_committed_sonnet_recording_is_complete_and_matches_the_sheet():
+    """Whatever its provenance, the recording must line up with the sheet row for row."""
+    data = load_recorded("claude-sonnet-5")
+    assert data is not None, "the Sonnet recording should be committed"
+    sheet = cases(SHEET)
+    assert set(data["cases"]) == set(sheet)
+    for case, rows in data["cases"].items():
+        assert [r["text"] for r in rows] == [tx.text for tx in sheet[case]]
+        assert [r["role"] for r in rows] == [tx.role for tx in sheet[case]]
+
+
+def test_derive_always_marks_its_output_as_api_written(tmp_path, monkeypatch, by_case):
+    monkeypatch.setattr(parse_llm, "make_parser", lambda model: lambda tx, ctx: [])
+    assert derive("claude-sonnet-5", by_case)["provenance"] == PROVENANCE_API
+
+
+def test_a_transcribed_recording_is_announced_as_such(capsys):
+    """The committed Sonnet events are real output read back from a pasted run, so anything citing them has to be
+    able to tell. `--record` is what replaces it with an API-written one."""
+    data = load_recorded("claude-sonnet-5")
+    out = capsys.readouterr().out
+    if data["provenance"] == PROVENANCE_TRANSCRIBED:
+        assert "transcribed" in out and "--record" in out
+    else:
+        assert data["provenance"] == PROVENANCE_API and out == ""
+
+
+def test_recording_marks_provenance_api_once_rewritten_from_the_api(tmp_path, monkeypatch, by_case, capsys):
+    """After a real --record the warning must stop, so the flag cannot become background noise."""
+    monkeypatch.setattr("scripts.real_2026_cases.RECORDED", tmp_path)
+    monkeypatch.setattr(parse_llm, "make_parser", lambda model: lambda tx, ctx: [])
+    record("claude-sonnet-5", by_case)
+    capsys.readouterr()
+    assert load_recorded("claude-sonnet-5")["provenance"] == PROVENANCE_API
+    assert "transcribed" not in capsys.readouterr().out

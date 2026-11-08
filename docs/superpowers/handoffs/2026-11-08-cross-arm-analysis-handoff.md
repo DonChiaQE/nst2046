@@ -91,19 +91,25 @@ report's own argument. It separates:
 
 ## The one step still needing a key
 
-`data/eval/real_2026/events-claude-sonnet-5.json` **does not exist yet.** Sonnet 5 was run manually on these rows and
-produced no reservation, but that output was transcribed through a chat session, so it was deliberately *not* written
-to disk by hand — a file claiming to be a machine recording has to be machine-written.
+`data/eval/real_2026/events-claude-sonnet-5.json` **exists but is marked `"provenance": "transcribed"`.** Its events
+are real Sonnet 5 output from a 2026-11-08 run, but they were read back from that run's terminal output rather than
+written by the script against the API, so they are a transcription: the terminal view prints `runway or to`, so those
+two fields had to be inferred back, and a typo is possible. The transcription was checked by re-rendering the
+recording and diffing it against the pasted run byte-for-byte, and the sheet supplies the text and roles so only the
+events came from the paste. `load_recorded` prints a warning on every load while this is the case.
 
-One command creates it (`--dry-run` priced it at about **$0.02**, 7 uncached parses):
+One command replaces it with an API-written one (`--dry-run` priced it at about **$0.02**, 7 uncached parses):
 
 ```bash
 read -rsp "Anthropic API key: " ANTHROPIC_API_KEY && export ANTHROPIC_API_KEY && .venv/bin/python scripts/real_2026_cases.py --record --model claude-sonnet-5
 ```
 
-After that, `test_the_committed_sonnet_recording_also_yields_no_reservation` stops skipping and starts guarding the
-§4.5 claim. Until then the §4.5 table's Sonnet column is sourced from a manual run and is **not** reproducible — do
-not present it as reproducible before this step is done.
+`--verify` does the same call but checks rather than overwrites, and is the better choice if you want to know whether
+the transcription is faithful before replacing it. Either way the warning stops only once `provenance` is `"api"`.
+
+Until then: the §4.5 Sonnet column is **real output, reproducible keyless, and guarded by a test**
+(`test_the_committed_sonnet_recording_also_yields_no_reservation` no longer skips), but it is **not** API-derived in
+this repo. Say "transcribed from a recorded run", not "regenerated", if the distinction comes up.
 
 Do **not** run the LLM context sweep (about 4,000 calls, ~$6.88 per arm). The prior handoff's recommendation to defer
 it to the Week 13 presentation stands.
