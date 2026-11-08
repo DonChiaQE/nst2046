@@ -78,7 +78,11 @@ an alert itself. Context comes in three modes: `none` is the line alone, `role` 
 
 The rules parser (`atcdb/parse_rules.py`) matches normalized text against a fixed set of regular expressions — one
 phrase pattern per event kind, a handoff-target pattern, and a go-around pattern (full set, Appendix B0) — frozen
-before any evaluation was run. A runway designator comes directly from the matched phrase for `CROSS`/`HOLD_SHORT`;
+before any evaluation was run. The designator pattern was later restructured so that an airport's phraseology
+convention can be selected per recording (§7): the default still requires the two digit-words ICAO practice speaks,
+and is verified identical to the frozen baseline on every transcript in the corpus, so §4's numbers are unaffected;
+the US single-digit form ("runway four left") is reachable only through an explicit opt-in that no scored arm uses.
+A runway designator comes directly from the matched phrase for `CROSS`/`HOLD_SHORT`;
 for `LAND`/`TAKEOFF`/`LUAW`, whose own pattern names no runway, it is the nearest `runway ...` mention in the
 transmission, falling back under `window` context to the single runway currently active (Appendix B4). A callsign
 is read by a positional heuristic around the matched phrase (Appendix B0) rather than by modelling which aircraft
@@ -105,14 +109,21 @@ this slot." This distinction is the mechanism behind every divergence reported i
 The engine (`atcdb/engine.py`) is a pure state fold: each event is applied to a frozen `State` object representing,
 per runway, the reservations currently open and their timestamps, and per aircraft, whether it is holding short.
 Four event kinds open a reservation — `LAND`, `TAKEOFF`, `LUAW`, `CROSS` — each valid for 300 seconds before it is
-discarded as stale. `HANDOFF`, `VACATED`, and certain `HOLD_SHORT` transitions release reservations; `READBACK` and
-`NOOP` carry no engine state.
+discarded as stale. `HANDOFF`, `VACATED`, and certain `HOLD_SHORT` transitions release reservations — a hold-short
+releases that aircraft's clearance for the named runway *and* for the strip's other end, so that an aircraft told to
+stay off a strip does not keep reading as occupying it; `READBACK` and `NOOP` carry no engine state.
 
 When a new reservation-opening event arrives on a runway that already has an open reservation, the engine looks up
-the pair of kinds in a fixed compatibility matrix (e.g. `LAND`×`TAKEOFF` = `alert`, `TAKEOFF`×`TAKEOFF` = `warning`,
-with a second matrix, `OPPOSITE_MATRIX`, applied when the reservation is held from the other end of the same strip,
-where two landings or two departures are head-on and so `alert` rather than legal,
-`CROSS`×`CROSS` = `ok`) and raises a `RUNWAY` conflict at the resulting severity. If either event's callsign is
+the pair of kinds in a fixed compatibility matrix (`LAND`×`TAKEOFF` = `alert`, `TAKEOFF`×`TAKEOFF` = `warning`,
+`CROSS`×`CROSS` = `ok`) and raises a `RUNWAY` conflict at the resulting severity.
+
+The same check is also made against any reservation held from the **other end of the same strip** — 13 and 31 are one
+piece of tarmac entered from opposite ends — against a second matrix, `OPPOSITE_MATRIX`. It is identical except for
+the two cells that are legal only because both aircraft move the same way: two landings, or two departures, from
+opposite ends are head-on, so `alert` rather than `ok`/`warning` (Appendix D1). An opposite-end conflict carries no
+doctrinal citation, because the ICAO paragraphs the matrix cites describe same-direction traffic (§6.3). Note where
+this relation lives: a reservation is still *stored* only under the designator actually cleared, and only the
+*check* spans both ends — which is why the state a `window`-mode extractor sees is unchanged by it. If either event's callsign is
 unknown, the severity is capped at `warning` regardless of what the matrix says, on the deliberate ground that an
 unidentified aircraft might be the aircraft already holding the reservation. A second alert type, `READBACK`, fires
 when a pilot's readback does not match the instruction it responds to; this study reports but does not adjudicate
@@ -168,7 +179,7 @@ Four separate evaluations are run on this data, each scoring a different unit ag
 
 | | What is scored | Against what | Measure |
 |---|---|---|---|
-| Level 1 — extraction | one transmission | 200 labelled instructions | events found / missed / invented |
+| Level 1 — extraction | one transmission | 200 labelled instructions | events found / missed / invented (*invented* counts runway events, per [`extraction-pair-events.md`](results/extraction-pair-events.md)) |
 | Level 2 — end to end | a whole recording | 98 positives, 309 negatives | lenient & strict recall; adjudicated false alarms/hour |
 | Ablation — LLM judge | a whole recording | the same Level 2 sets | the same two measures |
 | Consequence weighting | one perturbed event | an arm's own stored event stream | P(output changes), P(detection lost), P(false alarm created) |
@@ -200,7 +211,8 @@ phraseology. 98 were accepted and 2 rejected as implausible; only accepted cases
 ([`data/labels/README.md`](../data/labels/README.md) §2). Separately, a 200-row sheet of real controller
 instructions was labelled for runway events, blind to extractor output, supporting the Level 1 measure (§4.1); and
 two real 2026 incidents (Goa 2026-04-03, Houston 2026-04-24) were reconstructed from published incident reporting
-into seven short transmissions each, used as case studies in §4.5 rather than scored for a rate
+into seven short transmissions in total — five for Goa, two for Houston — used as case studies in §4.5 rather than
+scored for a rate
 (`data/labels/real_2026_cases_A.csv`).
 
 #### 3.3.2 Scoring
@@ -215,6 +227,17 @@ can move; the other four describe what the tower-only audio channel does or does
 compatibility matrix is defined, independent of extraction quality. Inter-rater agreement on 31 alerts labelled by
 both adjudicators was Cohen's κ = 0.80 with the checklist, against κ = 0.12 on an earlier round without one.
 `READBACK` alerts are counted but not adjudicated, so their reported rate is an upper bound.
+
+An alert with no verdict is neither a false alarm nor a correct one, and the scoring code refuses to decide for it:
+`evaluate.false_alarm_units` raises `Pending` rather than return a rate while any alert is unjudged, so
+[`conflict-eval.md`](results/conflict-eval.md) prints `pending` instead of a number. This matters because the set of
+alerts needing a verdict is produced by the system under test, not fixed in advance — a new model, context mode or
+engine rule can raise an alert at a key no sheet covers, as §2's strip fix did twice. Refusing to guess is the
+conservative default: counting an unjudged alert as a false alarm penalises the arm for a judgement nobody made,
+while dropping the recording that carries it removes a negative *because* an arm alerted on it, which biases the
+rate downward for whichever arm alerted. Where a figure is reported with alerts still pending, §4.2 bounds the
+effect by recomputing it under every treatment those verdicts could produce
+(`scripts/pending_sensitivity.py`), and reports the treatment least favourable to the claim being made.
 
 Confidence intervals throughout are 95% percentile bootstrap intervals over recordings (2,000 resamples, seed 0);
 the primary rules-vs-Sonnet comparison uses a paired bootstrap, since both arms are scored on the same recordings.
@@ -857,7 +880,7 @@ its wording, the text is NTSB public record, published incident reporting, or in
 
 ## Appendix A — Every divergent case, rules vs Sonnet 5
 
-### A1. The ten gold-transcript disagreements, with extracted events
+### A1. The eleven gold-transcript disagreements, with extracted events
 
 All ten recordings on which the primary pair disagrees. **Events and callsigns only, no transcript text.** "Trigger"
 is the injected conflicting clearance; "prior holder" is the reservation already open on that runway when it
@@ -981,7 +1004,7 @@ normalised to the corpus convention (lower case, digits as words). They are a re
 NTSB docket transcript should replace them when the ATC Group Chair's factual report is released. The conclusion
 does not depend on the exact wording, only on the runway designator.
 
-### B0. The full pattern catalogue, verbatim
+### B0. The full pattern catalogue, as scored and as it now stands
 
 §2.2.1 summarises this. This is the complete set the scored baseline matches against. **Every number reported in §4
 was scored against the `v1` catalogue below**, which is reproduced first because that is what the numbers mean:
@@ -1233,7 +1256,7 @@ reproducibility comes from the cache rather than from determinism (§2.2.2).
 
 ## Appendix D — The compatibility matrix and its doctrinal basis
 
-### D1. The compatibility matrix, verbatim, with its doctrinal basis
+### D1. Both compatibility matrices, with their doctrinal basis
 
 Rows are the arriving event, columns the reservation already open for a *different* aircraft on that runway.
 
@@ -1244,11 +1267,24 @@ Rows are the arriving event, columns the reservation already open for a *differe
 | `LUAW` | **alert** | **warning** | **warning** | **warning** |
 | `CROSS` | **alert** | **alert** | **warning** | **ok** |
 
+Since §2's strip fix, a clearance is also checked against a reservation held from the **other end of the same
+strip**, against a second matrix. It is identical except for the two cells that are legal only because both aircraft
+move the same way — two landings, or two departures, from opposite ends are head-on:
+
+| new \ active | `LAND` | `TAKEOFF` | `LUAW` | `CROSS` |
+|---|---|---|---|---|
+| `LAND` | **alert** *(was ok)* | **alert** | **alert** | **alert** |
+| `TAKEOFF` | **alert** | **alert** *(was warning)* | **alert** | **alert** |
+| `LUAW` | **alert** | **warning** | **warning** | **warning** |
+| `CROSS` | **alert** | **alert** | **warning** | **ok** |
+
 3 of the 16 same-end cells carry a verified ICAO Doc 4444 citation in `MATRIX_BASIS`; the other 13 encode the
-team's judgement. The 16 opposite-end cells (`OPPOSITE_MATRIX`) carry no citation at all by design — the ICAO
-paragraphs cited describe same-direction traffic — so a majority of the alerts the engine now raises rest on the
-team's reading rather than on doctrine.
-A conflict in which either party's callsign is unknown is capped at `warning` by `apply`, whatever this matrix says.
+team's judgement. None of the 16 opposite-end cells carries one, by design — the ICAO paragraphs cited describe
+same-direction traffic, so `apply` attaches no basis to an opposite-end conflict rather than borrowing one. Across
+every structured arm's stored events, 833 of 1,476 RUNWAY alerts (56%) carry no citation and 643 (44%) do, the
+latter all from `icao-4444-7.10.1` (495) and `icao-4444-7.9.2` (148). So **most of the alerts this engine raises
+rest on the team's reading rather than on doctrine**, and that share grew with the strip fix.
+A conflict in which either party's callsign is unknown is capped at `warning` by `apply`, whatever these matrices say.
 
 ### D2. Why the uncited cells matter
 
@@ -1427,20 +1463,21 @@ fails test collection.
 | Table or claim | Command |
 |---|---|
 | §4.1 extraction table | `python scripts/score_pair_events.py` → [`extraction-pair-events.md`](results/extraction-pair-events.md) |
-| §4.2 primary comparison, both transcript kinds | `python scripts/eval_conflicts.py report` → [`conflict-eval.md`](results/conflict-eval.md) |
+| §4.2 primary comparison, both transcript kinds | `python scripts/eval_conflicts.py report` → [`conflict-eval.md`](results/conflict-eval.md). The false-alarm rows print `pending` while two alerts await a verdict (§3.3.2) |
+| §4.2 false-alarm figures and the pending bound | `python scripts/pending_sensitivity.py` — emits the per-arm rates §4.2 publishes and the paired interval under every treatment the pending verdicts could produce; free, no API |
 | §4.3 contingency and failure taxonomy | same command; "case by case" lines in the same doc |
 | §4.3 cross-arm replication and mechanism labels | `python scripts/cross_arm_replication.py --markdown` → [`cross-arm-replication.md`](results/cross-arm-replication.md) |
 | §4.4 judge ablation | `python scripts/eval_conflicts.py report`; judge arms in the same table |
 | §4.5 and Appendix F, the 2026 cases | `python scripts/real_2026_cases.py` |
 | §4.5 Austin and Prague | `python scripts/pilot_cases.py --dry-run` to price, then without the flag (**billed**; Austin is not in the corpus so its parses are not cached) |
 | §5 and Appendix G, consequence weights | `python scripts/risk_score.py` → [`risk-score.md`](results/risk-score.md) |
-| Appendix A1, the ten divergent cases | `python scripts/divergent_cases.py` |
+| Appendix A1, the eleven divergent cases | `python scripts/divergent_cases.py` |
 | Appendix B1-B2, the LaGuardia replay and designator test | the snippet in B1–B2; `atcdb.parse_rules.parse` on the normalised lines |
-| Appendix B3's candidate-fix spot-check | a diff of the relaxed designator pattern against the scored one, over all gold transcripts; free, no API |
+| §7's designator measurement | a diff of the relaxed designator pattern against the default, over all 22,956 transcripts (gold and ASR); free, no API. The default is verified identical to the frozen baseline across 66,273 comparisons — 22,956 transcripts × 3 context modes, `parse` and `count_unresolved` |
 | Appendix B4, the JFK case under both orderings | the same replay snippet as B1, with the four JFK lines in each order, folded through `atcdb.engine.apply` |
 | Appendix E, the κ figures | `python scripts/eval_conflicts.py adjudicate --kappa` |
 | §2.1 word error rate | `python scripts/score_wer.py` → [`wer-baseline.md`](results/wer-baseline.md) |
-| The full test suite | `.venv/bin/python -m pytest -q` — 426 pass; the two `tests/test_asr.py` failures need a GPU module this machine lacks |
+| The full test suite | `.venv/bin/python -m pytest -q` — 428 pass; the two `tests/test_asr.py` failures need a GPU module this machine lacks |
 
 `data/atc.sqlite` is required only to re-run a paid arm or to regenerate transcripts; it is not on `main` because
 of its size. Install it with

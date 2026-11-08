@@ -3,7 +3,10 @@
 data/*
 !data/labels/
 !data/eval/
-!data/atc.sqlite
+# atc.sqlite is NOT tracked: it is ~23 MB, it is rebuildable from the README's steps 1-2, and it carries UWB-ATCC
+# transcript text that this project does not redistribute (see the skip reasons in tests/test_inject.py and
+# tests/test_incidents.py). A fresh clone therefore has no events cache, so the tests that need the corpus skip and
+# an LLM replay would have to pay for its parses again.
 __pycache__/
 *.pyc
 .DS_Store

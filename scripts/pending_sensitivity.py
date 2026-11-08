@@ -26,8 +26,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.evaluate import (PRIMARY, PRIMARY_ASR, alert_keys, per_hour, paired_bootstrap,  # noqa: E402
-                            read_rows, read_verdicts, usable)
+from atcdb.evaluate import (PRIMARY, PRIMARY_ASR, alert_keys, bootstrap, per_hour,  # noqa: E402
+                            paired_bootstrap, read_rows, read_verdicts, usable)
 
 ROWS = ROOT / "data/eval/conflicts"
 LABELS = ROOT / "data/labels"
@@ -68,6 +68,23 @@ def paired_interval(a_arm: str, b_arm: str, verdicts: dict[str, str], pending: s
     return point, low, high, len(pairs)
 
 
+def arm_rate(arm: str, verdicts: dict[str, str], pending: set[str]):
+    """(per hour, low, high) for one arm's RUNWAY false alarms, pending alerts not counted.
+
+    `evaluate.false_alarm_units` refuses to compute this while anything is pending, so the per-arm figures §4.2
+    publishes have no other committed source. They are emitted here, under the same treatment §4.2 reports (`skip`),
+    so every number in that table traces to a script rather than to a results file that now prints `pending`.
+    """
+    units = []
+    for row in read_rows(ROWS / f"{arm}.jsonl"):
+        if row["set"] != "negatives" or not usable(row):
+            continue
+        keys = alert_keys(row, "RUNWAY") - pending
+        units.append((float(sum(verdicts.get(k) != "genuine" for k in keys)), row["span_s"]))
+    low, high = bootstrap(units, per_hour)
+    return per_hour(units), low, high
+
+
 def main() -> None:
     verdicts = read_verdicts(list(csv.DictReader((LABELS / "adjudication_A.csv").open())))
     pending = unjudged_keys(verdicts)
@@ -77,6 +94,11 @@ def main() -> None:
     if not pending:
         print("\nNothing pending: the published interval is the interval.")
         return
+
+    print("\n== per-arm RUNWAY false alarms per hour, pending alerts not counted (the §4.2 table) ==")
+    for arm in dict.fromkeys([a.name for a in PRIMARY + PRIMARY_ASR]):
+        point, low, high = arm_rate(arm, verdicts, pending)
+        print(f"   {arm:<40} {point:.1f} ({low:.1f}-{high:.1f})")
 
     for label, (a, b) in (("primary pair, gold", PRIMARY), ("primary pair, ASR", PRIMARY_ASR)):
         print(f"\n== {label}: {a.name} minus {b.name} ==")
