@@ -1477,7 +1477,7 @@ fails test collection.
 | Appendix B4, the JFK case under both orderings | the same replay snippet as B1, with the four JFK lines in each order, folded through `atcdb.engine.apply` |
 | Appendix E, the κ figures | `python scripts/eval_conflicts.py adjudicate --kappa` |
 | §2.1 word error rate | `python scripts/score_wer.py` → [`wer-baseline.md`](results/wer-baseline.md) |
-| The full test suite | `.venv/bin/python -m pytest -q` — 428 pass; the two `tests/test_asr.py` failures need a GPU module this machine lacks |
+| The full test suite | `.venv/bin/python -m pytest -q` — 428 pass, 2 skip. The two `tests/test_asr.py` failures are `torch` not being installed in the local venv, not a missing capability: `torch==2.13.0` is pinned in `requirements.txt`, and `pip install -r requirements.txt` makes all 430 pass. The two skips are the live-app smoke tests, which skip without `ANTHROPIC_API_KEY` |
 
 `data/atc.sqlite` is required only to re-run a paid arm or to regenerate transcripts; it is not on `main` because
 of its size. Install it with
