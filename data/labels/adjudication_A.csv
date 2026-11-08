@@ -115,7 +115,7 @@ key,recording_id,type,runway,tx_id,arms,callsigns,context,verdict,notes
    [pilot] ruzyne tower csa five victor papa ils three one
    [controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one
    [pilot] reducing speed one fifty csa five victor papa
->> [controller] csa nine six one runway three one cleared to land wind one six zero degrees five knots",parse_error,"Missing release I think | step 1: no other plane cleared above (set by rule, 2026-11-02)"
+>> [controller] csa nine six one runway three one cleared to land wind one six zero degrees five knots",missing_release,"revised 2026-11-08 from parse_error: step 1 answers yes once the full context is shown -- swiss one two five victor is cleared for immediate takeoff on 31 four lines above the trigger; the only ground handoff after it is for csa five seven three, a different aircraft. The 2026-11-02 verdict was given when the sheet showed only six lines above the alert, which hid it (Don, via Jennifer). Prior note: Missing release I think | step 1: no other plane cleared above (set by rule, 2026-11-02)"
 242:RUNWAY:31:5199,242,RUNWAY,31,5199,llm-claude-haiku-5-5-window-asr,csa nine six one / swiss one two five victor,"   [pilot] ruzyne tower aero flot
    [pilot] four two
    [controller] aero flot one four two ruzyne tower
@@ -128,7 +128,7 @@ key,recording_id,type,runway,tx_id,arms,callsigns,context,verdict,notes
    [controller] csa five victor papa ruzyne tower continue approach reduce speed one five zero knots untill four miles final departure ahead airbus three two one
    [pilot] reducing speed one fifty csa five victor papa
    [controller] csa nine six one runway three one cleared to land wind one six zero degrees five knots
->> [pilot] runway three one cleared to land csa nine six one",parse_error,Idk
+>> [pilot] runway three one cleared to land csa nine six one",missing_release,"revised 2026-11-08 from parse_error: step 1 answers yes once the full context is shown -- same Swiss takeoff clearance on 31 above this readback; no release for Swiss follows. The 2026-11-02 verdict was given when the sheet showed only six lines above the alert, which hid it (Don, via Jennifer). Prior note: Idk"
 245:RUNWAY:13:14159,245,RUNWAY,13,14159,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold,turkish / one / seven / six / nine,"   [pilot] tower bline four zero victor approaching delta when ready
    [controller] bline four zero victor ruzyne tower good afternoon report ready
    [pilot] we are fully ready bline four zero victor
@@ -143,7 +143,7 @@ key,recording_id,type,runway,tx_id,arms,callsigns,context,verdict,notes
    [pilot] wilco
    [controller] air france one nine eight three i estimate two landings standby
    [mixed] standing bye air france one nine eight three r thank you
->> [controller] csa seven three charlie runway three one three clear to land wind zero two zero degrees nine knots",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+>> [controller] csa seven three charlie runway three one three clear to land wind zero two zero degrees nine knots",missing_release,"revised 2026-11-08 from parse_error: step 1 answers yes once the full context is shown -- speed bird eight six one is cleared for immediate takeoff on 13 two lines above the trigger; only a pilot sign-off follows, which is not a release. The 2026-11-02 verdict was given when the sheet showed only six lines above the alert, which hid it (Don, via Jennifer). Prior note: step 1: no other plane cleared above (set by rule, 2026-11-02)"
 261:RUNWAY:31:5923,261,RUNWAY,31,5923,llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold,csa seven three charlie / speed bird eight six one,"   [pilot] three eight whiskey
    [controller] speed bird eight six one runway one three cleared for immediate takeoff wind zero two zero degrees nine knots
    [pilot] speed bird eight six one is ready
