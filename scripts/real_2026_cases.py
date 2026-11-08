@@ -168,6 +168,27 @@ def show(title: str, rows: list[dict]) -> int:
     return reservations
 
 
+def summary_lines(totals: dict) -> list[str]:
+    """The §4.5 summary for a run, as lines.
+
+    The claim that no extractor can raise an alert here holds only while every arm produces zero reservations, so it
+    is printed only then: a single reservation already falsifies it, because the engine needs one open reservation
+    plus one conflicting clearance to alert. Extracted from `main` so the guard is testable -- the earlier version
+    asserted the claim unconditionally and warned only at two or more, so one reservation printed it silently.
+    """
+    worst = max(totals.values()) if totals else 0
+    if worst == 0:
+        head = ["  Every arm produces 0 runway reservations on both cases, so no alert can be raised by any extractor."]
+    else:
+        head = [f"  ! An arm produced {worst} runway reservation(s), so the \u00a74.5 claim below no longer holds as",
+                "    written: with a reservation open, an extractor can raise an alert. Re-check before citing it."]
+    return head + [
+        "  The engine recognises only LAND, TAKEOFF, LUAW and CROSS; Goa is a backtrack incursion and Houston is",
+        "  a callsign-confusion event, so both lie outside what the conflict model represents (report \u00a74.5).",
+        f"  max reservations in any arm: {worst}",
+    ]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--sheet", type=Path, default=SHEET)
@@ -245,9 +266,15 @@ def main() -> None:
     if not arms:
         print("\n  (no LLM arm recorded yet; run with --record --model <model> and a key to add one)")
 
+    # The replayed airport's phraseology convention (atcdb/parse_rules.py, `_patterns`). Houston is a US tower, where
+    # "runway four" is a real designator; Goa follows ICAO practice, where a lone digit-word would be a truncation.
+    US_SINGLE_DIGIT = {"houston-2026-04-24"}
+
     totals = {}
     for case, txs in by_case.items():
-        totals[(case, "rules")] = show(f"{case}, rules", _rows_from_fold(fold(txs, parse_rules.parse)))
+        single = case in US_SINGLE_DIGIT
+        totals[(case, "rules")] = show(f"{case}, rules",
+                                       _rows_from_fold(fold(txs, parse_rules.parse, single_digit_runways=single)))
         for m, data in arms.items():
             rows = data["cases"].get(case)
             if rows is None:
@@ -256,15 +283,8 @@ def main() -> None:
             totals[(case, m)] = show(f"{case}, {m}", rows)
 
     print("\n== summary ==")
-    worst = max(totals.values()) if totals else 0
-    if worst == 0:
-        print("  Every arm produces 0 runway reservations on both cases, so no alert can be raised by any extractor.")
-    else:   # a single reservation already falsifies the sentence above, so it must not be printed alongside it
-        print(f"  ! An arm produced {worst} runway reservation(s), so the \u00a74.5 claim below no longer holds as")
-        print("    written: with a reservation open, an extractor can raise an alert. Re-check before citing it.")
-    print("  The engine recognises only LAND, TAKEOFF, LUAW and CROSS; Goa is a backtrack incursion and Houston is")
-    print("  a callsign-confusion event, so both lie outside what the conflict model represents (report \u00a74.5).")
-    print(f"  max reservations in any arm: {worst}")
+    for line in summary_lines(totals):
+        print(line)
 
 
 if __name__ == "__main__":

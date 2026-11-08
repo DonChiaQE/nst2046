@@ -23,6 +23,13 @@ from atcdb.engine import (ENGINE_VERSION, ClearTakeoff, ClearToCross, ClearToLan
     ("zero", None),        # no runway 00
     ("four zero", None),   # no such runway: heading 01-36 only
     ("left", None),
+    # "oh" is NOT accepted here. normalize_runway is shared by the rules parser, the LLM parser, the judge, the
+    # injection generator, event_labels and score_pair_events, each keying its cache on its own hand-bumped version,
+    # so widening this vocabulary changes all six while their cache keys stay identical. atcdb/parse_rules.py handles
+    # "oh" locally instead. Re-adding it here would cost a paid re-run of the LLM arms to stay honest.
+    ("oh four", None),
+    ("oh four left", None),
+    ("one oh", None),
 ])
 def test_normalize_runway(text, expected):
     assert normalize_runway(text) == expected

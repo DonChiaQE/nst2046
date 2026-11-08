@@ -204,3 +204,22 @@ def test_recording_marks_provenance_api_once_rewritten_from_the_api(tmp_path, mo
     capsys.readouterr()
     assert load_recorded("claude-sonnet-5")["provenance"] == PROVENANCE_API
     assert "transcribed" not in capsys.readouterr().out
+
+
+# --- the §4.5 summary guard ----------------------------------------------------------------------------------------
+
+def test_the_summary_claims_no_alert_is_possible_only_when_every_arm_produced_nothing():
+    from scripts.real_2026_cases import summary_lines
+    lines = "\n".join(summary_lines({("goa", "rules"): 0, ("houston", "rules"): 0}))
+    assert "Every arm produces 0 runway reservations" in lines
+    assert "no longer holds" not in lines
+
+
+def test_one_reservation_is_enough_to_withdraw_the_claim():
+    """The earlier version asserted the claim unconditionally and warned only at two or more, so a single
+    reservation printed a false statement with no warning beside it."""
+    from scripts.real_2026_cases import summary_lines
+    lines = "\n".join(summary_lines({("goa", "rules"): 0, ("houston", "rules"): 1}))
+    assert "Every arm produces 0 runway reservations" not in lines
+    assert "produced 1 runway reservation(s)" in lines
+    assert "max reservations in any arm: 1" in lines

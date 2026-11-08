@@ -1,3 +1,5 @@
+import pytest
+
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, LineUpAndWait, NoOp,
                           ReadbackObserved, RunwayInstruction, RunwayVacated)
 from atcdb.parse_rules import (VERSION, blank_values, count_unresolved, parse, pilot_callsign, snap_callsign, take_prefix,
@@ -181,3 +183,44 @@ def test_count_unresolved_follows_window_snapping():
     window = Context(mode="window", role="controller", active_runways=("18L",))
     assert _kinds(parse(tx, window)) == [("ClearToLand", "", "18L")]   # placed; the US callsign is a known v1 gap
     assert count_unresolved(tx, window) == 0
+
+
+# --- phraseology convention: Context.single_digit_runways (atcdb/parse_rules.py, `_patterns`) -----------------------
+
+US = Context(mode="role", role="controller", single_digit_runways=True)
+
+
+@pytest.mark.parametrize("text,runway", [
+    ("delta one two three runway four left cleared to land", "04L"),
+    ("delta one two three runway four cleared to land", "04"),
+    ("delta one two three runway oh four left cleared to land", "04L"),
+    ("delta one two three runway zero four left cleared to land", "04L"),
+])
+def test_a_us_tower_reads_a_single_digit_word_as_a_designator(text, runway):
+    assert _kinds(parse(_tx(text), US)) == [("ClearToLand", "delta one two three", runway)]
+
+
+@pytest.mark.parametrize("text", [
+    "csa one two three line up runway three o",     # 27 of these in the corpus: a truncated "three one"
+    "csa one two three line up runway two",
+    "csa one two three hold short of runway one",
+])
+def test_the_default_refuses_a_lone_digit_word_so_a_truncation_is_not_read_as_a_runway(text):
+    """Two digit-words are always spoken at the airports in this corpus, so a lone one is an ASR truncation.
+
+    Reading it as a designator invents a runway the transmission never named; refusing it lets `_runway_for` fall
+    back to the active runway in window context. 109 transcripts (72 gold, 37 ASR) have this shape and not one is a
+    real single-digit designator.
+    """
+    assert all(r is None for _, _, r in _kinds(parse(_tx(text), CTL)))
+
+
+def test_oh_is_read_as_zero_inside_a_designator_but_is_not_a_general_digit_word():
+    """The narrow scope is the point: "oh" is a common interjection ("oh, roger"), so widening the shared
+    `D`/`DIGITS` vocabulary would risk reading it as part of a callsign or another field."""
+    from atcdb.parse_rules import DIGITS, _desig
+    assert "oh" not in DIGITS
+    assert _desig("oh four left") == "04L"
+    assert _desig("zero four left") == "04L"
+    assert _kinds(parse(_tx("csa one two three runway oh nine cleared to land"), CTL)) == \
+        [("ClearToLand", "csa one two three", "09")]

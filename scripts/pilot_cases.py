@@ -69,9 +69,9 @@ def main() -> None:
                   f"about ${parse_llm.estimate_cost(m, prompts + prague):.2f}")
         return
 
-    show("Austin, rules", times, fold(txs, parse_rules.parse))
+    show("Austin, rules", times, fold(txs, parse_rules.parse, single_digit_runways=True))   # KAUS
     for m in models:
-        show(f"Austin, {m}", times, fold(txs, parse_llm.make_parser(m)))
+        show(f"Austin, {m}", times, fold(txs, parse_llm.make_parser(m), single_digit_runways=True))   # KAUS
     for parser, m in [("rule", "rules"), *(("llm", m) for m in models)]:
         tl = build_timeline(conn, PRAGUE, parser, "gold", "window", m, transcript_model="human")
         errors = [s.error for s in tl.steps if s.error]

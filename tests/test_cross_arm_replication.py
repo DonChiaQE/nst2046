@@ -6,7 +6,8 @@ missed, which is why the classifier distinguishes the holder from the trigger.
 """
 import pytest
 
-from scripts.cross_arm_replication import anonymous, caught, classify, holders, trigger_event, trigger_step
+from scripts.cross_arm_replication import (anonymous, caught, classify, holders, reservations_on,
+                                            trigger_event, trigger_step)
 
 
 def _row(events, runway="13", trigger_ix=None, detection="strict"):
@@ -160,3 +161,19 @@ def test_a_row_without_a_locatable_trigger_is_unclassified(missing_key):
     missed, got = _row(HOLDER_BLANK, detection="warning"), _row(HOLDER_NAMED)
     del missed[missing_key]
     assert classify(missed, got, "13") == "unclassified"
+
+
+# --- one strip, two designators (atcdb/engine.py, OPPOSITE_MATRIX) -------------------------------------------------
+
+def test_reservations_on_finds_a_reservation_held_from_the_other_end_of_the_strip():
+    """`engine.apply` checks a clearance against reservations held from either end, so a function that matched the
+    designator string alone would report nothing behind a conflict the engine really raised -- and every divergent
+    positive in the report's Appendix A is on 13/31."""
+    row = _row([[["LAND", "csa two", "31", None]]])
+    assert reservations_on(row, "13") == [(0, "LAND", "csa two")]
+    assert reservations_on(row, "31") == [(0, "LAND", "csa two")]
+
+
+def test_reservations_on_still_excludes_a_genuinely_unrelated_runway():
+    row = _row([[["LAND", "csa two", "24", None]]])
+    assert reservations_on(row, "13") == []

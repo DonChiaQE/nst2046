@@ -68,17 +68,18 @@ def load_recording(conn: sqlite3.Connection, recording_id: int, transcript_kind:
                          start_s=r["start_s"] or 0.0) for r in rows]
 
 
-def build_context(mode: str, tx: Transmission, history: list[Transmission], state: State) -> Context:
+def build_context(mode: str, tx: Transmission, history: list[Transmission], state: State,
+                  single_digit_runways: bool = False) -> Context:
     """The parser's view for one transmission. `none` = text only; `role` = + speaker role; `window` = + the last
     WINDOW transmissions and what the engine is currently tracking."""
     if mode not in CONTEXT_MODES:
         raise ValueError(f"unknown context mode {mode!r}; expected one of {CONTEXT_MODES}")
     if mode == "none":
-        return Context(mode="none")
+        return Context(mode="none", single_digit_runways=single_digit_runways)
     if mode == "role":
-        return Context(mode="role", role=tx.role)
+        return Context(mode="role", role=tx.role, single_digit_runways=single_digit_runways)
     active = tuple(cs for cs, a in state.aircraft.items() if cs and (a.runway or a.holding_short or a.pending))
-    return Context(mode="window", role=tx.role, history=tuple((h.role, h.text) for h in history[-WINDOW:]),
+    return Context(mode="window", role=tx.role, single_digit_runways=single_digit_runways, history=tuple((h.role, h.text) for h in history[-WINDOW:]),
                    active_callsigns=active, active_runways=tuple(sorted(state.runways)))
 
 
