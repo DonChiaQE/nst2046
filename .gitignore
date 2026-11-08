@@ -8,5 +8,13 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 
+# The report draft and its figures are written outside the repo; the results docs
+# under docs/results/ are the tracked evidence they cite.
+docs/milestone2-report-draft.md
+docs/figures/
+
+# Papers we read, not ours to redistribute.
+docs/references/
+
 # subagent-driven-development scratch (ledger, briefs, review packages)
 .superpowers/

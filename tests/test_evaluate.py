@@ -2,10 +2,11 @@ import pytest
 
 from atcdb import engine
 from atcdb.evaluate import (ARMS, PRIMARY, Arm, Pending, adjudication_kappa, adjudication_rows, alert_key, alert_keys,
-                            bootstrap, cohen_kappa, detection, evaluation_sets, false_alarm_units, in_overlap, merge_rows,
+                            bootstrap, caught, cohen_kappa, detection, evaluation_sets, false_alarm_units,
+                            false_alarms, in_overlap, merge_rows,
                             overlap_rows,
                             paired_bootstrap, per_hour, rate, read_rows, read_verdicts, recall, recording_row, refold,
-                            run_arm, sweep, uncached, usable, write_rows)
+                            run_arm, scored, sweep, uncached, usable, write_rows)
 from atcdb.inject import apply_check, check_rows, generate, write_injection
 from atcdb.schema import init_db
 
@@ -182,6 +183,47 @@ def test_false_alarms_per_hour_use_verdicts_and_refuse_to_guess():
     with pytest.raises(Pending, match="1 alerts"):
         false_alarm_units(rows, {k: v for k, v in verdicts.items() if k != "2:RUNWAY:31:4"})
     assert false_alarm_units(rows, {}, conflict_type="READBACK") == [(0.0, 1800.0), (0.0, 1800.0), (0.0, 3600.0)]
+
+
+# --- the case-by-case predicates (scripts/divergent_cases.py, scripts/cross_arm_replication.py) ---
+
+def test_caught_treats_strict_and_lenient_as_a_detection_but_not_a_warning():
+    """`partial` is a warning on the right runway, which the engine raises when either aircraft is unidentified: a
+    real behavioural difference between arms, and not a catch."""
+    assert caught(_row([_c(2)], truth=TRUTH)) is True                            # strict
+    assert caught(_row([_c(3)], truth=TRUTH)) is True                            # lenient
+    assert caught(_row([_c(2, severity="warning")], truth=TRUTH)) is False       # partial
+    assert caught(_row([], truth=TRUTH)) is False                                # miss
+
+
+def test_false_alarms_are_the_alerts_adjudication_did_not_call_genuine():
+    row = _row([_c(2), _c(3)], rid=1)
+    verdicts = {"1:RUNWAY:31:3": "genuine", "1:RUNWAY:31:4": "parse_error"}
+    assert false_alarms(row, verdicts) == {"1:RUNWAY:31:4"}
+
+
+def test_an_unadjudicated_alert_counts_as_a_false_alarm_for_the_case_comparison():
+    """`false_alarm_units` raises Pending on an unjudged alert because a rate must not guess. The per-row set is used
+    to ask which arm alarmed at all, so an unjudged alert is kept rather than dropped."""
+    row = _row([_c(2)], rid=1)
+    assert false_alarms(row, {}) == {"1:RUNWAY:31:3"}
+
+
+def test_a_warning_is_never_a_false_alarm():
+    assert false_alarms(_row([_c(2, severity="warning")], rid=1), {}) == set()
+
+
+def test_scored_drops_the_positives_the_human_check_rejected():
+    """Two of the 100 injections were rejected as implausible, so every comparison must apply the same filter."""
+    rows = [_row([], rid=1, truth=TRUTH), _row([], rid=2, truth=TRUTH), _row([], rid=3)]
+    rows[2]["set"] = "negatives"
+    assert set(scored(rows, valid={1})) == {1, 3}
+
+
+def test_scored_keeps_every_negative_whatever_the_valid_set_says():
+    rows = [_row([], rid=9)]
+    rows[0]["set"] = "negatives"
+    assert set(scored(rows, valid=set())) == {9}
 
 
 def test_bootstrap_is_seeded_and_brackets_the_point_estimate():

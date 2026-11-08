@@ -1,0 +1,75 @@
+{
+  "model": "claude-sonnet-5",
+  "parse_version": "p1",
+  "sheet": "real_2026_cases_A.csv",
+  "provenance": "transcribed",
+  "note": "Events transcribed from a `--model claude-sonnet-5` run on 2026-11-08 whose output was pasted into a working session; text and roles are read from the sheet, not retyped. Replace with `--record --model claude-sonnet-5` to make it API-written, or check it with `--verify`.",
+  "cases": {
+    "goa-2026-04-03": [
+      {
+        "text": "taxi via november two hold at holding point runway zero eight",
+        "role": "controller",
+        "events": [
+          {
+            "kind": "HOLD_SHORT",
+            "callsign": "",
+            "runway": "08",
+            "to": null
+          }
+        ]
+      },
+      {
+        "text": "hold at holding point and contact navy approach one one niner decimal seven at the holding point",
+        "role": "controller",
+        "events": [
+          {
+            "kind": "HOLD_SHORT",
+            "callsign": "",
+            "runway": "08",
+            "to": null
+          },
+          {
+            "kind": "HANDOFF",
+            "callsign": "",
+            "runway": null,
+            "to": "approach"
+          }
+        ]
+      },
+      {
+        "text": "taxi via november two for runway zero eight",
+        "role": "pilot",
+        "events": [
+          {
+            "kind": "READBACK",
+            "callsign": "",
+            "runway": null,
+            "to": null
+          }
+        ]
+      },
+      {
+        "text": "expect backtrack",
+        "role": "controller",
+        "events": []
+      },
+      {
+        "text": "entering runway",
+        "role": "pilot",
+        "events": []
+      }
+    ],
+    "houston-2026-04-24": [
+      {
+        "text": "holding short november echo you need to listen to callsigns you followed two instructions that were not for you",
+        "role": "controller",
+        "events": []
+      },
+      {
+        "text": "you are not listening to callsigns i said united not qatari you have been doing that all night long",
+        "role": "controller",
+        "events": []
+      }
+    ]
+  }
+}

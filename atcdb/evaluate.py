@@ -45,6 +45,10 @@ ARMS: tuple[Arm, ...] = tuple(Arm(p, m, c, t) for p, models in (("rule", ("rules
 JUDGE_ARMS: tuple[Arm, ...] = tuple(Arm("judge", m, "sequence", t) for m in judge.MODELS for t in TRANSCRIPTS)
 # the pre-registered primary comparison (spec addendum A.5): rules vs Sonnet, window context, human transcripts
 PRIMARY = (Arm("rule", "rules", "window", "gold"), Arm("llm", "claude-sonnet-5", "window", "gold"))
+# The same pair on ASR transcripts. Milestone 1 motivated the LLM by robustness to ASR noise, so the comparison that
+# tests that motivation needs its own paired interval, not two separate ones read side by side (Milestone 1 feedback,
+# point 4). Secondary to PRIMARY, and subject to the train/test leakage in section 3.
+PRIMARY_ASR = (Arm("rule", "rules", "window", "asr"), Arm("llm", "claude-sonnet-5", "window", "asr"))
 
 
 # --- sets and running ---------------------------------------------------------------------------------------------
@@ -236,6 +240,24 @@ def alert_keys(row: dict, conflict_type: str | None = None) -> set[str]:
     """The distinct alert-severity conflicts in one row (optionally of one type), as adjudication keys."""
     return {alert_key(row["recording_id"], c) for c in row["conflicts"]
             if c["severity"] == "alert" and conflict_type in (None, c["type"])}
+
+
+def caught(row: dict) -> bool:
+    """Whether an arm detected the injected conflict at all, strictly or leniently. The predicate the case-by-case
+    comparisons are built on (`scripts/divergent_cases.py`, `scripts/cross_arm_replication.py`)."""
+    return detection(row) in ("strict", "lenient")
+
+
+def false_alarms(row: dict, verdicts: dict[str, str]) -> set[str]:
+    """This row's RUNWAY alerts that adjudication did not call genuine, as adjudication keys. The per-row counterpart
+    of `false_alarm_units`, which aggregates the same judgement into a rate."""
+    return {k for k in alert_keys(row, "RUNWAY") if verdicts.get(k) != "genuine"}
+
+
+def scored(rows: Iterable[dict], valid: set[int]) -> dict[int, dict]:
+    """Rows by recording id, keeping only the positives a human check accepted. Two rejected injections are scored by
+    nobody, so every case-by-case comparison has to apply the same filter (`data/labels/injection_check.csv`)."""
+    return {r["recording_id"]: r for r in rows if r["set"] != "positives" or r["recording_id"] in valid}
 
 
 def false_alarm_units(rows: list[dict], verdicts: dict[str, str], conflict_type: str = "RUNWAY") -> list[tuple[float, float]]:
