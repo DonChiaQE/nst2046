@@ -93,8 +93,8 @@ The Whisper model was fine-tuned on the corpus's train split, so ASR over train-
 | judge-claude-sonnet-5-sequence-gold | 0 | 6 | 7 | 0 | 25 | 0 |
 | llm-claude-haiku-5-5-window-asr | 0 | 1 | 11 | 0 | 3 | 0 |
 | llm-claude-haiku-5-5-window-gold | 0 | 1 | 11 | 0 | 4 | 0 |
-| llm-claude-sonnet-5-window-asr | 0 | 2 | 12 | 0 | 3 | 0 |
-| llm-claude-sonnet-5-window-gold | 0 | 1 | 9 | 0 | 4 | 0 |
+| llm-claude-sonnet-5-window-asr | 0 | 1 | 13 | 0 | 3 | 0 |
+| llm-claude-sonnet-5-window-gold | 0 | 0 | 10 | 0 | 4 | 0 |
 | rule-rules-none-asr | 0 | 1 | 10 | 0 | 6 | 0 |
 | rule-rules-none-gold | 0 | 0 | 10 | 0 | 5 | 0 |
 | rule-rules-role-asr | 0 | 0 | 9 | 0 | 3 | 0 |

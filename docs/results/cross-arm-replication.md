@@ -11,10 +11,10 @@ The report's Appendix A inspects rules vs Sonnet 5 on human transcripts. This as
 | Arm | parse error | missing release | other frequency | engine rule | genuine | Total |
 |---|---:|---:|---:|---:|---:|---:|
 | rules / gold | 0 | 8 | 0 | 3 | 0 | 11 |
-| Sonnet 5 / gold | 1 | 9 | 0 | 4 | 0 | 14 |
+| Sonnet 5 / gold | 0 | 10 | 0 | 4 | 0 | 14 |
 | Haiku 5.5 / gold | 1 | 11 | 0 | 4 | 0 | 16 |
 | rules / ASR | 0 | 9 | 0 | 3 | 0 | 12 |
-| Sonnet 5 / ASR | 2 | 12 | 0 | 3 | 0 | 17 |
+| Sonnet 5 / ASR | 1 | 13 | 0 | 3 | 0 | 17 |
 | Haiku 5.5 / ASR | 1 | 11 | 0 | 3 | 0 | 15 |
 
 ## 2. Contingency, rules vs each LLM
@@ -79,7 +79,7 @@ Classified by `classify()` from the two parties to a RUNWAY conflict: the *trigg
 |---|---:|---|---|
 | rules vs Sonnet 5 / gold | 74 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / gold | 242 | Sonnet 5 only | `missing_release` |
-| rules vs Sonnet 5 / gold | 261 | Sonnet 5 only | `parse_error` |
+| rules vs Sonnet 5 / gold | 261 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / gold | 533 | rules only | `missing_release` |
 | rules vs Haiku 5.5 / gold | 74 | Haiku 5.5 only | `missing_release` |
 | rules vs Haiku 5.5 / gold | 242 | Haiku 5.5 only | `missing_release` |
@@ -87,7 +87,7 @@ Classified by `classify()` from the two parties to a RUNWAY conflict: the *trigg
 | rules vs Haiku 5.5 / gold | 352 | Haiku 5.5 only | `parse_error` |
 | rules vs Haiku 5.5 / gold | 533 | rules only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 242 | Sonnet 5 only | `missing_release` |
-| rules vs Sonnet 5 / ASR | 261 | Sonnet 5 only | `parse_error` |
+| rules vs Sonnet 5 / ASR | 261 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 1969 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 2306 | Sonnet 5 only | `parse_error` |
 | rules vs Haiku 5.5 / ASR | 242 | Haiku 5.5 only | `missing_release`, `missing_release` |
