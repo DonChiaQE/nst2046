@@ -983,8 +983,8 @@ does not depend on the exact wording, only on the runway designator.
 
 ### B0. The full pattern catalogue, verbatim
 
-§2.2.1 summarises this. This is the complete set the scored baseline matches against — every number reported in §4
-and every arm labelled `rule` was scored with exactly this, reproduced verbatim from `atcdb/parse_rules.py`:
+§2.2.1 summarises this. This is the complete set the scored baseline matches against. **Every number reported in §4
+was scored against the `v1` catalogue below**, which is reproduced first because that is what the numbers mean:
 
 ```python
 _SIDE = r"(?: left| right| centre| center)?"
@@ -999,6 +999,27 @@ INSTRUCTION_RES = [   # kind, phrase regex. CROSS / HOLD_SHORT capture their run
 HANDOFF_RE = re.compile(r"\bcontact (?:[a-z]+ ){0,2}?(ground|apron|departure|tower|approach|radar)\b")
 GO_AROUND_RE = re.compile(r"\bgo around\b")
 ```
+
+**The source as it now stands differs textually and not behaviourally** (`VERSION = "v3"`). The designator is built
+from a reusable fragment so the US convention can be selected per airport (§7), and `"oh"` is accepted for the zero
+digit-word:
+
+```python
+_D_RWY = rf"(?:{D}|oh)"
+_DESIG = rf"{_D_RWY} {_D_RWY}{_SIDE}"            # the default: two digit-words, as v1 required
+_DESIG_SINGLE = rf"{_D_RWY}(?: {_D_RWY})?{_SIDE}"   # opt-in, for an airport that speaks one ("runway four left")
+RUNWAY_RE = re.compile(rf"\brunway ({_DESIG})\b")
+RUNWAY_RE_SINGLE = re.compile(rf"\brunway ({_DESIG_SINGLE})\b")
+INSTRUCTION_RES = _instruction_res(_DESIG)           # same five kinds as above, built for each convention
+INSTRUCTION_RES_SINGLE = _instruction_res(_DESIG_SINGLE)
+```
+
+The equivalence is measured, not asserted: parsing every transcript in the corpus under the `v1` catalogue and under
+the current default gives **0 differences across all 22,956 transcripts** (17,039 gold, 5,917 ASR), in all three
+context modes, for both `parse` and `count_unresolved`. `"oh"` never occurs in the corpus, and `_DESIG` requires two
+digit-words exactly as `v1` did, so the §4 numbers are unaffected by the change. `_DESIG_SINGLE` is reached only
+through `parse_rules.make_parser(single_digit_runways=True)`, which no scored arm uses — the scored path constructs
+no such parser, so no number in §4 can depend on it.
 
 Five pattern families, one event kind each except `RUNWAY_RE`, which every runway-bearing phrase (`CROSS`,
 `HOLD_SHORT`, and the `LAND`/`TAKEOFF`/`LUAW` phrases via the fallback described in §2.2.1) shares. `D` is the
