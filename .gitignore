@@ -3,6 +3,7 @@
 data/*
 !data/labels/
 !data/eval/
+!data/atc.sqlite
 __pycache__/
 *.pyc
 .DS_Store

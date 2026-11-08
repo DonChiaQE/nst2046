@@ -180,6 +180,11 @@ MATRIX: dict[tuple[str, str], str] = {
     ("CROSS", "LAND"): "alert",    ("CROSS", "TAKEOFF"): "alert",     ("CROSS", "LUAW"): "warning",   ("CROSS", "CROSS"): "ok",
 }
 
+# The same check against a reservation held from the strip's OTHER end (13 against 31). Identical to MATRIX except the
+# two cells that are legal only because both aircraft move the same way: two landings or two departures from opposite
+# ends are head-on. A crossing does not depend on direction, so CROSS/CROSS stays ok.
+OPPOSITE_MATRIX: dict[tuple[str, str], str] = {**MATRIX, ("LAND", "LAND"): "alert", ("TAKEOFF", "TAKEOFF"): "alert"}
+
 # (new_kind, active_kind) -> the atcdb/doctrine.py rule that cell encodes. Cells without an entry have no verified citation.
 MATRIX_BASIS: dict[tuple[str, str], str] = {
     ("LAND", "LAND"): "icao-4444-7.10.2-proviso",
@@ -246,17 +251,20 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
     if isinstance(event, RunwayInstruction) and event.kind in RESERVATION_KINDS:
         if cs:
             runways, _ = _release(runways, cs)   # one aircraft is in one place: its old reservation is superseded
-        for r in runways.get(event.runway, ()):
-            verdict = MATRIX[(event.kind, r.kind)]
-            if verdict == "ok":
-                continue
-            if not cs or not r.callsign:
-                verdict = "warning"   # an unidentified aircraft may be the same aircraft: tunable, see spec Section 1
-            conflicts.append(Conflict(
-                "RUNWAY", verdict, event.runway, (cs, r.callsign), seq,
-                f"{_name(cs)} given {_PHRASE[event.kind]} on runway {event.runway} while "
-                f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {event.runway}",
-                MATRIX_BASIS.get((event.kind, r.kind))))
+        other_end = reciprocal(event.runway)
+        ends = [(event.runway, False)] + ([(other_end, True)] if other_end != event.runway else [])
+        for rwy, opposite in ends:   # one strip, two designators: check reservations held from either end
+            for r in runways.get(rwy, ()):
+                verdict = (OPPOSITE_MATRIX if opposite else MATRIX)[(event.kind, r.kind)]
+                if verdict == "ok":
+                    continue
+                if not cs or not r.callsign:
+                    verdict = "warning"   # an unidentified aircraft may be the same aircraft: tunable, see spec Section 1
+                conflicts.append(Conflict(
+                    "RUNWAY", verdict, event.runway, (cs, r.callsign), seq,
+                    f"{_name(cs)} given {_PHRASE[event.kind]} on runway {event.runway} while "
+                    f"{_name(r.callsign)} still holds {_PHRASE[r.kind]} on runway {rwy}",
+                    None if opposite else MATRIX_BASIS.get((event.kind, r.kind))))
         runways[event.runway] = runways.get(event.runway, ()) + (Reservation(cs, event.kind, seq, event.t),)
         if cs:
             aircraft[cs] = replace(ac, runway=event.runway, kind=event.kind, holding_short=None, holding_short_t=None,

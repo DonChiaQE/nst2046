@@ -15,6 +15,22 @@ Nothing is re-parsed and no API call is made, so this is free and reproducible: 
 The point of weighting is that extraction errors are not interchangeable. An error only matters if it reaches the
 engine's output, and the ones that do reach it do not all cause the same harm.
 
+> **Re-run 08 Nov 2026 after the strip fix.** The engine now treats the two ends of one strip (13 and 31) as one
+> runway (`atcdb/engine.py`, `OPPOSITE_MATRIX`). `wrong_runway` and `spurious_other` both move an event to the other end
+> of the same strip, so those two rows changed; the other four are unchanged on the rules arm and move by at most one
+> point on Sonnet's. The tables below are the re-run.
+>
+> - **Still holds:** finding 1, and finding 2 for `dropped` (it costs recall, 38 to 45%, and never raises a false alarm).
+> - **No longer holds:** `wrong_runway` now raises a false alarm 5 to 6% of the time and loses a true detection 25 to
+>   27% (it was 0% and 49 to 54%), so it is not an omission-like error. Finding 3's 0% floor was the blind spot itself:
+>   an invented landing on the other end of a working strip raises a false alarm 49 to 62% of the time, more than one on
+>   the busiest end, because two landings from opposite ends are head-on. On a corpus of one strip there is no unused
+>   runway for an invention to land on harmlessly.
+> - **Survives, smaller:** finding 4 holds through `spurious_inuse` only, at 7 to 11%. `spurious_other` now loses no
+>   detection, because the invented reservation sits on the same strip and still conflicts with the later clearance.
+>
+> The prose under "What the weights say" predates this re-run and needs revising before it is cited.
+
 ## Weights, pre-registered primary arm (rules, window, gold)
 
 Denominators: "changed the output" over all perturbations of that kind; "lost a true detection" over perturbations on
@@ -22,24 +38,24 @@ the 98 positives; "created a false alarm" over perturbations on the 309 real neg
 
 | Error kind | Perturbations | Changed the output | Lost a true detection | Created a false alarm |
 |---|---:|---|---|---|
-| `wrong_runway` | 602 | 34% | 54% | 0% |
+| `wrong_runway` | 602 | 23% | 27% | 6% |
 | `wrong_type` | 572 | 24% | 26% | 8% |
 | `wrong_callsign` | 648 | 19% | 13% | 9% |
 | `dropped` | 703 | 27% | 45% | 0% |
 | `spurious_inuse` | 2094 | 54% | 7% | 37% |
-| `spurious_other` | 2094 | 8% | 14% | 0% |
+| `spurious_other` | 2094 | 71% | 0% | 62% |
 
 Same study on the Sonnet 5 arm's event stream, as a check that these are properties of the engine and not of one
 parser's output:
 
 | Error kind | Perturbations | Changed the output | Lost a true detection | Created a false alarm |
 |---|---:|---|---|---|
-| `wrong_runway` | 728 | 29% | 49% | 0% |
+| `wrong_runway` | 728 | 21% | 25% | 5% |
 | `wrong_type` | 636 | 25% | 26% | 6% |
-| `wrong_callsign` | 773 | 19% | 16% | 7% |
+| `wrong_callsign` | 773 | 20% | 16% | 7% |
 | `dropped` | 882 | 23% | 38% | 0% |
 | `spurious_inuse` | 2069 | 48% | 11% | 30% |
-| `spurious_other` | 2069 | 11% | 20% | 0% |
+| `spurious_other` | 2069 | 60% | 0% | 49% |
 
 All four structured gold arms agree on the ordering and roughly on the magnitudes (`--all`), which is what we would
 expect if the weight is a property of the conflict engine rather than of the extractor that fed it.

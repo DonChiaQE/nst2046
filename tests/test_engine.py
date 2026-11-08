@@ -3,7 +3,7 @@ import pytest
 from atcdb import engine
 from atcdb.engine import (ENGINE_VERSION, ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HANDOFF_TARGETS,
                           HoldShort, LineUpAndWait, MATRIX, NoOp, ReadbackObserved, RESERVATION_KINDS, RunwayVacated,
-                          STALE_S, State, Unresolved, apply, fold, normalize_runway)
+                          STALE_S, State, Unresolved, apply, fold, normalize_runway, reciprocal)
 
 
 @pytest.mark.parametrize("text,expected", [
@@ -99,8 +99,66 @@ def test_cross_after_cross_is_ok():
 
 
 def test_different_runways_never_conflict():
-    _, conflicts = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="13")])
+    _, conflicts = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="22")])
     assert conflicts == []
+
+
+# --- the two ends of one strip are one runway ---------------------------------------------------
+
+@pytest.mark.parametrize("runway,other_end", [("13", "31"), ("31", "13"), ("04", "22"), ("18L", "36R"),
+                                              ("36R", "18L"), ("06C", "24C"), ("09", "27")])
+def test_reciprocal_is_the_other_end_of_the_same_strip(runway, other_end):
+    assert reciprocal(runway) == other_end
+
+
+def test_a_clearance_on_the_other_end_of_an_occupied_strip_is_an_alert():
+    """13 and 31 are one strip of tarmac seen from its two ends: crossing at 13 while an aircraft lands on 31 is the
+    same hazard as crossing at 31. The conflict keeps the trigger's designator, so alert keys for same-end conflicts
+    are unchanged, and the explanation names the end each aircraft was cleared for."""
+    _, conflicts = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="13")])
+    assert [(c.type, c.severity, c.runway, c.callsigns) for c in conflicts] == [("RUNWAY", "alert", "13", ("b", "a"))]
+    assert "runway 13" in conflicts[0].explanation and "runway 31" in conflicts[0].explanation
+
+
+def test_parallel_runways_are_different_strips():
+    """18L's other end is 36R; 36L is the other end of 18R, a different strip."""
+    _, same = fold([ClearToLand(callsign="a", runway="18L"), ClearTakeoff(callsign="b", runway="36R")])
+    _, other = fold([ClearToLand(callsign="a", runway="18L"), ClearTakeoff(callsign="b", runway="36L")])
+    assert [c.severity for c in same] == ["alert"] and other == []
+
+
+def test_landings_from_opposite_ends_are_head_on_not_anticipated_separation():
+    """LAND after LAND is legal only in the same direction (the ICAO proviso is about a following aircraft). Two
+    landings towards each other on one strip, or two departures towards each other, are head-on."""
+    _, landings = fold([ClearToLand(callsign="a", runway="13"), ClearToLand(callsign="b", runway="31")])
+    _, takeoffs = fold([ClearTakeoff(callsign="a", runway="13"), ClearTakeoff(callsign="b", runway="31")])
+    assert [c.severity for c in landings] == ["alert"] and [c.severity for c in takeoffs] == ["alert"]
+
+
+def test_crossings_from_opposite_ends_stay_ok():
+    _, conflicts = fold([ClearToCross(callsign="a", runway="13"), ClearToCross(callsign="b", runway="31")])
+    assert conflicts == []
+
+
+def test_an_unidentified_aircraft_on_the_other_end_is_still_only_a_warning():
+    _, conflicts = fold([ClearToLand(callsign="", runway="31"), ClearTakeoff(callsign="b", runway="13")])
+    assert [c.severity for c in conflicts] == ["warning"]
+
+
+def test_opposite_end_conflicts_carry_no_doctrine_basis():
+    """The cited ICAO paragraphs describe aircraft moving the same way along the runway; none is verified for
+    opposite-direction use, so the basis is left empty rather than borrowed."""
+    _, c = fold([ClearToLand(callsign="fedex", runway="18L"), ClearTakeoff(callsign="southwest", runway="36R")])
+    assert [x.basis for x in c] == [None]
+
+
+def test_checking_the_other_end_changes_no_tracked_state():
+    """Window-mode LLM parses see the engine's active runways, and the events cache is keyed by ENGINE_VERSION. This
+    change only adds conflicts, so reservations stay keyed by the designator each aircraft was cleared for and the
+    cached parses stay valid without a version bump."""
+    state, _ = fold([ClearToLand(callsign="a", runway="31"), ClearToCross(callsign="b", runway="13")])
+    assert _kinds(state, "31") == [("a", "LAND")] and _kinds(state, "13") == [("b", "CROSS")]
+    assert ENGINE_VERSION == "1"
 
 
 def test_one_new_reservation_can_conflict_with_several_active_ones():

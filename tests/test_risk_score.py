@@ -64,11 +64,13 @@ def test_dropping_the_crossing_removes_the_conflict_it_caused():
     assert outcome(row, base, new)["label"] == "lost_alert"
 
 
-def test_moving_a_clearance_to_the_reciprocal_runway_removes_the_conflict():
+def test_moving_a_clearance_to_the_other_end_of_the_strip_keeps_the_conflict():
+    """13 and 31 are one strip, so a wrong-end error still meets the reservation it conflicts with."""
     row = _row(CROSS_THEN_LAND)
     moved = next(e for k, e in perturbations(row) if k == "wrong_runway")
     from atcdb.evaluate import refold
-    assert refold(row, {}) and not refold({**row, "events": moved}, {})
+    assert moved[0][0][2] == "31"   # the crossing moved from 13 to the other end
+    assert [c["severity"] for c in refold(row, {})] == [c["severity"] for c in refold({**row, "events": moved}, {})] == ["alert"]
 
 
 def test_an_unchanged_stream_scores_no_change():
