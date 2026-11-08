@@ -207,7 +207,8 @@ def reciprocal(runway: str) -> str:
     if not m:
         return runway
     number = (int(m.group(1)) + 17) % 36 + 1
-    return f"{number:02d}{ {'L': 'R', 'R': 'L'}.get(m.group(2), m.group(2)) }"
+    side = {"L": "R", "R": "L"}.get(m.group(2), m.group(2))
+    return f"{number:02d}{side}"
 
 
 def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str, kinds: tuple[str, ...] = RESERVATION_KINDS,

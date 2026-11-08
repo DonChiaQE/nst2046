@@ -42,17 +42,12 @@ def austin_lines(start: str = AUSTIN_FROM) -> list[tuple[str, Transmission]]:
     return rows[k:]
 
 
-def fold_window(txs: list[Transmission], parse: Parser, single_digit_runways: bool = False
-                ) -> list[tuple[Transmission, list[Event], list[Conflict]]]:
+def fold_window(txs: list[Transmission], parse: Parser) -> list[tuple[Transmission, list[Event], list[Conflict]]]:
     """(transmission, events, conflicts) per transmission, folding as `replay.build_timeline` does in `window` context
-    but without the events cache.
-
-    `single_digit_runways` is the replayed airport's phraseology convention, forwarded to the parser: pass True only
-    for an airport where a lone digit-word is a real designator (a US tower). See atcdb/parse_rules.py, `_patterns`.
-    """
+    but without the events cache."""
     state, out = State(), []
     for k, tx in enumerate(txs):
-        events = list(parse(tx, build_context("window", tx, txs[:k], state, single_digit_runways)))
+        events = list(parse(tx, build_context("window", tx, txs[:k], state)))
         conflicts: list[Conflict] = []
         for e in events:
             state, new = apply(state, e)

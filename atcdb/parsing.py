@@ -31,10 +31,6 @@ class Context:
     history: tuple[tuple[str, str], ...] = ()       # (role, text) of the previous WINDOW transmissions, oldest first
     active_callsigns: tuple[str, ...] = ()          # aircraft the engine currently tracks (window mode only)
     active_runways: tuple[str, ...] = ()            # runways with an active reservation (window mode only)
-    single_digit_runways: bool = False              # the field is this recording's airport, not the parser:
-    # True only where a single digit-word is a real designator ("runway four" at KLGA). Default False, because
-    # where two digit-words are always spoken, a lone one is an ASR truncation and reading it as a designator
-    # invents a runway. See atcdb/parse_rules.py, _patterns.
 
 
 Parser = Callable[[Transmission, Context], list[Event]]

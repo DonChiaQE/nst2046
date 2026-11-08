@@ -9,7 +9,7 @@ import re
 
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoAround, Handoff, HoldShort, LineUpAndWait, NoOp,
                           ReadbackObserved, RunwayVacated, normalize_runway)
-from atcdb.parsing import Context, Transmission
+from atcdb.parsing import Context, Parser, Transmission
 from atcdb.readback import D, ITEM_PATTERNS
 
 VERSION = "v3"
@@ -34,12 +34,12 @@ _SIDE = r"(?: left| right| centre| center)?"
 # confident wrong designator instead of letting `_runway_for` fall back to the active runway. Measured on this corpus:
 # 109 transcripts (72 gold, 37 ASR) carry a lone digit-word after "runway" and not one is a real single-digit
 # designator -- every airport here is European or Australian (LKPR, LSZH, LSGS, LSZB, LZIB, LKTB, YSSY). So the
-# relaxed pattern is opt-in per recording, via `Context.single_digit_runways`.
+# relaxed pattern is opt-in per replay, via `make_parser(single_digit_runways=True)`.
 _D_RWY = rf"(?:{D}|oh)"
 _DESIG = rf"{_D_RWY} {_D_RWY}{_SIDE}"
-_DESIG_US = rf"{_D_RWY}(?: {_D_RWY})?{_SIDE}"
+_DESIG_SINGLE = rf"{_D_RWY}(?: {_D_RWY})?{_SIDE}"
 RUNWAY_RE = re.compile(rf"\brunway ({_DESIG})\b")
-RUNWAY_RE_US = re.compile(rf"\brunway ({_DESIG_US})\b")
+RUNWAY_RE_SINGLE = re.compile(rf"\brunway ({_DESIG_SINGLE})\b")
 
 
 def _instruction_res(desig: str) -> list[tuple[str, re.Pattern]]:
@@ -53,13 +53,18 @@ def _instruction_res(desig: str) -> list[tuple[str, re.Pattern]]:
     ]
 
 
-def _patterns(ctx: Context) -> tuple[re.Pattern, list[tuple[str, re.Pattern]]]:
-    """(runway-mention regex, instruction regexes) for this recording's phraseology convention."""
-    return (RUNWAY_RE_US, INSTRUCTION_RES_US) if ctx.single_digit_runways else (RUNWAY_RE, INSTRUCTION_RES)
-
-
 INSTRUCTION_RES = _instruction_res(_DESIG)
-INSTRUCTION_RES_US = _instruction_res(_DESIG_US)
+INSTRUCTION_RES_SINGLE = _instruction_res(_DESIG_SINGLE)
+
+
+def _runway_re(single: bool) -> re.Pattern:
+    """The runway-mention regex for the replayed airport's phraseology convention."""
+    return RUNWAY_RE_SINGLE if single else RUNWAY_RE
+
+
+def _instructions(single: bool) -> list[tuple[str, re.Pattern]]:
+    """The instruction regexes for the replayed airport's phraseology convention."""
+    return INSTRUCTION_RES_SINGLE if single else INSTRUCTION_RES
 HANDOFF_RE = re.compile(r"\bcontact (?:[a-z]+ ){0,2}?(ground|apron|departure|tower|approach|radar)\b")
 GO_AROUND_RE = re.compile(r"\bgo around\b")
 _TAIL_NOISE_RE = re.compile(r"\b(?:winds?|good ?bye|bye)\b.*$")
@@ -170,11 +175,11 @@ def _desig(text: str) -> str | None:
     return normalize_runway(" ".join("zero" if w == "oh" else w for w in text.split()))
 
 
-def _runway_for(text: str, m: re.Match, kind: str, ctx: Context) -> str | None:
+def _runway_for(text: str, m: re.Match, kind: str, ctx: Context, single: bool) -> str | None:
     if kind in ("CROSS", "HOLD_SHORT"):
         return _desig(m.group(1))
-    runway_re, _ = _patterns(ctx)
-    mentions = [(min(abs(r.start() - m.end()), abs(m.start() - r.end())), r.group(1)) for r in runway_re.finditer(text)]
+    mentions = [(min(abs(r.start() - m.end()), abs(m.start() - r.end())), r.group(1))
+                for r in _runway_re(single).finditer(text)]
     if mentions:
         return _desig(min(mentions)[1])
     if ctx.mode == "window" and len(ctx.active_runways) == 1:
@@ -182,12 +187,12 @@ def _runway_for(text: str, m: re.Match, kind: str, ctx: Context) -> str | None:
     return None
 
 
-def _controller_events(tx: Transmission, ctx: Context) -> list[Event]:
+def _controller_events(tx: Transmission, ctx: Context, single: bool) -> list[Event]:
     text = tx.text
     found: list[tuple[int, int, str, str | None]] = []   # (start, end, kind, runway-or-handoff-target)
-    for kind, rx in _patterns(ctx)[1]:
+    for kind, rx in _instructions(single):
         for m in rx.finditer(text):
-            runway = _runway_for(text, m, kind, ctx)
+            runway = _runway_for(text, m, kind, ctx, single)
             if runway:
                 found.append((m.start(), m.end(), kind, runway))
     for m in HANDOFF_RE.finditer(text):
@@ -213,7 +218,7 @@ def _controller_events(tx: Transmission, ctx: Context) -> list[Event]:
     return events
 
 
-def _pilot_events(tx: Transmission, ctx: Context) -> list[Event]:
+def _pilot_events(tx: Transmission, ctx: Context, single: bool) -> list[Event]:
     text = tx.text
     callsign = pilot_callsign(text)
     if ctx.mode == "window" and callsign:
@@ -226,25 +231,42 @@ def _pilot_events(tx: Transmission, ctx: Context) -> list[Event]:
     return events
 
 
-def count_unresolved(tx: Transmission, ctx: Context) -> int:
+def count_unresolved(tx: Transmission, ctx: Context, single_digit_runways: bool = False) -> int:
     """How many instruction kinds `parse` recognised in this transmission but dropped because no runway could be placed
-    on them (spec addendum A.3.5). A diagnostic beside `parse`, not part of it: `parse`'s output is unchanged, so VERSION
-    stays v1 and the frozen baseline is untouched. Pilot transmissions never yield instructions, so they count 0."""
+    on them (spec addendum A.3.5). A diagnostic beside `parse`, not part of it: `parse`'s output is unchanged, so the
+    frozen baseline is untouched. Pilot transmissions never yield instructions, so they count 0.
+
+    Takes the same phraseology convention as `parse`, so the diagnostic counts what that parser actually dropped."""
     role = ctx.role if ctx.mode != "none" else "unknown"
     if role == "pilot":
         return 0
     placed, unplaced = set(), set()
-    for kind, rx in _patterns(ctx)[1]:
+    for kind, rx in _instructions(single_digit_runways):
         for m in rx.finditer(tx.text):
-            (placed if _runway_for(tx.text, m, kind, ctx) else unplaced).add(kind)
+            (placed if _runway_for(tx.text, m, kind, ctx, single_digit_runways) else unplaced).add(kind)
     return len(unplaced - placed)
 
 
-def parse(tx: Transmission, ctx: Context) -> list[Event]:
+def parse(tx: Transmission, ctx: Context, single_digit_runways: bool = False) -> list[Event]:
     """Events for one transmission. Controller-side phrasing is only extracted for controller / mixed / unknown
     roles; pilot transmissions become readbacks (plus pilot-reported releases). Mode `none` has no role, so
     every transmission is treated as controller-side — a pilot's readback then becomes a reservation, which is
     exactly the failure the context ablation is meant to measure."""
     role = ctx.role if ctx.mode != "none" else "unknown"
-    events = _pilot_events(tx, ctx) if role == "pilot" else _controller_events(tx, ctx)
+    events = (_pilot_events(tx, ctx, single_digit_runways) if role == "pilot"
+              else _controller_events(tx, ctx, single_digit_runways))
     return events or [NoOp(t=tx.start_s, text=tx.text)]
+
+
+def make_parser(single_digit_runways: bool = False) -> Parser:
+    """`parse` bound to one airport's phraseology convention, mirroring `parse_llm.make_parser`.
+
+    `single_digit_runways=True` reads a lone digit-word as a designator ("runway four left" at a US tower). Keep the
+    default anywhere the airport is unknown or follows ICAO practice: there a lone digit-word is an ASR truncation,
+    and reading it as a designator invents a runway the transmission never named (see the `_DESIG_SINGLE` note above). The
+    convention is a property of the airport, so it is bound here rather than carried on `Context`, which is the
+    spec's context-ablation knob.
+    """
+    if not single_digit_runways:
+        return parse
+    return lambda tx, ctx: parse(tx, ctx, single_digit_runways=True)

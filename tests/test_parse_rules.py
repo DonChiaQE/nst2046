@@ -2,8 +2,8 @@ import pytest
 
 from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, GoAround, Handoff, HoldShort, LineUpAndWait, NoOp,
                           ReadbackObserved, RunwayInstruction, RunwayVacated)
-from atcdb.parse_rules import (VERSION, blank_values, count_unresolved, parse, pilot_callsign, snap_callsign, take_prefix,
-                               take_suffix)
+from atcdb.parse_rules import (VERSION, blank_values, count_unresolved, make_parser, parse, pilot_callsign,
+                               snap_callsign, take_prefix, take_suffix)
 from atcdb.parsing import Context, Transmission
 
 CTL = Context(mode="role", role="controller")
@@ -187,7 +187,7 @@ def test_count_unresolved_follows_window_snapping():
 
 # --- phraseology convention: Context.single_digit_runways (atcdb/parse_rules.py, `_patterns`) -----------------------
 
-US = Context(mode="role", role="controller", single_digit_runways=True)
+parse_single = make_parser(single_digit_runways=True)   # a US tower: "runway four left" is a real designator
 
 
 @pytest.mark.parametrize("text,runway", [
@@ -197,7 +197,7 @@ US = Context(mode="role", role="controller", single_digit_runways=True)
     ("delta one two three runway zero four left cleared to land", "04L"),
 ])
 def test_a_us_tower_reads_a_single_digit_word_as_a_designator(text, runway):
-    assert _kinds(parse(_tx(text), US)) == [("ClearToLand", "delta one two three", runway)]
+    assert _kinds(parse_single(_tx(text), CTL)) == [("ClearToLand", "delta one two three", runway)]
 
 
 @pytest.mark.parametrize("text", [

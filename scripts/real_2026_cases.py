@@ -168,6 +168,11 @@ def show(title: str, rows: list[dict]) -> int:
     return reservations
 
 
+# Cases whose airport speaks a single digit-word as a designator (atcdb/parse_rules.py, `make_parser`). Houston is a
+# US tower, where "runway four" is real; Goa follows ICAO practice, where a lone digit-word would be a truncation.
+SINGLE_DIGIT_CASES = {"houston-2026-04-24"}
+
+
 def summary_lines(totals: dict) -> list[str]:
     """The §4.5 summary for a run, as lines.
 
@@ -266,15 +271,10 @@ def main() -> None:
     if not arms:
         print("\n  (no LLM arm recorded yet; run with --record --model <model> and a key to add one)")
 
-    # The replayed airport's phraseology convention (atcdb/parse_rules.py, `_patterns`). Houston is a US tower, where
-    # "runway four" is a real designator; Goa follows ICAO practice, where a lone digit-word would be a truncation.
-    US_SINGLE_DIGIT = {"houston-2026-04-24"}
-
     totals = {}
     for case, txs in by_case.items():
-        single = case in US_SINGLE_DIGIT
-        totals[(case, "rules")] = show(f"{case}, rules",
-                                       _rows_from_fold(fold(txs, parse_rules.parse, single_digit_runways=single)))
+        parse = parse_rules.make_parser(single_digit_runways=case in SINGLE_DIGIT_CASES)
+        totals[(case, "rules")] = show(f"{case}, rules", _rows_from_fold(fold(txs, parse)))
         for m, data in arms.items():
             rows = data["cases"].get(case)
             if rows is None:
