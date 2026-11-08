@@ -8,14 +8,14 @@ The report's Appendix A inspects rules vs Sonnet 5 on human transcripts. This as
 
 `parse_error` is the only verdict the choice of extractor can move: the other verdicts describe the channel or the engine's framing, not the parse. Counting it per arm states the report's central claim as a count rather than as a confidence interval.
 
-| Arm | parse error | missing release | other frequency | engine rule | genuine | unadjudicated | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| rules / gold | 0 | 8 | 0 | 3 | 0 | 0 | 11 |
-| Sonnet 5 / gold | 1 | 8 | 0 | 4 | 0 | 1 | 14 |
-| Haiku 5.5 / gold | 2 | 9 | 0 | 4 | 0 | 1 | 16 |
-| rules / ASR | 0 | 9 | 0 | 3 | 0 | 0 | 12 |
-| Sonnet 5 / ASR | 2 | 11 | 0 | 3 | 0 | 1 | 17 |
-| Haiku 5.5 / ASR | 4 | 8 | 0 | 3 | 0 | 0 | 15 |
+| Arm | parse error | missing release | other frequency | engine rule | genuine | Total |
+|---|---:|---:|---:|---:|---:|---:|
+| rules / gold | 0 | 8 | 0 | 3 | 0 | 11 |
+| Sonnet 5 / gold | 2 | 8 | 0 | 4 | 0 | 14 |
+| Haiku 5.5 / gold | 3 | 9 | 0 | 4 | 0 | 16 |
+| rules / ASR | 0 | 9 | 0 | 3 | 0 | 12 |
+| Sonnet 5 / ASR | 3 | 11 | 0 | 3 | 0 | 17 |
+| Haiku 5.5 / ASR | 4 | 8 | 0 | 3 | 0 | 15 |
 
 ## 2. Contingency, rules vs each LLM
 
@@ -79,15 +79,15 @@ Classified by `classify()` from the two parties to a RUNWAY conflict: the *trigg
 |---|---:|---|---|
 | rules vs Sonnet 5 / gold | 74 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / gold | 242 | Sonnet 5 only | `parse_error` |
-| rules vs Sonnet 5 / gold | 261 | Sonnet 5 only | `unadjudicated` |
+| rules vs Sonnet 5 / gold | 261 | Sonnet 5 only | `parse_error` |
 | rules vs Sonnet 5 / gold | 533 | rules only | `missing_release` |
 | rules vs Haiku 5.5 / gold | 74 | Haiku 5.5 only | `missing_release` |
 | rules vs Haiku 5.5 / gold | 242 | Haiku 5.5 only | `parse_error` |
 | rules vs Haiku 5.5 / gold | 261 | Haiku 5.5 only | `parse_error` |
-| rules vs Haiku 5.5 / gold | 352 | Haiku 5.5 only | `unadjudicated` |
+| rules vs Haiku 5.5 / gold | 352 | Haiku 5.5 only | `parse_error` |
 | rules vs Haiku 5.5 / gold | 533 | rules only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 242 | Sonnet 5 only | `parse_error` |
-| rules vs Sonnet 5 / ASR | 261 | Sonnet 5 only | `unadjudicated` |
+| rules vs Sonnet 5 / ASR | 261 | Sonnet 5 only | `parse_error` |
 | rules vs Sonnet 5 / ASR | 1969 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 2306 | Sonnet 5 only | `parse_error` |
 | rules vs Haiku 5.5 / ASR | 242 | Haiku 5.5 only | `parse_error`, `parse_error` |

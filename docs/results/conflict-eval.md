@@ -7,18 +7,18 @@ Positives are synthetic conflicts injected into real tower recordings and accept
 | | rule-rules-window-gold | llm-claude-sonnet-5-window-gold | Difference, first minus second (95% CI) |
 |---|---|---|---|
 | Lenient recall | 87% (80% to 93%) | 90% (84% to 95%) | -3 pts (-9 pts to +2 pts) over 98 positives |
-| RUNWAY false alarms / h | 4.1 (1.9 to 6.6) | pending | pending over 0 negatives |
+| RUNWAY false alarms / h | 4.1 (1.9 to 6.6) | 5.3 (2.6 to 8.2) | -1.1 (-2.9 to +0.4) over 309 negatives |
 
-Case by case, positives caught: both 83, rule-rules-window-gold only 2, llm-claude-sonnet-5-window-gold only 5, neither 8. Negatives with a RUNWAY false alarm: pending.
+Case by case, positives caught: both 83, rule-rules-window-gold only 2, llm-claude-sonnet-5-window-gold only 5, neither 8. Negatives with a RUNWAY false alarm: both 10, rule-rules-window-gold only 1, llm-claude-sonnet-5-window-gold only 3, neither 295.
 
 The same pair on ASR transcripts. Milestone 1 argued an LLM extractor would be the more robust of the two under ASR noise, so this is the comparison that tests that motivation; read it with the leakage caveat below, which makes any degradation a lower bound.
 
 | | rule-rules-window-asr | llm-claude-sonnet-5-window-asr | Difference, first minus second (95% CI) |
 |---|---|---|---|
 | Lenient recall | 87% (80% to 93%) | 91% (85% to 96%) | -4 pts (-10 pts to +1 pts) over 98 positives |
-| RUNWAY false alarms / h | 4.5 (2.0 to 7.3) | pending | pending over 0 negatives |
+| RUNWAY false alarms / h | 4.5 (2.0 to 7.3) | 6.4 (3.3 to 9.8) | -1.9 (-3.6 to -0.4) over 309 negatives |
 
-Case by case, positives caught: both 83, rule-rules-window-asr only 2, llm-claude-sonnet-5-window-asr only 6, neither 7. Negatives with a RUNWAY false alarm: pending.
+Case by case, positives caught: both 83, rule-rules-window-asr only 2, llm-claude-sonnet-5-window-asr only 6, neither 7. Negatives with a RUNWAY false alarm: both 11, rule-rules-window-asr only 0, llm-claude-sonnet-5-window-asr only 4, neither 294.
 
 ## All arms, human and ASR transcripts
 
@@ -29,9 +29,9 @@ Case by case, positives caught: both 83, rule-rules-window-asr only 2, llm-claud
 | judge-claude-sonnet-5-sequence-asr | 98 | 67 | 72% (64% to 81%) | 0 | 13.2 (9.2 to 17.2) | 41.5 (34.2 to 48.8) | 2.65 | 0 | 0 |
 | judge-claude-sonnet-5-sequence-gold | 98 | 68 | 72% (63% to 82%) | 0 | 14.3 (10.3 to 18.1) | 33.6 (27.1 to 40.2) | 2.65 | 0 | 0 |
 | llm-claude-haiku-5-5-window-asr | 98 | 88 | 90% (84% to 95%) | 8 | 5.7 (2.9 to 8.8) | 16.2 (11.8 to 20.9) | 2.65 | 0 | 0 |
-| llm-claude-haiku-5-5-window-gold | 98 | 85 | 88% (81% to 94%) | 11 | pending | 18.8 (14.0 to 24.0) | 2.65 | 0 | 0 |
-| llm-claude-sonnet-5-window-asr | 98 | 89 | 91% (85% to 96%) | 6 | pending | 19.6 (14.8 to 25.0) | 2.65 | 0 | 0 |
-| llm-claude-sonnet-5-window-gold | 98 | 88 | 90% (84% to 95%) | 6 | pending | 21.1 (16.1 to 26.4) | 2.65 | 0 | 0 |
+| llm-claude-haiku-5-5-window-gold | 98 | 85 | 88% (81% to 94%) | 11 | 6.0 (3.0 to 9.4) | 18.8 (14.0 to 24.0) | 2.65 | 0 | 0 |
+| llm-claude-sonnet-5-window-asr | 98 | 89 | 91% (85% to 96%) | 6 | 6.4 (3.3 to 9.8) | 19.6 (14.8 to 25.0) | 2.65 | 0 | 0 |
+| llm-claude-sonnet-5-window-gold | 98 | 88 | 90% (84% to 95%) | 6 | 5.3 (2.6 to 8.2) | 21.1 (16.1 to 26.4) | 2.65 | 0 | 0 |
 | rule-rules-none-asr | 98 | 86 | 88% (82% to 94%) | 12 | 6.4 (3.1 to 10.0) | 0.0 (0.0 to 0.0) | 2.65 | 0 | 0 |
 | rule-rules-none-gold | 98 | 87 | 91% (85% to 96%) | 9 | 5.7 (2.7 to 8.9) | 0.0 (0.0 to 0.0) | 2.65 | 0 | 0 |
 | rule-rules-role-asr | 98 | 85 | 87% (80% to 93%) | 13 | 4.5 (2.0 to 7.3) | 5.3 (2.7 to 8.1) | 2.65 | 0 | 0 |
@@ -92,9 +92,9 @@ The Whisper model was fine-tuned on the corpus's train split, so ASR over train-
 | judge-claude-sonnet-5-sequence-asr | 0 | 7 | 5 | 0 | 23 | 0 |
 | judge-claude-sonnet-5-sequence-gold | 0 | 7 | 6 | 0 | 25 | 0 |
 | llm-claude-haiku-5-5-window-asr | 0 | 4 | 8 | 0 | 3 | 0 |
-| llm-claude-haiku-5-5-window-gold | 0 | 2 | 9 | 0 | 4 | 1 |
-| llm-claude-sonnet-5-window-asr | 0 | 2 | 11 | 0 | 3 | 1 |
-| llm-claude-sonnet-5-window-gold | 0 | 1 | 8 | 0 | 4 | 1 |
+| llm-claude-haiku-5-5-window-gold | 0 | 3 | 9 | 0 | 4 | 0 |
+| llm-claude-sonnet-5-window-asr | 0 | 3 | 11 | 0 | 3 | 0 |
+| llm-claude-sonnet-5-window-gold | 0 | 2 | 8 | 0 | 4 | 0 |
 | rule-rules-none-asr | 0 | 1 | 10 | 0 | 6 | 0 |
 | rule-rules-none-gold | 0 | 0 | 10 | 0 | 5 | 0 |
 | rule-rules-role-asr | 0 | 0 | 9 | 0 | 3 | 0 |
