@@ -1,8 +1,59 @@
-# nst2046
+# Listening for Contradictions
 
-ATC (air traffic control) speech → transcripts → database, for analysing potentially ambiguous / non-standard phraseology. The conflict engine (`atcdb/engine.py`) turns parsed clearances into runway reservations and flags incompatible ones; see `docs/superpowers/specs/2026-09-12-conflict-engine-design.md`.
+**Rule-based vs LLM extraction of runway clearances from ATC speech.** NST2046 group project, Don Chia and Jennifer Liu, 2026.
 
-## Setup
+The system turns tower radio audio into runway-conflict alerts in three stages:
+
+1. A Whisper model fine-tuned on ATC audio transcribes each transmission (`atcdb/asr.py`).
+2. An extractor turns each line into typed events such as a landing clearance or a crossing. It is either a rules parser (`atcdb/parse_rules.py`) or Claude Sonnet 5 / Haiku 5.5 (`atcdb/parse_llm.py`).
+3. A deterministic conflict engine (`atcdb/engine.py`) tracks which runways are reserved and raises an alert when two clearances clash.
+
+Only the extractor changes between conditions, so the project asks whether using an LLM changes what the system catches, what it misses, and what kind of errors it makes.
+
+**Main result.** On human transcripts the two extractors are statistically indistinguishable: recall is 87% (rules) vs 90% (Sonnet 5), and false alarms are 4.1 vs 5.3 per hour, with both paired confidence intervals including zero. On speech-recognition transcripts, Sonnet raises significantly more false alarms (6.4 vs 4.5 per hour). Most false alarms come from runway releases nobody said on the radio, not from extraction errors.
+
+| Where | What |
+|---|---|
+| [Appendices to the submitted report](https://github.com/DonChiaQE/nst2046/blob/milestone2-appendices/docs/milestone2-appendices.md) | Appendices A–K, on the `milestone2-appendices` branch: divergent cases, prompts, matrices, adjudication, logs, contribution statement |
+| [`notebooks/milestone2_pipeline_walkthrough.ipynb`](notebooks/milestone2_pipeline_walkthrough.ipynb) | A runnable walkthrough: one recording through the pipeline, then the headline numbers recomputed live |
+| [`docs/results/`](docs/results/) | Every results table: `conflict-eval.md`, `cross-arm-replication.md`, `risk-score.md`, `extraction-pair-events.md`, `wer-baseline.md` |
+| [`docs/logs/`](docs/logs/) | The AI-use log and the decision log |
+| [`data/eval/conflicts/`](data/eval/conflicts/), [`data/labels/`](data/labels/) | Every arm's stored output, and the human labels and adjudication sheets |
+
+## Reproduce the results (free, no API key)
+
+The paid part of the study (the Claude parses) ran once and is stored, so every number in the report can be recomputed without spending anything. `env -u ANTHROPIC_API_KEY` makes sure nothing can call the API.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# The corpus database is not on main (size, and it contains UWB-ATCC transcripts). Fetch it once:
+git fetch origin runway-watch-app
+git cat-file -p origin/runway-watch-app:data/atc.sqlite > data/atc.sqlite
+
+env -u ANTHROPIC_API_KEY python scripts/eval_conflicts.py report     # §4.1, §4.2, §4.4 -> docs/results/conflict-eval.md
+env -u ANTHROPIC_API_KEY python scripts/cross_arm_replication.py --markdown > docs/results/cross-arm-replication.md
+env -u ANTHROPIC_API_KEY python scripts/risk_score.py                 # §4.3 consequence weights (risk-score.md)
+env -u ANTHROPIC_API_KEY python scripts/divergent_cases.py            # Appendix A1
+env -u ANTHROPIC_API_KEY python scripts/real_2026_cases.py            # §4.5, the Goa and Houston cases
+env -u ANTHROPIC_API_KEY python scripts/pending_sensitivity.py        # confirms every alert has a verdict
+env -u ANTHROPIC_API_KEY pytest -q                                    # 430 pass, 2 skip (the live-app smoke tests)
+```
+
+The regenerated docs should differ from the committed ones only in their date line.
+
+**The notebook** recomputes the headline tables directly from the committed rows, and its Section 5 needs neither the database nor an API key. To open it:
+
+```bash
+pip install notebook ipykernel matplotlib
+python -m ipykernel install --user --name nst2046-venv --display-name "NST2046 (.venv)"
+env -u ANTHROPIC_API_KEY jupyter notebook notebooks/milestone2_pipeline_walkthrough.ipynb
+```
+
+## Build everything from scratch
+
+This rebuilds the database from the public corpora and re-runs the evaluation. The LLM steps call the Claude API and cost money, so always run `--dry-run` first.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -32,7 +83,7 @@ python scripts/show_replay.py uwb-atcc_TWR-DM7AI0  # step through one recording:
 # 5. replay UI: step through a recording in the browser (runway board, transmissions, conflicts, audio)
 uvicorn atcdb.api:app --reload                     # then open http://127.0.0.1:8000/?recording=528
 
-# 6. Claude parser (phase 3a): Haiku 4.5 and Sonnet 5 through one forced tool call; needs ANTHROPIC_API_KEY.
+# 6. Claude parser (phase 3a): Haiku 5.5 and Sonnet 5 through one forced tool call; needs ANTHROPIC_API_KEY.
 #    Without a key the page lists it disabled, and replays already in the cache still work.
 python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528 --dry-run   # count and cost first
 python scripts/parse_events.py --parser llm --model claude-sonnet-5 --recording 528             # parse and cache
