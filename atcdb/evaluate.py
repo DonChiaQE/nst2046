@@ -45,6 +45,10 @@ ARMS: tuple[Arm, ...] = tuple(Arm(p, m, c, t) for p, models in (("rule", ("rules
 JUDGE_ARMS: tuple[Arm, ...] = tuple(Arm("judge", m, "sequence", t) for m in judge.MODELS for t in TRANSCRIPTS)
 # the pre-registered primary comparison (spec addendum A.5): rules vs Sonnet, window context, human transcripts
 PRIMARY = (Arm("rule", "rules", "window", "gold"), Arm("llm", "claude-sonnet-5", "window", "gold"))
+# The same pair on ASR transcripts. Milestone 1 motivated the LLM by robustness to ASR noise, so the comparison that
+# tests that motivation needs its own paired interval, not two separate ones read side by side (Milestone 1 feedback,
+# point 4). Secondary to PRIMARY, and subject to the train/test leakage in section 3.
+PRIMARY_ASR = (Arm("rule", "rules", "window", "asr"), Arm("llm", "claude-sonnet-5", "window", "asr"))
 
 
 # --- sets and running ---------------------------------------------------------------------------------------------

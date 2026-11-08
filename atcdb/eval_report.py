@@ -7,8 +7,8 @@ report.
 """
 from collections import Counter
 
-from atcdb.evaluate import (PRIMARY, VERDICTS, Pending, alert_keys, bootstrap, detection, false_alarm_units,
-                            paired_bootstrap, per_hour, rate, recall, sweep, usable)
+from atcdb.evaluate import (PRIMARY, PRIMARY_ASR, VERDICTS, Pending, alert_keys, bootstrap, detection,
+                            false_alarm_units, paired_bootstrap, per_hour, rate, recall, sweep, usable)
 from atcdb.inject import EDIT_KINDS
 
 
@@ -58,6 +58,19 @@ def _cases(pairs: list[tuple[bool, bool]]) -> dict[str, int]:
     for a, b in pairs:
         out["both" if a and b else "first only" if a else "second only" if b else "neither"] += 1
     return out
+
+
+def _primary_block(summary: dict, pair_key: str, diff_key: str) -> list[str]:
+    """One primary-comparison table: the two arms side by side, their paired difference, and the case-by-case line."""
+    a, b = summary[pair_key]
+    sa, sb, d = summary["arms"][a], summary["arms"][b], summary[diff_key]
+    return ["| | " + a + " | " + b + " | Difference, first minus second (95% CI) |", "|---|---|---|---|",
+            f"| Lenient recall | {_recall_cell(sa)} | {_recall_cell(sb)} | {_diff_cell(d['recall'], True)} "
+            f"over {d['recall_n']} positives |",
+            f"| RUNWAY false alarms / h | {_fa_cell(sa)} | {_fa_cell(sb)} | {_diff_cell(d['fa'], False)} "
+            f"over {d['fa_n']} negatives |", "",
+            f"Case by case, positives caught: {_cases_text(d['recall_cases'], a, b)}. Negatives with a RUNWAY "
+            f"false alarm: {_cases_text(d['fa_cases'], a, b)}.", ""]
 
 
 def primary_differences(rows_a: list[dict], rows_b: list[dict], verdicts: dict[str, str]) -> dict:
@@ -138,6 +151,8 @@ def summarize(rows_by_arm: dict[str, list[dict]], verdicts: dict[str, str], inje
     negatives = next((ns for rows in flagged.values() if (ns := [r for r in rows if r["set"] == "negatives"])), [])
     leakage = (sum(r["n_test"] for r in negatives), sum(r["n_tx"] for r in negatives)) if negatives else None
     primary = [a.name for a in PRIMARY]
+    primary_asr = [a.name for a in PRIMARY_ASR]
+    have_asr = all(p in rows_by_arm for p in primary_asr)
     checks = {k: Counter(i.get("valid") or "unchecked" for i in injections if i["edit_kind"] == k) for k in EDIT_KINDS}
     return {
         "arms": arms, "asr_headline": headline, "leakage": leakage, "stale_positives": stale, "kappa": kappa,
@@ -145,6 +160,9 @@ def summarize(rows_by_arm: dict[str, list[dict]], verdicts: dict[str, str], inje
         "primary": primary if all(p in rows_by_arm for p in primary) else None,
         "primary_diff": primary_differences(rows_by_arm[primary[0]], rows_by_arm[primary[1]], verdicts)
         if all(p in rows_by_arm for p in primary) else None,
+        "primary_asr": primary_asr if have_asr else None,
+        "primary_asr_diff": primary_differences(rows_by_arm[primary_asr[0]], rows_by_arm[primary_asr[1]], verdicts)
+        if have_asr else None,
         "taxonomy": {name: taxonomy(rows, verdicts) for name, rows in sorted(rows_by_arm.items())},
         "sweep": {p: sweep(rows_by_arm[p]) for p in primary if p in rows_by_arm},
     }
@@ -204,16 +222,13 @@ def render(summary: dict, date: str) -> str:
            "adjudication did not find genuine; rates are per hour of recording span. Intervals are 95% percentile "
            "bootstrap intervals over recordings (2,000 resamples, seed 0).", ""]
     if summary["primary"]:
-        a, b = summary["primary"]
-        sa, sb, d = summary["arms"][a], summary["arms"][b], summary["primary_diff"]
-        out += ["## Primary comparison (pre-registered)", "",
-                "| | " + a + " | " + b + " | Difference, first minus second (95% CI) |", "|---|---|---|---|",
-                f"| Lenient recall | {_recall_cell(sa)} | {_recall_cell(sb)} | {_diff_cell(d['recall'], True)} "
-                f"over {d['recall_n']} positives |",
-                f"| RUNWAY false alarms / h | {_fa_cell(sa)} | {_fa_cell(sb)} | {_diff_cell(d['fa'], False)} "
-                f"over {d['fa_n']} negatives |", "",
-                f"Case by case, positives caught: {_cases_text(d['recall_cases'], a, b)}. Negatives with a RUNWAY "
-                f"false alarm: {_cases_text(d['fa_cases'], a, b)}.", ""]
+        out += ["## Primary comparison (pre-registered)", ""]
+        out += _primary_block(summary, "primary", "primary_diff")
+        if summary.get("primary_asr"):
+            out += ["The same pair on ASR transcripts. Milestone 1 argued an LLM extractor would be the more robust "
+                    "of the two under ASR noise, so this is the comparison that tests that motivation; read it with "
+                    "the leakage caveat below, which makes any degradation a lower bound.", ""]
+            out += _primary_block(summary, "primary_asr", "primary_asr_diff")
     else:
         out += ["## Primary comparison (pre-registered)", "", "Not run yet: both primary arms are needed.", ""]
     stale = ", ".join(f"{name} {n}" for name, n in summary["stale_positives"].items() if n) or "none"
