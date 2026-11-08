@@ -110,8 +110,9 @@ Do not redo these; do spot-check any you rely on.
   adjudication again, that column and §4.3's taxonomy sentence are the two places per-arm `parse_error` is quoted.
 - **The submission handoff's three items** (section 6, contribution statement, trim to 3,000–5,000 words) are
   untouched and still the team's.
-- **`pip install -r requirements.txt`** makes all 430 tests pass; `torch` is pinned but not installed, which is
-  the only reason 2 fail. Appendix H says so.
+- **The test suite is green: 430 pass, 2 skip, 0 fail.** The 2 skips are the live-app smoke tests, which need
+  an API key. `torch` had been pinned at `2.13.0`, a release that does not exist, so it was never installed and
+  the two GPU-transcriber tests failed on the missing module; repinned to `2.11.0` on 2026-11-08.
 - **Not defects, reported as limitations:** the single-digit opt-in is correct by construction but exercised by no
   transcript in this corpus, and `readback.extract_items` deliberately stays ICAO-only, so a runway read-back miss
   on a single-digit designator goes undetected. Both have tests pinning them.
