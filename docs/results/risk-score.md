@@ -29,7 +29,8 @@ engine's output, and the ones that do reach it do not all cause the same harm.
 > - **Survives, smaller:** finding 4 holds through `spurious_inuse` only, at 7 to 11%. `spurious_other` now loses no
 >   detection, because the invented reservation sits on the same strip and still conflicts with the later clearance.
 >
-> The prose under "What the weights say" predates this re-run and needs revising before it is cited.
+> The prose under "What the weights say" was rewritten against these tables on 08 Nov 2026. The three
+> bullets above are kept as the record of what the strip fix changed and why.
 
 ## Weights, pre-registered primary arm (rules, window, gold)
 
@@ -57,38 +58,56 @@ parser's output:
 | `spurious_inuse` | 2069 | 48% | 11% | 30% |
 | `spurious_other` | 2069 | 60% | 0% | 49% |
 
-All four structured gold arms agree on the ordering and roughly on the magnitudes (`--all`), which is what we would
-expect if the weight is a property of the conflict engine rather than of the extractor that fed it.
+All five structured gold arms (`--all`: rules in none, role and window context, plus Haiku 5.5 and Sonnet 5) agree
+on which error kinds sit at the top and bottom of the ordering, which is what we would expect if the weight is mostly
+a property of the conflict engine rather than of the extractor that fed it. They do **not** agree on magnitude: the
+context-free rules arm is the clear dissenter, putting `wrong_runway`'s lost-detection rate at 33% against 49 to 54%
+elsewhere and `spurious_other`'s at 34% against 13 to 14%, and it inverts the false-alarm ordering of `wrong_type` and
+`wrong_callsign`. Read the ordering as the robust part and the percentages as specific to the arm named above each
+table.
 
 ## What the weights say
 
-**1. Most extraction errors never reach the output.** Between 19% and 34% of single-field errors change any alert at
-all. A per-slot accuracy figure therefore overstates how much extraction quality matters to this system — which is the
-reason Chang et al. argue for weighting in the first place, reproduced here on our own pipeline.
+**1. Field-level errors rarely reach the output; invented events usually do.** Getting one field wrong on an event
+that is otherwise right -- the runway, the type, the callsign -- changes an alert only 19 to 25% of the time. Inventing
+an event that was never said changes one 48 to 71% of the time. So a per-slot accuracy figure overstates how much
+field-level transcription quality matters to this system, which is Chang et al.'s argument for weighting, reproduced
+here on our own pipeline -- but it understates how much *not inventing things* matters. Those are the two halves of
+"extraction quality" and this engine weights them very differently.
 
-**2. The two extractors' characteristic errors cause opposite harms.** The rules parser's failure mode is omission
-(`dropped`, and `wrong_runway` from a designator it cannot normalise): those cost recall — 45% and 54% of the ones
-that land on a positive — and create a false alarm **0% of the time, on every arm**. The LLM's failure mode is
-invention (`spurious`): that costs false alarms and barely touches recall. Neither error kind is "worse"; they are
-harms of different kinds, which is exactly why a single scalar score would hide the result rather than express it.
+**2. Omission and invention cause opposite harms, and only omission is now clean.** `dropped` is the pure omission:
+it costs recall (38 to 45% of the perturbations that land on a positive) and raises a false alarm **0% of the time, on
+every arm**. Invention is the mirror image: `spurious_other` loses no true detection at all (0%) and raises a false
+alarm 49 to 62% of the time. Neither is "worse" -- they are harms of different kinds, which is why a single scalar
+score would hide this result rather than express it. What no longer holds is treating `wrong_runway` as omission-like:
+since the engine relates the two ends of a strip, a misread designator can land on the same tarmac and conflict, so it
+now both loses detections (25 to 27%) and raises false alarms (5 to 6%).
 
-**3. An invented clearance is almost harmless unless it lands on a runway already in use.** This is the sharpest
-number here: a spurious landing clearance on the recording's busiest runway creates a false alarm 37% of the time,
-and the same invented event on a runway the recording never uses creates one **0%** of the time. The real rate for a
-given extractor sits between these bounds, set by *where* its inventions land. This explains the central tension in
-the evaluation — Sonnet 5 invents 9 events on the 200 labelled instructions where the rules parser invents 0
-(`extraction-pair-events.md`), yet its RUNWAY false-alarm rate is 4.9/h against the rules parser's 4.1/h, well within
-the confidence interval (`conflict-eval.md`). Most of Sonnet's inventions are approach clearances read as landing
-clearances, and the runways in them are mostly not the runway the tower is working. The deterministic engine absorbs
-them.
+**3. An invented clearance is most dangerous on the *other* end of a working strip.** This is the sharpest number
+here, and it reverses the pre-fix reading. A spurious landing clearance on the recording's busiest runway creates a
+false alarm 30 to 37% of the time; the same invented event on a runway the recording "never uses" creates one 49 to
+62% of the time -- more, not less. On a corpus with one active strip there is no harmlessly unused runway: the other
+designator is the reciprocal end, and two landings from opposite ends are head-on, so `OPPOSITE_MATRIX` rates the pair
+`alert` where the same-direction pair is legal. `spurious_other` is accordingly the single most consequential
+perturbation in the study, changing the output 60 to 71% of the time.
 
-**4. A hallucination can suppress a real alert, not only raise a false one.** `spurious_other` creates no false
-alarms, but still loses a true detection 14% (rules stream) to 20% (Sonnet stream) of the time. The mechanism is in
-`engine.apply` ([`engine.py`](../../atcdb/engine.py), "one aircraft is in one place: its old reservation is
-superseded"): an invented clearance for an aircraft releases whatever reservation that aircraft actually held, so a
-hallucination on an empty runway can silently cancel the reservation that a later clearance was supposed to conflict
-with. This is the failure mode least visible from the outside — it produces no alert, no alarm and no trace — and it
-is invisible to any metric that counts false alarms.
+This removes the mechanism that previously explained the central tension in the evaluation. Sonnet 5 invents 9 runway
+events on the 200 labelled instructions where the rules parser invents 0 (`extraction-pair-events.md`, which counts
+runway events; the rules parser also produced 3 unlabelled `HANDOFF`s, and that sheet notes only 36 of 92 "contact
+&lt;frequency&gt;" instructions were labelled as handoffs). The pre-fix argument was that most of Sonnet's inventions are
+approach clearances read as landing clearances on runways the tower is not working, which the engine absorbed
+harmlessly. Post-fix the engine no longer absorbs them, so that explanation cannot be reused. The measured RUNWAY
+false-alarm comparison is pending re-adjudication of the alerts the strip fix newly raises (`conflict-eval.md`), and
+this paragraph should not be cited until it is.
+
+**4. A hallucination can suppress a real alert, not only raise one.** `spurious_inuse` still loses a true detection
+7% (rules stream) to 11% (Sonnet stream) of the time. The mechanism is in `engine.apply`
+([`engine.py`](../../atcdb/engine.py), "one aircraft is in one place: its old reservation is superseded"): an invented
+clearance for an aircraft releases whatever reservation that aircraft actually held, so a hallucination can silently
+cancel the reservation a later clearance was supposed to conflict with. This is the failure mode least visible from
+the outside -- no alert, no alarm, no trace -- and it is invisible to any metric that counts false alarms. It no
+longer appears under `spurious_other`, whose invented reservation now sits on the same strip and still conflicts with
+the later clearance, so suppression is specific to inventions that land on the runway already in use.
 
 ## Caveats
 
@@ -100,7 +119,8 @@ is invisible to any metric that counts false alarms.
   second annotator (the kappa of 0.80 in `conflict-eval.md` is for alert verdicts, not for events). A consequence
   study has to fold a whole recording through the engine to see a conflict appear or vanish, which a single labelled
   line inside an otherwise unlabelled recording cannot support. What those labels do establish is that the rules
-  parser invented 0 events across all 200 instructions, so its stream is the closest available stand-in. The real
+  parser invented 0 *runway* events across all 200 instructions (it produced 3 `HANDOFF`s with no
+  matching label, which that sheet attributes to unlabelled handoffs rather than to invention), so its stream is the closest available stand-in. The real
   check, though, is that this measures a property of **the engine** rather than of one parser: the study repeated on
   the Sonnet stream, and on all four structured gold arms, agrees on the ordering and roughly on the magnitudes.
 - One edit at a time. Real extractors make correlated errors (an ASR digit failure corrupts the runway for every
