@@ -29,8 +29,9 @@ they disagree.
 cost of a somewhat higher false-alarm rate from hallucinated events.
 
 **Claim.** On human transcripts, the two extractors are statistically indistinguishable on both recall and false
-alarms: a 3-point recall gap and a 0.8-per-hour false-alarm gap, with 95% confidence intervals that include zero
-(§4.2). Under transcription noise, recall stays indistinguishable but the LLM raises significantly more false alarms
+alarms: a 3-point recall gap whose 95% confidence interval includes zero, and a false-alarm comparison that is
+pending re-adjudication (§4.2)
+(§4.2). Under transcription noise recall stays indistinguishable; the false-alarm comparison is likewise pending
 — the only interval in the study that excludes zero. This supports the direction of our hypothesis but not its
 size: at the level of individual transmissions, the LLM extracts more correctly and hallucinates far more often than
 the aggregate numbers suggest (§4.1), and most of that divergence is absorbed by the engine before it reaches an
@@ -110,6 +111,8 @@ discarded as stale. `HANDOFF`, `VACATED`, and certain `HOLD_SHORT` transitions r
 
 When a new reservation-opening event arrives on a runway that already has an open reservation, the engine looks up
 the pair of kinds in a fixed compatibility matrix (e.g. `LAND`×`TAKEOFF` = `alert`, `TAKEOFF`×`TAKEOFF` = `warning`,
+with a second matrix, `OPPOSITE_MATRIX`, applied when the reservation is held from the other end of the same strip,
+where two landings or two departures are head-on and so `alert` rather than legal,
 `CROSS`×`CROSS` = `ok`) and raises a `RUNWAY` conflict at the resulting severity. If either event's callsign is
 unknown, the severity is capped at `warning` regardless of what the matrix says, on the deliberate ground that an
 unidentified aircraft might be the aircraft already holding the reservation. A second alert type, `READBACK`, fires
@@ -151,7 +154,7 @@ Every run is specified by an **arm**: a choice of parser, model, context mode, a
 | Dimension | Values | Note |
 |---|---|---|
 | Parser | `rule`, `llm`, `judge` | `judge` removes the parser *and* the engine — an ablation, §4.4 |
-| Model | rules v1, Claude Sonnet 5, Claude Haiku 5.5 | one forced tool call per transmission, extended thinking disabled, effort low |
+| Model | rules v3, Claude Sonnet 5, Claude Haiku 5.5 | one forced tool call per transmission, extended thinking disabled, effort low |
 | Context | `none`, `role`, `window` (`sequence` for the judge) | nothing beyond the line / plus speaker role / plus the last 4 transmissions and tracked state |
 | Transcript | `gold`, `asr` | human transcript, or the fine-tuned Whisper output (§2.1) |
 
@@ -253,15 +256,17 @@ This sheet substitutes for the pre-registered, tower-only event sheet, which was
 |---|---|---|---|
 | **Gold transcripts** | | | |
 | Lenient recall | 87% (80–93%) | 90% (84–95%) | −3.1 pts (−9.2 to +2.0) |
-| RUNWAY false alarms / h | 4.1 (1.9–6.6) | 4.9 (2.3–7.8) | −0.8 (−2.3 to +0.7) |
+| RUNWAY false alarms / h | 4.1 (1.9–6.6) | pending | pending over 0 adjudicated negatives |
 | **ASR transcripts** | | | |
 | Lenient recall | 87% (80–93%) | 91% (85–96%) | −4.1 pts (−10.2 to +1.0) |
-| RUNWAY false alarms / h | 4.5 (2.0–7.3) | 6.0 (3.0–9.3) | **−1.5 (−3.0 to −0.4)** |
+| RUNWAY false alarms / h | 4.5 (2.0–7.3) | pending | pending over 0 adjudicated negatives |
 
 On gold transcripts the two extractors are statistically indistinguishable on both measures. On ASR transcripts,
-recall stays indistinguishable, but Sonnet raises significantly more false alarms — 1.5 per hour more, the only
+recall stays indistinguishable. The false-alarm half of this comparison is withdrawn pending adjudication: the
+strip fix (§2) raises one previously unseen alert on each LLM window arm, and because an unadjudicated alert is
+never folded into a total, the negatives denominator is 0 until those are judged. The pre-fix figures were the only
 interval in this study that excludes zero. Of the recordings where exactly one arm raises a false alarm under ASR,
-Sonnet accounts for 3 and the rules parser for 0.
+Sonnet accounts for 4 and the rules parser for 0.
 
 **Figure 2.** ![Primary comparison: recall and false alarms with 95% CI error bars](figures/fig-primary-comparison.png)
 
@@ -276,16 +281,16 @@ small number of recordings that carry the whole difference:
 
 | | Positives (n=98) | Negatives, false alarm (n=309) |
 |---|---|---|
-| Both arms agree | 83 (both catch) / 8 (both miss) | 296 clean + 10 both false-alarm |
+| Both arms agree | 83 (both catch) / 8 (both miss) | 295 clean + 10 both false-alarm |
 | Rules only | 2 | 1 |
 | Sonnet only | 5 | 2 |
 
 **Figure 3.** ![Case-by-case agreement between rules and Sonnet, positives and negatives](figures/fig-case-contingency.png)
 
 Classifying every false alarm by cause shows what the two arms are mostly doing, which is the same thing: no arm
-ever raises a `genuine` false alarm (i.e. an alert that turns out to be a real conflict) on any of the 309
+ever raises an adjudicated `genuine` false alarm (i.e. an alert that turns out to be a real conflict) on any of the 309
 recordings; `missing_release` — extraction was correct, but the release of a runway was simply never transmitted —
-accounts for 8 of roughly 11–13 false alarms on each arm; a further 3–4 per arm are `engine_rule` cases (a framing
+accounts for 8 of the 11 to 17 false alarms per arm; a further 3–4 per arm are `engine_rule` cases (a framing
 limitation, not an extraction error); and `parse_error`, the one category the extractor can move, is 0 for rules
 and 1 for Sonnet. The choice of extractor can therefore move at most one of roughly a dozen false alarms per arm —
 this system's false-alarm rate is set mainly by what the tower frequency does and does not carry.
@@ -302,12 +307,13 @@ This pattern replicates on a second model (Haiku 5.5) and a second transcript ki
 The count rises with transcription noise within each model and is zero for the rules parser in every condition,
 while `missing_release` stays flat (8–11) across all six arms. This holds across an independent model and an
 independent transcript kind, which is what makes "the LLM's failure mode is invention" a property of the approach
-rather than of one comparison — though the volume involved is still small relative to each arm's roughly 12 false
+rather than of one comparison — though the volume involved is still small relative to each arm's 11 to 17 false
 alarms.
 
 **Figure 4.** ![Failure taxonomy of RUNWAY false alarms, window context, gold transcripts, by arm](figures/fig-failure-taxonomy.png)
 
-**The divergent cases, inspected individually.** All ten gold-transcript divergences between rules and Sonnet were
+**The divergent cases, inspected individually.** All eleven gold-transcript divergences between rules and Sonnet
+(seven positives, four negatives) were
 read case by case (Appendix A); a classifier (`scripts/cross_arm_replication.py`) was then run over all 25 divergent
 positives across all four rules-vs-LLM arm pairs (both models, both transcript kinds) to check whether the same
 mechanisms generalise:
@@ -350,7 +356,7 @@ between.
 | Arm (gold transcripts) | Lenient recall | RUNWAY false alarms / h | `parse_error` verdicts |
 |---|---|---|---|
 | Rules, window | 87% (80–93%) | 4.1 (1.9–6.6) | 0 |
-| Sonnet 5 extractor, window | 90% (84–95%) | 4.9 (2.3–7.8) | 1 |
+| Sonnet 5 extractor, window | 90% (84–95%) | pending | 1 |
 | Sonnet 5 judge, sequence | 72% (63–82%) | 14.3 (10.3–18.1) | 7 |
 | Haiku 5.5 judge, sequence | 78% (69–86%) | 14.7 (10.5–19.0) | 9 |
 
@@ -400,10 +406,10 @@ failing to extract one of them, the engine's own logic is what was missing, not 
 parser never had to make.
 
 **Goa (VAGO, 2026-04-03) and Houston (KIAH, 2026-04-24).** These two reconstructions, built from seven transmissions
-each (`data/labels/real_2026_cases_A.csv`), are the clearest demonstration of the engine's framing boundary (§2.3).
+in total (five Goa, two Houston) (`data/labels/real_2026_cases_A.csv`), are the clearest demonstration of the engine's framing boundary (§2.3).
 Replayed through the rules parser, the seven Goa lines (a taxi instruction to a holding point, a frequency handoff,
 "expect backtrack," and a pilot's "entering runway") and the two Houston lines (a controller correcting a crew that
-had followed another aircraft's clearance) produce only `HOLD_SHORT` and `HANDOFF` events — **no `LAND`, `TAKEOFF`,
+had followed another aircraft's clearance) produce only `HANDOFF` and `READBACK` events — **no `LAND`, `TAKEOFF`,
 `LUAW`, or `CROSS` reservation is opened in either case**, so no alert can be raised by either extractor. Goa is a
 backtrack incursion; Houston is a callsign-confusion event. Neither is an incompatible pair of runway clearances,
 which is the only failure mode this engine models.
@@ -415,7 +421,7 @@ same mechanisms seen elsewhere, not new ones:
 
 | | Rules parser | Sonnet 5 |
 |---|---|---|
-| "taxi via N2 hold at holding point runway 08" | `HOLD_SHORT 08` | `HOLD_SHORT 08` |
+| "taxi via N2 hold at holding point runway 08" | nothing (`NOOP`) — its pattern needs "hold short" | `HOLD_SHORT 08` |
 | "hold at holding point and contact navy approach 119.7" (no runway named) | `HANDOFF` only | `HOLD_SHORT 08` + `HANDOFF` |
 | the handoff's callsign | `one one niner` — the radio frequency, read as a callsign | blank, correctly |
 
@@ -444,12 +450,12 @@ calls).
 
 | Error kind | Changed the output | Lost a true detection | Created a false alarm |
 |---|---:|---:|---:|
-| Wrong runway | 34% | 54% | 0% |
+| Wrong runway | 23% | 27% | 6% |
 | Dropped event | 27% | 45% | 0% |
 | Wrong event type | 24% | 26% | 8% |
 | Wrong callsign | 19% | 13% | 9% |
 | Invented event, runway in use | 54% | 7% | 37% |
-| Invented event, runway not in use | 8% | 14% | 0% |
+| Invented event, runway not in use | 71% | 0% | 61% |
 
 *Rules arm, window context, gold transcripts; the Sonnet arm and the other gold arms agree within a few points.*
 
@@ -459,12 +465,16 @@ matters to this system. **Second**, the two extractors' characteristic errors ca
 overlapping harms: omission (the rules parser's typical failure) costs recall and essentially never creates a false
 alarm; invention (the LLM's typical failure) creates false alarms and barely touches recall. Collapsing these into
 one combined score would hide this asymmetry rather than express it, which is why this study reports two rates
-instead of one. **Third**, an invented clearance is largely absorbed by the engine unless it lands on a runway
-already in use (37% false-alarm rate vs. 0%) — most of Sonnet's inventions in this data are approach clearances
+instead of one. **Third**, an invented clearance is *most* dangerous on the other end of a working strip, not least:
+an invention on the runway already in use raises a false alarm 37% of the time, and one on a runway "not in use"
+61% of the time, because on a corpus with one active strip the other designator is the reciprocal end and two
+landings from opposite ends are head-on. The pre-fix reading of this was the opposite, and rested on the engine
+being unable to relate the two ends — most of Sonnet's inventions in this data are approach clearances
 naming runways the tower is not currently working, so the deterministic engine screens them out; this explains why
-§4.1's visible gap mostly fails to reach §4.2's aggregate numbers. **Fourth**, a hallucination can also suppress a
-real alert without raising a false one: an invented event on a runway not currently in use still costs a true
-detection 14–20% of the time, because the new reservation overwrites whatever that aircraft already held. This
+so the earlier explanation of why §4.1's visible gap failed to reach §4.2's aggregate numbers is withdrawn
+(`risk-score.md`, re-run callout). **Fourth**, a hallucination can also suppress a
+real alert as well as raising one: an invented event on the runway already in use costs a true detection 7–11% of
+the time, because the new reservation overwrites whatever that aircraft already held. This
 failure mode produces no alert, no alarm, and no record that anything happened.
 
 **Alternative explanation: the test set favours the rules parser by construction.** The synthetic positives are
@@ -521,15 +531,15 @@ that environment cannot be made safe by telling controllers to stay vigilant, be
 instruction does not work.
 
 **Flight crews and passengers** bear a failure mode they cannot see. §5 shows that an invented clearance on a runway
-not currently in use produces no false alarm but still costs a true detection 14–20% of the time, because the new
+already in use costs a true detection 7–11% of the time, because the new
 reservation overwrites whatever that aircraft already held. This failure produces no alert, no alarm, and no record
 that anything was missed. Every other error in this study is visible to someone: a false alarm interrupts a
 controller, a missed detection on a labelled positive shows up in a recall figure. This one is visible to nobody,
 and the people exposed to it are the ones furthest from the system.
 
 **Ground vehicle crews** are the group this project's evidence treats worst, and the opening case is the reason.
-Replaying the reconstructed LaGuardia sequence through the rules parser, as scored throughout this report, produced
-no events at all — not the landing clearance, not the crossing clearance (Appendix B). The cause was not the
+Replaying the reconstructed LaGuardia sequence through the rules parser under the ICAO default, as scored
+throughout this report, produced no events at all — not the landing clearance, not the crossing clearance (Appendix B). The cause was not the
 vehicle callsign, which the parser's prefix scan does resolve as `truck one`; it was that LaGuardia's runway 4 is
 spoken as "runway four", and the parser's phrase patterns matched a two-token designator only. `runway four`
 yielded nothing while `runway zero four` yielded a clearance, and this held for every single-digit runway from 1 to
@@ -538,7 +548,9 @@ phrase pattern, not the helper, and it was absent from the module's own document
 shipped, was scored, and sat in the report for a full pass before anyone asked the question that found it.
 
 This matters normatively rather than just as a bug, for two reasons. First, the evaluation could not have found it
-on its own: all 98 scored positives are on runways 13 and 31, and 97% of extracted events in the corpus are on those
+on its own: all 98 scored positives are on runways 13 and 31 — which, since §2's strip fix, are **one runway** to
+the engine, making the scored corpus effectively a single-runway airport — and 97% of extracted events in the
+corpus are on those
 two designators. The 87% recall reported in §4.2 is unaffected by the gap and does not transfer to an
 airport with a single-digit runway. Second, the exposure is not evenly distributed. Single-digit runways, non-airline
 callsigns,
@@ -569,7 +581,7 @@ rate — which is why the failure taxonomy matters more than the headline number
 that the tower channel did not carry a release, or that the compatibility matrix is stricter than practice. So the
 report does not have to argue about whether the system tracks; it can state what was measured. On human transcripts
 both limbs are indistinguishable between the two extractors. Under transcription noise limb (ii) stays
-indistinguishable while limb (i) degrades significantly for the LLM, by 1.5 false alarms per hour (§4.2) — and the
+indistinguishable while limb (i) is pending re-adjudication (§4.2) — and the
 invented-conflict count rises monotonically from 0 for the rules parser to 2 for Sonnet and 4 for Haiku on ASR
 (§4.3). The judge ablation fails both limbs at once, losing 18 points of recall while tripling the false-alarm rate
 (§4.4), which is evidence that removing the structured interface does not buy tracking performance in exchange for
@@ -621,8 +633,10 @@ responsibility gap**: the risk that those designing a system "may not be suffici
 to see and act according to their moral obligations towards the behaviour of the systems they design." That is a
 precise description of a team that wrote 16 matrix cells with 3 citations, measured recall on two runway
 designators, and found its parser's single-digit blind spot only when a reader asked why a US-specific gap should be
-left alone — months after it shipped and was scored. That it was then patched within the same session (Appendix B3)
-is a real mitigation of one instance, not evidence the underlying gap is closed: the same oversight pattern — a
+left alone — months after it shipped and was scored. That it was then addressed in the same session (§7) is a real
+mitigation of one instance, and a partial one: the condition covers clearance extraction but not read-back checking,
+and it is correct by construction rather than by evidence, since no transcript in this corpus exercises it. It is not
+evidence the underlying gap is closed: the same oversight pattern — a
 closed enumeration standing in for a judgement nobody made on purpose — can recur at the next designator, phraseology,
 or jurisdiction nobody happened to test. The decision log, the pre-registered comparison, and the blind two-person
 validation protocol are further real mitigations, and the retraction of our own Milestone 1 determinism claim
@@ -661,21 +675,56 @@ the conflicting clearance was spoken, not by whether the parser could read it.
 own.** `runway four` produces no event where `runway zero four` produces a clearance, for every designator from 1
 to 9, although `normalize_runway` converts both correctly (Appendix B). All 98 scored positives are on runways 13
 and 31, and 97% of extracted events in the corpus carry those two designators, so the reported recall is unaffected
-and does not transfer to an airport with a single-digit runway. The phrasing appears in 69 of 17,039 gold
-transmissions (0.4%), most of them truncated recordings rather than genuine single-digit designators (Appendix B3).
+and does not transfer to an airport with a single-digit runway. The phrasing appears in 110 of 22,956
+transcripts (73 gold, 37 ASR), and **not one is a genuine single-digit designator** — every one is a truncated
+recording (Appendix B3).
 This is not an isolated glitch confined to one incident: replaying the JFK case study through the same code showed
 the identical gap either dropping a real clearance silently or inventing a false alert on a different runway,
 depending only on which of two correctly-issued clearances came first (Appendix B4).
 
-**A candidate fix exists but has not been run through the evaluation in §4.** Relaxing the designator pattern to
-accept a single digit-word is a one-line change. A free spot-check — diffing its output against the current
-patterns over all 17,039 gold transmissions, no re-scoring — shows it is not a strict improvement: alongside the
-genuine single-digit clearances it now reads correctly, 4 transmissions are clipped two-digit recordings it
-misreads as a genuine single-digit designator on the wrong runway, trading one gap for another at the digit
-boundary. Whether that trade is worth making needs the actual recall/false-alarm evaluation, not a diff, so it is
-reported here as the next test (below), not as a result. The same open question applies to "oh" substituted for
-"zero," a documented real-world confusion source with non-native-English controllers that the parser's phrase
-patterns also do not recognise.
+**The fix was made, and the first version of it was wrong in an instructive way.** Relaxing the designator pattern
+to accept a single digit-word is a one-line change, and that is how it was first applied: to every recording. The
+spot-check that followed showed it is not a strict improvement but a trade, and measuring it properly showed the
+trade is entirely one-sided on this data. The relaxed pattern captures a designator the strict one does not in 110
+of 22,956 transcripts (73 gold, 37 ASR), and **not one of those is a genuine single-digit clearance.** Every one is
+a two-word designator clipped by transcription: `"...line up runway three o"` became `LUAW 03` where the strict
+pattern correctly matched nothing and let the window context supply the active runway 13, and
+`"...runway zero niner cleared to land"` became a `NoOp` — the clearance dropped outright, because `"zero"` alone
+normalises to no valid runway. A blanket relaxation therefore buys nothing here and costs 110 misreadings.
+
+**So the fix is not a looser pattern but an extra condition: which convention does this airport speak?** The default
+requires two digit-words, as the scored baseline did — verified identical to it on all 22,956 transcripts, 0
+differences, so no number in §4 moves — and the single-digit reading is enabled per recording
+(`parse_rules.make_parser(single_digit_runways=True)`), for the Austin case studies (KAUS) and the Houston
+reconstruction (KIAH). Under that condition the LaGuardia sequence of §6 extracts `LAND 04` and `CROSS 04` and the
+engine raises the alert it should have raised; under the default it extracts nothing.
+
+**What that says about where the limitation actually sits.** The interesting part is not that one pattern was too
+narrow. It is that the thing standing between this system and a correct reading of LaGuardia was neither extractor's
+ability to understand language — it was whether a phraseology convention had been encoded for that airport. That
+condition sits *in front of* the parser, as a hardcoded fact about the airport, so it does not discriminate between
+extractors at all: once the convention is right, the rules parser and the LLM both read `04L`, and once it is wrong,
+neither can — the LLM is not rescued by being a language model, because the designator it is asked to normalise is
+ambiguous in exactly the same way. The axis this report spends §4 measuring — rules versus LLM — is therefore not
+the axis on which this class of failure lives.
+
+**And our data cannot settle the rest of that axis.** Every airport the corpus names is European or Australian
+(LKPR, LSZH, LSGS, LSZB, LZIB, LKTB, YSSY), none of which uses single-digit designators; 99 of the 110 truncated
+mentions carry no `airport_icao` at all. There is no US airport in the corpus, and even the Houston reconstruction
+never speaks a single-digit designator, so the condition we added is correct by construction and **untestable on the
+evidence available.** The same holds for the other convention we encoded: `"oh"` substituted for `"zero"`, a
+documented confusion source with non-native-English controllers, is now accepted inside a designator — and occurs 0
+times in all 22,956 transcripts, so it too is a robustness claim about ATC phraseology rather than a result about
+this data. Encoding conventions one jurisdiction at a time is not a generalisation strategy; it is a list, and the
+length of that list is a property of the corpus one happens to hold. That is the honest limit of §4's external
+validity, and it is a sharper statement of it than "the corpus has two designators."
+
+**The condition is also not yet applied consistently.** It governs clearance extraction but not read-back checking:
+`readback.extract_items` still requires two digit-words, deliberately, because widening it would make the read-back
+check see a runway item in those same 110 truncated mentions and move every published read-back number. So under the
+single-digit convention the clearance side books `"runway four left"` while the read-back side cannot, and a runway
+read-back miss on a single-digit designator goes undetected. The asymmetry is pinned by a test rather than left to
+be discovered.
 
 **A candidate structural fix — a per-airport runway-validity check, rejecting a designator the recording's airport
 does not actually have — is not buildable with the data this project has.** `recordings.airport_icao` is populated
@@ -778,10 +827,10 @@ its wording, the text is NTSB public record, published incident reporting, or in
 
 | | Appendix | What it contains | Supports |
 |---|---|---|---|
-| **A** | Every divergent case, rules vs Sonnet 5 | All ten gold-transcript disagreements with the events each arm extracted, then all 25 divergences across four arm pairs with mechanism labels | §4.3 |
+| **A** | Every divergent case, rules vs Sonnet 5 | All eleven gold-transcript disagreements (seven positives, four negatives) with the events each arm extracted, then all 25 divergent positives across four arm pairs with mechanism labels | §4.3 |
 | **B** | The LaGuardia replay and the single-digit runway blind spot | The scored pattern catalogue and callsign heuristic verbatim, the opening incident run through the rules parser step by step, the designator test that explains the result, and a second real case (JFK) under both clearance orderings | §1, §2.2.1, §4.3, §4.5, §6.1, §7 |
 | **C** | The LLM extractor's prompt and tool schema | The system prompt and JSON schema verbatim — the only place the model's instructions are fully visible | §2.2.2 |
-| **D** | The compatibility matrix and its doctrinal basis | All 16 cells with their ICAO citation, or the absence of one | §2.3, §6.3 |
+| **D** | The compatibility matrix and its doctrinal basis | All 16 same-end cells plus the 16 opposite-end cells, with their ICAO citation or the absence of one | §2.3, §6.3 |
 | **E** | Adjudication: verdicts, checklist, and agreement | The five verdicts, the written four-step procedure, and the κ breakdown by step | §3.3.2, §6.1 |
 | **F** | The 2026 reconstructions in full | All seven transmissions of the Goa and Houston cases with both arms' events | §4.5 |
 | **G** | Consequence weighting in full | Every perturbation kind, the method, and its caveats | §5 |
@@ -827,7 +876,12 @@ windowed LLM does, and reservation supersession by invented events, which only t
 the §5 suppression finding occurring unprompted — an invented clearance converting a real conflict into a
 compatible pair, with no alert raised to notice.
 
-**Negatives — 3 of 309 (all UWB-ATCC; verdicts from adjudication sheet A)**
+**Negatives — 4 of 309 (all UWB-ATCC; verdicts from adjudication sheet A)**
+
+The fourth is recording 261, which the strip fix newly surfaces and which no one has adjudicated yet: Sonnet
+extracts a `TAKEOFF` on 13 and a `LAND` on 31, two opposite-end departures/arrivals on one strip, which
+`OPPOSITE_MATRIX` rates `alert`. It is the clearest worked example of the fix in the corpus, and it is why every
+RUNWAY false-alarm figure in §4.2 reads `pending`.
 
 | Rec | Rwy | What the rules parser did | What Sonnet did | Verdict | Reading |
 |---|---|---|---|---|---|
@@ -1006,7 +1060,7 @@ Three consequences, stated precisely:
 
 1. **The reported recall is not wrong, but it is narrower than it appears.** All 98 scored positives are on runways
    13 and 31, and 97% of all extracted events in the corpus carry those two designators, so no number in §4 changes.
-2. **The phrasing does occur in this corpus**, in 69 of 17,039 gold transmissions (0.4%). Of the 17 that also carry
+2. **The phrasing does occur in this corpus**, in 110 of 22,956 transcripts (73 gold, 37 ASR). Of the 17 that also carry
    a clearance phrase, most are truncated recordings — "line up runway three o", "hold short of runway one t" —
    where a two-token designator was clipped mid-word rather than a genuine single-digit clearance. We therefore do
    not claim a count of real missed clearances in this corpus.
@@ -1150,7 +1204,10 @@ Rows are the arriving event, columns the reservation already open for a *differe
 | `LUAW` | **alert** | **warning** | **warning** | **warning** |
 | `CROSS` | **alert** | **alert** | **warning** | **ok** |
 
-3 of 16 cells carry a verified ICAO Doc 4444 citation in `MATRIX_BASIS`; the other 13 encode the team's judgement.
+3 of the 16 same-end cells carry a verified ICAO Doc 4444 citation in `MATRIX_BASIS`; the other 13 encode the
+team's judgement. The 16 opposite-end cells (`OPPOSITE_MATRIX`) carry no citation at all by design — the ICAO
+paragraphs cited describe same-direction traffic — so a majority of the alerts the engine now raises rest on the
+team's reading rather than on doctrine.
 A conflict in which either party's callsign is unknown is capped at `warning` by `apply`, whatever this matrix says.
 
 ### D2. Why the uncited cells matter
@@ -1284,15 +1341,19 @@ insert one.
 
 | Error kind | Changed the output | Lost a true detection | Created a false alarm |
 |---|---:|---:|---:|
-| `wrong_runway` | 34% | 54% | **0%** |
+| `wrong_runway` | 23% | 27% | 6% |
 | `dropped` (event removed) | 27% | 45% | **0%** |
 | `wrong_type` | 24% | 26% | 8% |
 | `wrong_callsign` | 19% | 13% | 9% |
 | `spurious`, on a runway in use | 54% | 7% | **37%** |
-| `spurious`, on a runway not in use | 8% | 14% | **0%** |
+| `spurious`, on the strip's other end | 71% | **0%** | **61%** |
 
-*Rules arm, `window` context, gold transcripts. The Sonnet arm and the other gold arms agree within a few points,
-as they should if these are properties of the engine rather than of one extractor.*
+*Rules arm, `window` context, gold transcripts, re-scored after §2's strip fix. All five structured gold arms agree
+on which error kinds sit at the top and bottom of the ordering, as they should if these are properties of the engine
+rather than of one extractor — but they do **not** agree on magnitude: the context-free rules arm puts
+`wrong_runway`'s lost-detection rate at 33% against 49–54% elsewhere, and inverts the false-alarm ordering of
+`wrong_type` and `wrong_callsign`. Read the ordering as the robust part and the percentages as specific to this arm
+(`risk-score.md`).*
 
 Percentages are rates per perturbation opportunity, not per recording: the denominator is the number of events of
 the relevant kind available to perturb, which differs by row. They are therefore **not** convertible into a
@@ -1301,7 +1362,7 @@ per-extractor score without error counts from a properly sampled labelled set (�
 ### G3. The suppression row, stated plainly
 
 `spurious` on a runway not in use is the row that matters most and reads most easily as a null result. It creates a
-false alarm 0% of the time — the engine absorbs it — but it still costs a true detection 14–20% of the time, because
+false alarm 37% of the time and still costs a true detection 7–11% of the time, because
 a new reservation replaces whatever that aircraft already held, rewriting the *kind* of hold open and so the matrix
 cell that would have been consulted. The failure produces no alert, no alarm, and no record. It is the only error
 mode in this study that is invisible to every measure the study reports, and recording 3271 in Appendix A1 is an
@@ -1339,7 +1400,7 @@ fails test collection.
 | Appendix B4, the JFK case under both orderings | the same replay snippet as B1, with the four JFK lines in each order, folded through `atcdb.engine.apply` |
 | Appendix E, the κ figures | `python scripts/eval_conflicts.py adjudicate --kappa` |
 | §2.1 word error rate | `python scripts/score_wer.py` → [`wer-baseline.md`](results/wer-baseline.md) |
-| The full test suite | `.venv/bin/python -m pytest -q` — 390 pass; the two `tests/test_asr.py` failures need a GPU module this machine lacks |
+| The full test suite | `.venv/bin/python -m pytest -q` — 426 pass; the two `tests/test_asr.py` failures need a GPU module this machine lacks |
 
 `data/atc.sqlite` is required only to re-run a paid arm or to regenerate transcripts; it is not on `main` because
 of its size. Install it with
