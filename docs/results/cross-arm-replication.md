@@ -8,14 +8,14 @@ The report's Appendix A inspects rules vs Sonnet 5 on human transcripts. This as
 
 `parse_error` is the only verdict the choice of extractor can move: the other verdicts describe the channel or the engine's framing, not the parse. Counting it per arm states the report's central claim as a count rather than as a confidence interval.
 
-| Arm | parse error | missing release | other frequency | engine rule | genuine | Total |
-|---|---:|---:|---:|---:|---:|---:|
-| rules / gold | 0 | 8 | 0 | 3 | 0 | 11 |
-| Sonnet 5 / gold | 1 | 8 | 0 | 4 | 0 | 13 |
-| Haiku 5.5 / gold | 2 | 9 | 0 | 4 | 0 | 15 |
-| rules / ASR | 0 | 9 | 0 | 3 | 0 | 12 |
-| Sonnet 5 / ASR | 2 | 11 | 0 | 3 | 0 | 16 |
-| Haiku 5.5 / ASR | 4 | 8 | 0 | 3 | 0 | 15 |
+| Arm | parse error | missing release | other frequency | engine rule | genuine | unadjudicated | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| rules / gold | 0 | 8 | 0 | 3 | 0 | 0 | 11 |
+| Sonnet 5 / gold | 1 | 8 | 0 | 4 | 0 | 1 | 14 |
+| Haiku 5.5 / gold | 2 | 9 | 0 | 4 | 0 | 1 | 16 |
+| rules / ASR | 0 | 9 | 0 | 3 | 0 | 0 | 12 |
+| Sonnet 5 / ASR | 2 | 11 | 0 | 3 | 0 | 1 | 17 |
+| Haiku 5.5 / ASR | 4 | 8 | 0 | 3 | 0 | 0 | 15 |
 
 ## 2. Contingency, rules vs each LLM
 
@@ -24,11 +24,11 @@ Each row compares the pre-registered baseline against one LLM arm on the same tr
 | Comparison | Set | n | Both | Rules only | LLM only | Neither |
 |---|---|---:|---:|---:|---:|---:|
 | rules vs Sonnet 5 / gold | positives | 98 | 83 | 2 | 5 | 8 |
-| rules vs Sonnet 5 / gold | negatives | 309 | 10 | 1 | 2 | 296 |
+| rules vs Sonnet 5 / gold | negatives | 309 | 10 | 1 | 3 | 295 |
 | rules vs Haiku 5.5 / gold | positives | 98 | 83 | 2 | 3 | 10 |
-| rules vs Haiku 5.5 / gold | negatives | 309 | 10 | 1 | 3 | 295 |
+| rules vs Haiku 5.5 / gold | negatives | 309 | 10 | 1 | 4 | 294 |
 | rules vs Sonnet 5 / ASR | positives | 98 | 83 | 2 | 6 | 7 |
-| rules vs Sonnet 5 / ASR | negatives | 309 | 11 | 0 | 3 | 295 |
+| rules vs Sonnet 5 / ASR | negatives | 309 | 11 | 0 | 4 | 294 |
 | rules vs Haiku 5.5 / ASR | positives | 98 | 84 | 1 | 4 | 9 |
 | rules vs Haiku 5.5 / ASR | negatives | 309 | 11 | 0 | 3 | 295 |
 
@@ -79,12 +79,15 @@ Classified by `classify()` from the two parties to a RUNWAY conflict: the *trigg
 |---|---:|---|---|
 | rules vs Sonnet 5 / gold | 74 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / gold | 242 | Sonnet 5 only | `parse_error` |
+| rules vs Sonnet 5 / gold | 261 | Sonnet 5 only | `unadjudicated` |
 | rules vs Sonnet 5 / gold | 533 | rules only | `missing_release` |
 | rules vs Haiku 5.5 / gold | 74 | Haiku 5.5 only | `missing_release` |
 | rules vs Haiku 5.5 / gold | 242 | Haiku 5.5 only | `parse_error` |
 | rules vs Haiku 5.5 / gold | 261 | Haiku 5.5 only | `parse_error` |
+| rules vs Haiku 5.5 / gold | 352 | Haiku 5.5 only | `unadjudicated` |
 | rules vs Haiku 5.5 / gold | 533 | rules only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 242 | Sonnet 5 only | `parse_error` |
+| rules vs Sonnet 5 / ASR | 261 | Sonnet 5 only | `unadjudicated` |
 | rules vs Sonnet 5 / ASR | 1969 | Sonnet 5 only | `missing_release` |
 | rules vs Sonnet 5 / ASR | 2306 | Sonnet 5 only | `parse_error` |
 | rules vs Haiku 5.5 / ASR | 242 | Haiku 5.5 only | `parse_error`, `parse_error` |

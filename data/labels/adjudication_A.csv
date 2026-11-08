@@ -144,6 +144,15 @@ key,recording_id,type,runway,tx_id,arms,callsigns,context,verdict,notes
    [controller] air france one nine eight three i estimate two landings standby
    [mixed] standing bye air france one nine eight three r thank you
 >> [controller] csa seven three charlie runway three one three clear to land wind zero two zero degrees nine knots",parse_error,"step 1: no other plane cleared above (set by rule, 2026-11-02)"
+261:RUNWAY:31:5923,261,RUNWAY,31,5923,llm-claude-sonnet-5-window-asr; llm-claude-sonnet-5-window-gold,csa seven three charlie / speed bird eight six one,"   [pilot] three eight whiskey
+   [controller] speed bird eight six one runway one three cleared for immediate takeoff wind zero two zero degrees nine knots
+   [pilot] speed bird eight six one is ready
+   [controller] bye bye
+   [mixed] ruzyne tower csa zero two five ils one three csa zero two five continue approach
+   [pilot] wilco
+   [controller] air france one nine eight three i estimate two landings standby
+   [mixed] standing bye air france one nine eight three r thank you
+>> [controller] csa seven three charlie runway three one three clear to land wind zero two zero degrees nine knots",,
 280:RUNWAY:31:304,280,RUNWAY,31,304,judge-claude-haiku-5-5-sequence-asr; judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / 516 / csa / 730; csa / five / one / six / csa / seven / three / zero; csa seven three zero,"   [controller] csa three sierra lima contact ruzyne ground one two one decimal nine
    [pilot] ground one two one nine csa three sierra lima
    [pilot] ruzyne tower csa seven three zero good morning again
@@ -166,6 +175,12 @@ key,recording_id,type,runway,tx_id,arms,callsigns,context,verdict,notes
    [pilot] two one nine easy five three kilo romeo bye
    [mixed] csa eight two eight runway three one cleared for takeoff wind one eight zero degrees five knots three one cleared for takeoff
 >> [mixed] csa four bravo echo line up runway three one lining up runway three one csa four bravo echo",engine_rule,i think
+352:RUNWAY:13:393,352,RUNWAY,13,393,llm-claude-haiku-5-5-window-gold,austrian seven one zulu / austrian seven one one zulu,"   [pilot] ruzyne tower csa five zero five ils one three
+   [controller] csa five zero five continue approach
+   [controller] csa seven four three continue golf hold short of lima and one two one nine
+   [pilot] via golf hold short of lima one two one nine
+   [controller] austrian seven one one zulu runway one
+>> [mixed] zero eight zero degrees six knots clear to one three land austrian seven one zulu",,
 356:RUNWAY:13:3805,356,RUNWAY,13,3805,judge-claude-haiku-5-5-sequence-asr,csa / nine / five / six,"   [controller] csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots
 >> [controller] csa nine five six runway one three cleared for takeoff wind one five zero degrees three knots",missing_release,"None, the two lines are the same"
 356:RUNWAY:13:12594,356,RUNWAY,13,12594,judge-claude-haiku-5-5-sequence-gold; judge-claude-sonnet-5-sequence-asr; judge-claude-sonnet-5-sequence-gold,csa / nine / five / six / csa / eight / two / six; csa eight two six,"   [controller] csa nine on five six runway one three cleared for takeoff wind one five zero degrees three knots
