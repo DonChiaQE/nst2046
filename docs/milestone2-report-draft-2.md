@@ -29,9 +29,8 @@ they disagree.
 cost of a somewhat higher false-alarm rate from hallucinated events.
 
 **Claim.** On human transcripts, the two extractors are statistically indistinguishable on both recall and false
-alarms: a 3-point recall gap whose 95% confidence interval includes zero, and a false-alarm comparison that is
-pending re-adjudication (§4.2)
-(§4.2). Under transcription noise recall stays indistinguishable; the false-alarm comparison is likewise pending
+alarms: a 3-point recall gap and a 0.8-per-hour false-alarm gap, with 95% confidence intervals that include zero
+(§4.2). Under transcription noise, recall stays indistinguishable but the LLM raises significantly more false alarms
 — the only interval in the study that excludes zero. This supports the direction of our hypothesis but not its
 size: at the level of individual transmissions, the LLM extracts more correctly and hallucinates far more often than
 the aggregate numbers suggest (§4.1), and most of that divergence is absorbed by the engine before it reaches an
@@ -256,17 +255,35 @@ This sheet substitutes for the pre-registered, tower-only event sheet, which was
 |---|---|---|---|
 | **Gold transcripts** | | | |
 | Lenient recall | 87% (80–93%) | 90% (84–95%) | −3.1 pts (−9.2 to +2.0) |
-| RUNWAY false alarms / h | 4.1 (1.9–6.6) | pending | pending over 0 adjudicated negatives |
+| RUNWAY false alarms / h | 4.1 (1.9–6.6) | 4.9 (2.3–7.8) | −0.8 (−2.3 to +0.7) |
 | **ASR transcripts** | | | |
 | Lenient recall | 87% (80–93%) | 91% (85–96%) | −4.1 pts (−10.2 to +1.0) |
-| RUNWAY false alarms / h | 4.5 (2.0–7.3) | pending | pending over 0 adjudicated negatives |
+| RUNWAY false alarms / h | 4.5 (2.0–7.3) | 6.0 (3.0–9.3) | **−1.5 (−3.0 to −0.4)** |
 
 On gold transcripts the two extractors are statistically indistinguishable on both measures. On ASR transcripts,
-recall stays indistinguishable. The false-alarm half of this comparison is withdrawn pending adjudication: the
-strip fix (§2) raises one previously unseen alert on each LLM window arm, and because an unadjudicated alert is
-never folded into a total, the negatives denominator is 0 until those are judged. The pre-fix figures were the only
+recall stays indistinguishable, but Sonnet raises significantly more false alarms — 1.5 per hour more, the only
 interval in this study that excludes zero. Of the recordings where exactly one arm raises a false alarm under ASR,
 Sonnet accounts for 4 and the rules parser for 0.
+
+**Two alerts in this comparison have no adjudication verdict, and they cannot change it.** §2's strip fix raises one
+previously unseen alert on recording 261 and one on 352, at alert keys no adjudication sheet covers, so
+`evaluate.false_alarm_units` raises `Pending` rather than guess a verdict, and `conflict-eval.md` prints `pending`
+for every RUNWAY false-alarm figure. Refusing to guess is the right default — the possible treatments bias in known
+directions — but it says nothing about how much the two verdicts could matter, so we bound it
+(`scripts/pending_sensitivity.py`, free and deterministic). The three treatments below bracket every verdict those
+two alerts could receive:
+
+| Treatment of the 2 pending alerts | rules − Sonnet, ASR | rules − Sonnet, gold |
+|---|---|---|
+| not counted (what `genuine` would do) | −1.51 (−3.02 to −0.36) | −0.75 (−2.30 to +0.74) |
+| recording dropped from the comparison | −1.52 (−3.14 to −0.37) | −0.76 (−2.31 to +0.75) |
+| counted as false alarms (any non-`genuine` verdict) | −1.88 (−3.61 to −0.38) | −1.13 (−2.92 to +0.38) |
+
+The ASR interval excludes zero under all three and the gold interval includes zero under all three, so neither
+conclusion depends on the pending verdicts. §4.2 reports the first row, which is the treatment least favourable to
+the claim that a gap exists; an adjudication finding either alert not-genuine widens the gap rather than closing it.
+We note that dropping the recording — the intuitive fix — is selection on the outcome, since it removes a negative
+*because* an arm alerted on it, and so flatters the arm that alerted; it is shown for comparison, not used.
 
 **Figure 2.** ![Primary comparison: recall and false alarms with 95% CI error bars](figures/fig-primary-comparison.png)
 
@@ -356,7 +373,7 @@ between.
 | Arm (gold transcripts) | Lenient recall | RUNWAY false alarms / h | `parse_error` verdicts |
 |---|---|---|---|
 | Rules, window | 87% (80–93%) | 4.1 (1.9–6.6) | 0 |
-| Sonnet 5 extractor, window | 90% (84–95%) | pending | 1 |
+| Sonnet 5 extractor, window | 90% (84–95%) | 4.9 (2.3–7.8) | 1 |
 | Sonnet 5 judge, sequence | 72% (63–82%) | 14.3 (10.3–18.1) | 7 |
 | Haiku 5.5 judge, sequence | 78% (69–86%) | 14.7 (10.5–19.0) | 9 |
 
@@ -581,7 +598,7 @@ rate — which is why the failure taxonomy matters more than the headline number
 that the tower channel did not carry a release, or that the compatibility matrix is stricter than practice. So the
 report does not have to argue about whether the system tracks; it can state what was measured. On human transcripts
 both limbs are indistinguishable between the two extractors. Under transcription noise limb (ii) stays
-indistinguishable while limb (i) is pending re-adjudication (§4.2) — and the
+indistinguishable while limb (i) degrades significantly for the LLM, by 1.5 false alarms per hour (§4.2) — and the
 invented-conflict count rises monotonically from 0 for the rules parser to 2 for Sonnet and 4 for Haiku on ASR
 (§4.3). The judge ablation fails both limbs at once, losing 18 points of recall while tripling the false-alarm rate
 (§4.4), which is evidence that removing the structured interface does not buy tracking performance in exchange for
@@ -878,10 +895,12 @@ compatible pair, with no alert raised to notice.
 
 **Negatives — 4 of 309 (all UWB-ATCC; verdicts from adjudication sheet A)**
 
-The fourth is recording 261, which the strip fix newly surfaces and which no one has adjudicated yet: Sonnet
-extracts a `TAKEOFF` on 13 and a `LAND` on 31, two opposite-end departures/arrivals on one strip, which
-`OPPOSITE_MATRIX` rates `alert`. It is the clearest worked example of the fix in the corpus, and it is why every
-RUNWAY false-alarm figure in §4.2 reads `pending`.
+The fourth is recording 261, which §2's strip fix newly surfaces and which no one has adjudicated yet: Sonnet
+extracts a `TAKEOFF` on 13 and a `LAND` on 31 — a departure and an arrival from opposite ends of one strip, which
+`OPPOSITE_MATRIX` rates `alert`. It is the clearest worked example of the fix in the corpus. Recording 352 carries
+the second unadjudicated alert. `evaluate.false_alarm_units` refuses to return a rate while any alert lacks a
+verdict, which is why `conflict-eval.md` prints `pending`; §4.2 reports the interval anyway, bounded by the
+sensitivity analysis below.
 
 | Rec | Rwy | What the rules parser did | What Sonnet did | Verdict | Reading |
 |---|---|---|---|---|---|
