@@ -14,14 +14,14 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from atcdb.evaluate import alert_keys, detection, read_verdicts, usable  # noqa: E402
+from atcdb.evaluate import (alert_keys, caught, detection, false_alarms, read_rows,  # noqa: E402
+                            read_verdicts, scored, usable)
 
 ROWS = ROOT / "data/eval/conflicts"
 LABELS = ROOT / "data/labels"
@@ -29,18 +29,8 @@ RELEASES = ("VACATED", "GOAROUND", "HANDOFF")
 
 
 def load(arm: str, valid: set[int]) -> dict[int, dict]:
-    """The arm's rows by recording, positives limited to the injections the human check accepted."""
-    rows = (json.loads(line) for line in (ROWS / f"{arm}.jsonl").open())
-    return {r["recording_id"]: r for r in rows if r["set"] != "positives" or r["recording_id"] in valid}
-
-
-def caught(row: dict) -> bool:
-    return detection(row) in ("strict", "lenient")
-
-
-def false_alarms(row: dict, verdicts: dict[str, str]) -> set[str]:
-    """The arm's RUNWAY alerts on this recording that adjudication did not call genuine."""
-    return {k for k in alert_keys(row, "RUNWAY") if verdicts.get(k) != "genuine"}
+    """The arm's stored rows by recording, positives limited to the injections the human check accepted."""
+    return scored(read_rows(ROWS / f"{arm}.jsonl"), valid)
 
 
 def on_runway(row: dict, runway: str) -> list[tuple[int, list]]:
