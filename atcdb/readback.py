@@ -20,6 +20,12 @@ ITEM_PATTERNS = [
     ("altitude", re.compile(rf"\b({D} thousand(?: {D} hundred)?) feet\b")),
     ("heading", re.compile(rf"\bheading ({D} {D} {D})\b")),
     ("squawk", re.compile(rf"\bsqu?awk ({D} {D} {D} {D})\b")),
+    # Two digit-words only, deliberately, and NOT switched by `parse_rules.make_parser`'s single-digit convention:
+    # widening it would make the readback check see a runway item in the 110 ASR-truncated mentions ("runway three o")
+    # that carry no designator, changing every published readback number for a convention no transcript here uses.
+    # The cost is a real asymmetry -- under that convention the clearance side books "runway four left" while this
+    # side cannot, so a runway read-back miss on a single-digit designator is not detected. See
+    # tests/test_readback.py, the asymmetry test, and report §7.
     ("runway", re.compile(rf"\brunway ({D} {D}(?: left| right| centre| center)?)\b")),
 ]
 CUE_RE = re.compile(r"\b(i say again|say again|confirm|correction|sorry|repeat|negative|standby)\b")

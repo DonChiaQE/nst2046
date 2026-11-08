@@ -162,6 +162,10 @@ class State:
 # Bumped by hand whenever a change to the rules below can change what the engine tracks. `window`-mode parses see the
 # engine's active runways and callsigns, so the events cache keys them by this too (spec addendum A.7.2).
 # "1" = the engine after phase 2.5.
+# Not bumped for the strip fix: `apply` relates the two ends of a strip when *checking* a clearance, but reservations
+# are still stored only under the designator cleared, so `state.runways`' keys -- and therefore the `active_runways` a
+# window-mode parse sees -- are unchanged. Window cache keys stay valid only because of that. Bump this if a
+# reservation is ever stored under the reciprocal end.
 ENGINE_VERSION = "1"
 
 # A reservation (or hold-short) older than its kind's timeout, in transmission time, is dropped silently: we missed the
@@ -273,8 +277,16 @@ def apply(state: State, event: Event) -> tuple[State, list[Conflict]]:
     elif isinstance(event, HoldShort):
         if cs:
             # "hold short runway 13" cancels this aircraft's clearance for 13; a hold-short of another runway releases
-            # nothing (a crossing clearance for 13 often ends "... hold short of runway 24").
+            # nothing (a crossing clearance for 13 often ends "... hold short of runway 24"). It also cancels a
+            # clearance held from the strip's other end, because `apply` above relates the two ends: without this,
+            # "cross 31" then "hold short 13" left the crossing open and a later landing on 13 raised a false alert
+            # against an aircraft that had just been told to stay off that strip. Releasing one end and checking both
+            # is the asymmetry that bug came from.
+            other_end = reciprocal(event.runway)
             runways, dropped = _release(runways, cs, runway=event.runway)
+            if other_end != event.runway:
+                runways, dropped_other = _release(runways, cs, runway=other_end)
+                dropped = dropped or dropped_other
             aircraft[cs] = replace(ac, runway=None if dropped else ac.runway, kind=None if dropped else ac.kind,
                                    holding_short=event.runway, holding_short_t=event.t,
                                    pending=event.text or ac.pending, last_seq=seq)

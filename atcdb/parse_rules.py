@@ -32,8 +32,10 @@ _SIDE = r"(?: left| right| centre| center)?"
 # left"), and `_DESIG_US` matches that. It is NOT the default: on a corpus where two digit-words are always spoken, a
 # lone digit-word is an ASR truncation ("runway three o", "runway two"), and accepting it turns a truncation into a
 # confident wrong designator instead of letting `_runway_for` fall back to the active runway. Measured on this corpus:
-# 109 transcripts (72 gold, 37 ASR) carry a lone digit-word after "runway" and not one is a real single-digit
-# designator -- every airport here is European or Australian (LKPR, LSZH, LSGS, LSZB, LZIB, LKTB, YSSY). So the
+# 110 transcripts (73 gold, 37 ASR) carry a lone digit-word after "runway" and not one is a real single-digit
+# designator. Every airport the corpus names is European or Australian (LKPR, LSZH, LSGS, LSZB, LZIB, LKTB,
+# YSSY) and none uses single-digit designators; 99 of the 110 carry no airport tag at all, so the evidence is
+# the designators themselves, not the metadata. So the
 # relaxed pattern is opt-in per replay, via `make_parser(single_digit_runways=True)`.
 _D_RWY = rf"(?:{D}|oh)"
 _DESIG = rf"{_D_RWY} {_D_RWY}{_SIDE}"

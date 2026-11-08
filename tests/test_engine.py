@@ -410,3 +410,24 @@ def test_unresolved_is_counted_and_changes_nothing_else():
     assert c == [] and after.ignored == 1
     assert (after.runways, after.aircraft) == (state.runways, state.aircraft)
     assert isinstance(ENGINE_VERSION, str) and ENGINE_VERSION
+
+
+# --- one strip, both directions: detection and release must agree ----------------------------------------------
+
+def test_holding_short_of_one_end_releases_a_clearance_held_from_the_other():
+    """`apply` checks a clearance against reservations at both ends, so release has to match. While it did not, an
+    aircraft told to hold short of the strip still read as holding a crossing on the far end, and the next landing
+    raised an alert against it."""
+    _, conflicts = fold([ClearToCross(callsign="b", runway="31", t=0.0, text=""),
+                         HoldShort(callsign="b", runway="13", t=1.0, text=""),
+                         ClearToLand(callsign="a", runway="13", t=2.0, text="")])
+    assert conflicts == []
+
+
+def test_holding_short_of_an_unrelated_runway_still_releases_nothing():
+    """The counterexample the release rule exists for: a crossing clearance for 13 often ends "... hold short of
+    runway 24", which must not cancel the crossing."""
+    _, conflicts = fold([ClearToCross(callsign="b", runway="13", t=0.0, text=""),
+                         HoldShort(callsign="b", runway="24", t=1.0, text=""),
+                         ClearToLand(callsign="a", runway="13", t=2.0, text="")])
+    assert [c.severity for c in conflicts] == ["alert"]

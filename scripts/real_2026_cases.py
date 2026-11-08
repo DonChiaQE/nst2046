@@ -181,7 +181,9 @@ def summary_lines(totals: dict) -> list[str]:
     plus one conflicting clearance to alert. Extracted from `main` so the guard is testable -- the earlier version
     asserted the claim unconditionally and warned only at two or more, so one reservation printed it silently.
     """
-    worst = max(totals.values()) if totals else 0
+    if not totals:   # nothing was replayed, so the claim below is unverified rather than confirmed
+        return ["  ! No arm produced any output, so the \u00a74.5 claim was not checked by this run."]
+    worst = max(totals.values())
     if worst == 0:
         head = ["  Every arm produces 0 runway reservations on both cases, so no alert can be raised by any extractor."]
     else:

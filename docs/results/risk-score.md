@@ -23,11 +23,15 @@ engine's output, and the ones that do reach it do not all cause the same harm.
 > - **Still holds:** finding 1, and finding 2 for `dropped` (it costs recall, 38 to 45%, and never raises a false alarm).
 > - **No longer holds:** `wrong_runway` now raises a false alarm 5 to 6% of the time and loses a true detection 25 to
 >   27% (it was 0% and 49 to 54%), so it is not an omission-like error. Finding 3's 0% floor was the blind spot itself:
->   an invented landing on the other end of a working strip raises a false alarm 49 to 62% of the time, more than one on
+>   an invented landing on the other end of a working strip raises a false alarm 49 to 61% of the time, more than one on
 >   the busiest end, because two landings from opposite ends are head-on. On a corpus of one strip there is no unused
 >   runway for an invention to land on harmlessly.
 > - **Survives, smaller:** finding 4 holds through `spurious_inuse` only, at 7 to 11%. `spurious_other` now loses no
 >   detection, because the invented reservation sits on the same strip and still conflicts with the later clearance.
+>
+> A follow-up fix on 08 Nov 2026 made a hold-short release a clearance held from the strip's other end, so
+> release matches the detection rule above; that moved `spurious_other`'s false-alarm rate on the rules
+> stream from 62% to 61% and nothing else (the Sonnet stream is unchanged).
 >
 > The prose under "What the weights say" was rewritten against these tables on 08 Nov 2026. The three
 > bullets above are kept as the record of what the strip fix changed and why.
@@ -44,7 +48,7 @@ the 98 positives; "created a false alarm" over perturbations on the 309 real neg
 | `wrong_callsign` | 648 | 19% | 13% | 9% |
 | `dropped` | 703 | 27% | 45% | 0% |
 | `spurious_inuse` | 2094 | 54% | 7% | 37% |
-| `spurious_other` | 2094 | 71% | 0% | 62% |
+| `spurious_other` | 2094 | 71% | 0% | 61% |
 
 Same study on the Sonnet 5 arm's event stream, as a check that these are properties of the engine and not of one
 parser's output:
@@ -78,7 +82,7 @@ here on our own pipeline -- but it understates how much *not inventing things* m
 **2. Omission and invention cause opposite harms, and only omission is now clean.** `dropped` is the pure omission:
 it costs recall (38 to 45% of the perturbations that land on a positive) and raises a false alarm **0% of the time, on
 every arm**. Invention is the mirror image: `spurious_other` loses no true detection at all (0%) and raises a false
-alarm 49 to 62% of the time. Neither is "worse" -- they are harms of different kinds, which is why a single scalar
+alarm 49 to 61% of the time. Neither is "worse" -- they are harms of different kinds, which is why a single scalar
 score would hide this result rather than express it. What no longer holds is treating `wrong_runway` as omission-like:
 since the engine relates the two ends of a strip, a misread designator can land on the same tarmac and conflict, so it
 now both loses detections (25 to 27%) and raises false alarms (5 to 6%).
@@ -86,7 +90,7 @@ now both loses detections (25 to 27%) and raises false alarms (5 to 6%).
 **3. An invented clearance is most dangerous on the *other* end of a working strip.** This is the sharpest number
 here, and it reverses the pre-fix reading. A spurious landing clearance on the recording's busiest runway creates a
 false alarm 30 to 37% of the time; the same invented event on a runway the recording "never uses" creates one 49 to
-62% of the time -- more, not less. On a corpus with one active strip there is no harmlessly unused runway: the other
+61% of the time -- more, not less. On a corpus with one active strip there is no harmlessly unused runway: the other
 designator is the reciprocal end, and two landings from opposite ends are head-on, so `OPPOSITE_MATRIX` rates the pair
 `alert` where the same-direction pair is legal. `spurious_other` is accordingly the single most consequential
 perturbation in the study, changing the output 60 to 71% of the time.

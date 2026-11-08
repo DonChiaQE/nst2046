@@ -121,3 +121,16 @@ def test_build_pairs_rebuild_updates_items_in_place_keeping_ids(tmp_path, fixtur
     ids_after = [r[0] for r in conn.execute("SELECT id FROM readback_pairs ORDER BY id")]
     assert ids_after == ids_before
     assert conn.execute("SELECT count(*) FROM readback_pairs WHERE n_items > 0").fetchone()[0] == 2
+
+
+def test_the_runway_item_stays_icao_only_even_where_the_parser_reads_a_single_digit():
+    """A deliberate asymmetry, pinned so it is not "fixed" by accident.
+
+    `parse_rules.make_parser(single_digit_runways=True)` reads "runway four left" as 04L for a US tower, but this
+    extractor keeps requiring two digit-words, so a runway read-back miss on a single-digit designator is not
+    detected. Widening it would make the readback check see a runway item in the 110 ASR-truncated mentions
+    ("runway three o") that carry no designator, changing every published readback number for a convention no
+    transcript in this corpus uses. Report §7 states the limitation.
+    """
+    assert extract_items("cleared to land runway four left") == []
+    assert extract_items("cleared to land runway zero four left") == [("runway", "zero four left")]

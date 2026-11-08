@@ -209,7 +209,7 @@ def test_the_default_refuses_a_lone_digit_word_so_a_truncation_is_not_read_as_a_
     """Two digit-words are always spoken at the airports in this corpus, so a lone one is an ASR truncation.
 
     Reading it as a designator invents a runway the transmission never named; refusing it lets `_runway_for` fall
-    back to the active runway in window context. 109 transcripts (72 gold, 37 ASR) have this shape and not one is a
+    back to the active runway in window context. 110 transcripts (73 gold, 37 ASR) have this shape and not one is a
     real single-digit designator.
     """
     assert all(r is None for _, _, r in _kinds(parse(_tx(text), CTL)))

@@ -15,7 +15,7 @@ from atcdb import parse_llm, parse_rules
 from atcdb.engine import RESERVATION_KINDS, ClearTakeoff, HoldShort
 from atcdb.incidents import fold_window as fold
 from atcdb.parsing import KINDS
-from scripts.real_2026_cases import (
+from scripts.real_2026_cases import (SINGLE_DIGIT_CASES,
     PROVENANCE_API, PROVENANCE_TRANSCRIBED, SHEET, cases, derive, drift, load_recorded,
     record, recording_path, reservations_in, show,
 )
@@ -223,3 +223,20 @@ def test_one_reservation_is_enough_to_withdraw_the_claim():
     assert "Every arm produces 0 runway reservations" not in lines
     assert "produced 1 runway reservation(s)" in lines
     assert "max reservations in any arm: 1" in lines
+
+
+def test_each_case_is_replayed_under_its_own_airport_convention():
+    """`main` picks the parser per case through `SINGLE_DIGIT_CASES`, while the tests above call `parse_rules.parse`
+    directly and so exercise the ICAO default only. This pins the choice itself, and pins that it changes nothing
+    for these two reconstructions: neither transcript carries a lone digit-word after "runway", which is the §7
+    finding -- even the US case never speaks a single-digit designator, so the convention is untestable on the data
+    available.
+    """
+    by_case = cases(SHEET)
+    assert SINGLE_DIGIT_CASES == {"houston-2026-04-24"}
+    assert set(by_case) == {"goa-2026-04-03", "houston-2026-04-24"}
+    for case, txs in by_case.items():
+        strict = [KINDS[type(e)] for _, events, _ in fold(txs, parse_rules.make_parser()) for e in events]
+        relaxed = [KINDS[type(e)] for _, events, _ in
+                   fold(txs, parse_rules.make_parser(single_digit_runways=True)) for e in events]
+        assert strict == relaxed, case
