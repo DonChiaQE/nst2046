@@ -1,0 +1,4 @@
+region,year_or_fy,total_incursions,rate_per_million_ops,category_ab,source
+US,FY2024,1758,,9,DOT OIG AV2025026 p.4
+US,FY2023,,32,22,DOT OIG AV2025026 p.4; FAA RIM FY2023 summary (rate)
+US,FY2022,,33,,FAA RIM FY2023 summary (rate)
