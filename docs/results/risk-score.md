@@ -4,6 +4,10 @@ Milestone 1 committed to a consequence-weighted Risk Score after Chang et al. (2
 perturbing gold events, like a wrong runway, a wrong type, a wrong callsign, a missed event, or a spurious event, and
 observing how the engine's output changes as a result". This is that measurement.
 
+What this measures is the **engine's sensitivity** to each class of extraction error -- not a score attached to an
+alert, and not a per-parser score (see the last caveat). Read it as: if an extractor makes this kind of mistake, how
+often does the mistake reach the engine's output, and what does it do when it gets there.
+
 Each perturbation edits **one** event in a recording's stored event stream and re-folds the stream through the engine.
 Nothing is re-parsed and no API call is made, so this is free and reproducible: `python scripts/risk_score.py`
 (`--all` for every structured arm on gold transcripts). Perturbations are deterministic.
@@ -72,10 +76,17 @@ is invisible to any metric that counts false alarms.
 
 ## Caveats
 
-- The perturbed streams are an extractor's output, not human gold events: the pre-registered event sheets were never
-  labelled (`decisions.md`, 2026-10-22). The rules parser invented 0 events on the 200 labelled instructions, so its
-  stream is the closest available stand-in; running the study on the Sonnet stream as well is the check that the
-  result does not depend on this choice.
+- The perturbed streams are an extractor's output, not human gold events, and no labelled stream could have been
+  substituted. The pre-registered Level 1 event sheets were never labelled (`decisions.md`, 2026-10-22), and the 200
+  labelled instructions that do exist (`data/labels/pair_events_A.csv`) are a per-transmission sample rather than
+  labelled recordings: 183 of their 191 recordings carry exactly one labelled transmission, only 20 of the 407 scored
+  recordings appear among them at all, none of the labelled transmissions is an injection trigger, and they have no
+  second annotator (the kappa of 0.80 in `conflict-eval.md` is for alert verdicts, not for events). A consequence
+  study has to fold a whole recording through the engine to see a conflict appear or vanish, which a single labelled
+  line inside an otherwise unlabelled recording cannot support. What those labels do establish is that the rules
+  parser invented 0 events across all 200 instructions, so its stream is the closest available stand-in. The real
+  check, though, is that this measures a property of **the engine** rather than of one parser: the study repeated on
+  the Sonnet stream, and on all four structured gold arms, agrees on the ordering and roughly on the magnitudes.
 - One edit at a time. Real extractors make correlated errors (an ASR digit failure corrupts the runway for every
   transmission that mentions it), and those are not modelled.
 - `spurious` is modelled as an invented LAND for a callsign the engine has already heard, inserted on a transmission

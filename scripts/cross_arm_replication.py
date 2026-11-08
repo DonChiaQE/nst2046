@@ -75,9 +75,15 @@ def reservations_on(row: dict, runway: str) -> list[tuple[int, str, str]]:
 
     This is extraction, not state: a reservation here may since have been released. Use `holders` for what the engine
     believes is open.
+
+    Both ends of the strip count: `engine.apply` checks a new clearance against reservations held from either end
+    (13 and 31 are one piece of tarmac), so a function that matched the designator string alone would report no
+    extracted reservation behind a conflict the engine really did raise -- and every divergent positive here is on
+    13/31. `holders` needs no equivalent change: it folds through `engine.apply` and so inherits the rule.
     """
+    ends = {runway, engine.reciprocal(runway)}
     return [(step, e[0], e[1]) for step, events in enumerate(row["events"]) for e in events
-            if e[0] in RESERVATIONS and e[2] == runway]
+            if e[0] in RESERVATIONS and e[2] in ends]
 
 
 def trigger_step(row: dict) -> int | None:

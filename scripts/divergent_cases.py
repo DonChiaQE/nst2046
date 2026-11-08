@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from atcdb.engine import reciprocal  # noqa: E402
 from atcdb.evaluate import (alert_keys, caught, detection, false_alarms, read_rows,  # noqa: E402
                             read_verdicts, scored, usable)
 
@@ -34,9 +35,15 @@ def load(arm: str, valid: set[int]) -> dict[int, dict]:
 
 
 def on_runway(row: dict, runway: str) -> list[tuple[int, list]]:
-    """Every event this arm extracted that touches `runway`, plus the releases, with the step it came from."""
+    """Every event this arm extracted that touches `runway`, plus the releases, with the step it came from.
+
+    Both ends of the strip count: `engine.apply` checks a clearance against reservations held from either end, so
+    listing one designator alone would omit the very event that explains a conflict on 13 raised against a holder
+    on 31.
+    """
+    ends = {runway, reciprocal(runway)}
     return [(step, e) for step, events in enumerate(row["events"]) for e in events
-            if e[2] == runway or e[0] in RELEASES]
+            if e[2] in ends or e[0] in RELEASES]
 
 
 def main() -> None:
@@ -67,12 +74,20 @@ def main() -> None:
                 and bool(false_alarms(a[r], verdicts)) != bool(false_alarms(b[r], verdicts))]:
         print(f"\nrecording {rid}  false alarm on "
               f"{args.a if false_alarms(a[rid], verdicts) else args.b} only")
+        # The runways either arm raised a RUNWAY conflict on. Both arms are then printed on the same runways, so the
+        # arm that stayed silent is shown on the runway it stayed silent about -- which is the comparison.
+        runways = sorted({c["runway"] for row in (a[rid], b[rid]) for c in row["conflicts"] if c["type"] == "RUNWAY"})
         for name, row in ((args.a, a[rid]), (args.b, b[rid])):
             conflicts = [(c["severity"], c["runway"], c["callsigns"]) for c in row["conflicts"] if c["type"] == "RUNWAY"]
             seen = sorted(alert_keys(row, "RUNWAY"))
             print(f"  {name}")
             print(f"    RUNWAY conflicts: {conflicts or 'none'}")
             print(f"    verdicts:         {[verdicts.get(k, 'unadjudicated') for k in seen] or 'none'}")
+            for runway in runways:   # what each arm extracted there: a false alarm is an extraction difference
+                extracted = on_runway(row, runway)
+                print(f"    extracted on runway {runway}:" + ("" if extracted else " nothing"))
+                for step, e in extracted:
+                    print(f"      step {step:>3}  {e[0]:<10} runway={str(e[2]):<5} callsign={e[1]!r}")
 
 
 if __name__ == "__main__":

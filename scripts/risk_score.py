@@ -23,6 +23,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+# The other end of the same strip (13 <-> 31). The realistic runway confusion -- an ASR digit error, or a
+# parser reading the wrong end -- so it is the perturbation most likely to matter. Shared with the engine
+# rather than redefined here, so a perturbation can never disagree with the engine about what one strip is.
+from atcdb.engine import reciprocal  # noqa: E402
 from atcdb.evaluate import alert_key, detection, refold, usable  # noqa: E402
 
 ROWS = Path("data/eval/conflicts")
@@ -34,18 +38,6 @@ RELEASES = ("VACATED", "GOAROUND", "HANDOFF")
 NEXT_KIND = {"LAND": "TAKEOFF", "TAKEOFF": "LUAW", "LUAW": "CROSS", "CROSS": "LAND"}
 
 KINDS = ("wrong_runway", "wrong_type", "wrong_callsign", "dropped", "spurious_inuse", "spurious_other")
-
-
-def reciprocal(runway: str) -> str:
-    """The other end of the same strip: 13 -> 31, 18L -> 36R. This is the realistic runway confusion (an ASR digit
-    error, or a parser reading the wrong end), and the engine treats the two ends as unrelated runways, so it is also
-    the perturbation most likely to matter."""
-    digits = "".join(c for c in runway if c.isdigit())
-    side = runway[len(digits):].upper()
-    if not digits:
-        return runway
-    n = ((int(digits) + 18 - 1) % 36) + 1
-    return f"{n:02d}{ {'L': 'R', 'R': 'L'}.get(side, side) }".replace(" ", "")
 
 
 def perturbations(row: dict) -> list[tuple[str, list[list]]]:

@@ -256,13 +256,15 @@ def main() -> None:
             totals[(case, m)] = show(f"{case}, {m}", rows)
 
     print("\n== summary ==")
-    print("  Every arm produces 0 runway reservations on both cases, so no alert can be raised by any extractor.")
+    worst = max(totals.values()) if totals else 0
+    if worst == 0:
+        print("  Every arm produces 0 runway reservations on both cases, so no alert can be raised by any extractor.")
+    else:   # a single reservation already falsifies the sentence above, so it must not be printed alongside it
+        print(f"  ! An arm produced {worst} runway reservation(s), so the \u00a74.5 claim below no longer holds as")
+        print("    written: with a reservation open, an extractor can raise an alert. Re-check before citing it.")
     print("  The engine recognises only LAND, TAKEOFF, LUAW and CROSS; Goa is a backtrack incursion and Houston is")
     print("  a callsign-confusion event, so both lie outside what the conflict model represents (report \u00a74.5).")
-    worst = max(totals.values()) if totals else 0
     print(f"  max reservations in any arm: {worst}")
-    if worst >= 2:
-        print("  ! An arm produced two or more reservations: the \u00a74.5 claim no longer holds as written.")
 
 
 if __name__ == "__main__":
