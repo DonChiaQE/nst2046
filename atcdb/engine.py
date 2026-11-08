@@ -22,7 +22,10 @@ _RUNWAY_RE = re.compile(r"^(\d{1,2})([lrc])?$")
 
 def normalize_runway(text: str) -> str | None:
     """'three one' -> '31', 'one six right' -> '16R', '16r' -> '16R', 'four left' -> '04L'. None if it is not a runway
-    designator. A single digit is zero-padded: US controllers say "runway four left" where ICAO says "zero four left"."""
+    designator. A single digit is zero-padded: US controllers say "runway four left" where ICAO says "zero four left".
+    Deliberately does not accept 'oh' for zero: this function is shared by the rules parser, the LLM parser
+    (atcdb/parse_llm.py), the judge and the injection generator, each with its own hand-bumped cache version, so
+    widening it here would silently invalidate four cache domains at once. atcdb/parse_rules.py handles 'oh' locally."""
     words = (text or "").strip().lower().split()
     if not words:
         return None
@@ -190,6 +193,16 @@ _PHRASE = {"LAND": "a landing clearance", "TAKEOFF": "a takeoff clearance",
 
 def _name(callsign: str) -> str:
     return callsign or "an unidentified aircraft"
+
+
+def reciprocal(runway: str) -> str:
+    """The other end of the same strip, for a normalized designator: 13 -> 31, 04 -> 22, 18L -> 36R, 06C -> 24C.
+    Returned unchanged when `runway` is not a two-digit designator, so callers can apply it blindly."""
+    m = re.match(r"^(\d{2})([LRC]?)$", runway)
+    if not m:
+        return runway
+    number = (int(m.group(1)) + 17) % 36 + 1
+    return f"{number:02d}{ {'L': 'R', 'R': 'L'}.get(m.group(2), m.group(2)) }"
 
 
 def _release(runways: dict[str, tuple[Reservation, ...]], callsign: str, kinds: tuple[str, ...] = RESERVATION_KINDS,

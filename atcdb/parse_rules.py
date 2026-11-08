@@ -12,7 +12,7 @@ from atcdb.engine import (ClearTakeoff, ClearToCross, ClearToLand, Event, GoArou
 from atcdb.parsing import Context, Transmission
 from atcdb.readback import D, ITEM_PATTERNS
 
-VERSION = "v1"
+VERSION = "v3"
 
 DIGITS = set("zero one two three four five six seven eight nine niner".split())
 NATO = set("alfa alpha bravo charlie delta echo foxtrot golf hotel india juliett juliet kilo lima mike november oscar oskar "
@@ -21,13 +21,29 @@ FILLER = set("roger ok okay tower ground hello hi good morning afternoon evening
              "wilco affirm yes yeah we are will expedite to the now sir again say please confirm correct that s is it for of "
              "your wait ruzyne".split())
 _SIDE = r"(?: left| right| centre| center)?"
-RUNWAY_RE = re.compile(rf"\brunway ({D} {D}{_SIDE})\b")
+# A runway designator is two digit-words in ICAO practice ("zero four") but US controllers commonly drop the
+# leading zero and speak the single digit ("four") -- see atcdb.engine.normalize_runway, which already zero-pads a
+# lone digit correctly. v1's phrase patterns required two digit-words and so never matched a single-digit mention
+# at all (report Appendix B); `_DESIG` is the v2 fix: the second digit-word is optional, so "four left" and "zero
+# four left" both match, while the greedy `?` still prefers consuming a second digit-word when one follows, so a
+# genuine two-digit designator is unaffected.
+# `_D_RWY` (v3) additionally accepts "oh" for a zero digit-word -- a colloquial substitution reported in
+# non-native-English ATC communications (report §7) -- but only inside a runway designator. It deliberately does
+# not extend the shared `D`/`DIGITS` used for callsigns and the other item patterns in atcdb.readback: "oh" is a
+# common interjection elsewhere in a transcript ("oh, roger"), and widening digit-word recognition there would risk
+# misreading it as part of a callsign or another field. `_desig` rewrites "oh" to "zero" before handing the match to
+# `engine.normalize_runway`, keeping the colloquialism local to this parser: `normalize_runway` is shared with the LLM
+# parser, the judge and the injection generator, which key their caches on their own versions, so changing it there
+# would invalidate those caches too (and cost a paid re-run) for a rules-parser-only fix.
+_D_RWY = rf"(?:{D}|oh)"
+_DESIG = rf"{_D_RWY}(?: {_D_RWY})?{_SIDE}"
+RUNWAY_RE = re.compile(rf"\brunway ({_DESIG})\b")
 INSTRUCTION_RES = [   # kind, phrase regex. CROSS / HOLD_SHORT capture their runway directly.
     ("LAND", re.compile(r"\bclear(?:ed)? to land\b")),
     ("TAKEOFF", re.compile(r"\bclear(?:ed)? (?:for|to) take ?off\b")),
     ("LUAW", re.compile(r"\bline up\b")),
-    ("CROSS", re.compile(rf"\b(?:cross|crossing) runway ({D} {D}{_SIDE})\b")),
-    ("HOLD_SHORT", re.compile(rf"\bhold(?:ing)? short(?: of)?(?: runway)? ({D} {D}{_SIDE})\b")),
+    ("CROSS", re.compile(rf"\b(?:cross|crossing) runway ({_DESIG})\b")),
+    ("HOLD_SHORT", re.compile(rf"\bhold(?:ing)? short(?: of)?(?: runway)? ({_DESIG})\b")),
 ]
 HANDOFF_RE = re.compile(r"\bcontact (?:[a-z]+ ){0,2}?(ground|apron|departure|tower|approach|radar)\b")
 GO_AROUND_RE = re.compile(r"\bgo around\b")
@@ -133,12 +149,18 @@ def snap_callsign(raw: str, candidates: tuple[str, ...]) -> str:
     return hits[0] if len(hits) == 1 else raw
 
 
+def _desig(text: str) -> str | None:
+    """`engine.normalize_runway` for a designator captured by `_DESIG`, with "oh" read as the zero digit-word. The
+    substitution lives here, not in `normalize_runway`, for the reason given in the `_D_RWY` note above."""
+    return normalize_runway(" ".join("zero" if w == "oh" else w for w in text.split()))
+
+
 def _runway_for(text: str, m: re.Match, kind: str, ctx: Context) -> str | None:
     if kind in ("CROSS", "HOLD_SHORT"):
-        return normalize_runway(m.group(1))
+        return _desig(m.group(1))
     mentions = [(min(abs(r.start() - m.end()), abs(m.start() - r.end())), r.group(1)) for r in RUNWAY_RE.finditer(text)]
     if mentions:
-        return normalize_runway(min(mentions)[1])
+        return _desig(min(mentions)[1])
     if ctx.mode == "window" and len(ctx.active_runways) == 1:
         return ctx.active_runways[0]
     return None
