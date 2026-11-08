@@ -1,4 +1,4 @@
-# Conflict detection, Level 2 (07 Nov 2026)
+# Conflict detection, Level 2 (08 Nov 2026)
 
 Positives are synthetic conflicts injected into real tower recordings and accepted by a human check; negatives are the unperturbed real recordings. Recall is lenient (an alert on the injected runway at or after the trigger transmission) unless marked strict (at the trigger). A false alarm is an alert on a negative that adjudication did not find genuine; rates are per hour of recording span. Intervals are 95% percentile bootstrap intervals over recordings (2,000 resamples, seed 0).
 
@@ -10,6 +10,15 @@ Positives are synthetic conflicts injected into real tower recordings and accept
 | RUNWAY false alarms / h | 4.1 (1.9 to 6.6) | 4.9 (2.3 to 7.8) | -0.8 (-2.3 to +0.7) over 309 negatives |
 
 Case by case, positives caught: both 83, rule-rules-window-gold only 2, llm-claude-sonnet-5-window-gold only 5, neither 8. Negatives with a RUNWAY false alarm: both 10, rule-rules-window-gold only 1, llm-claude-sonnet-5-window-gold only 2, neither 296.
+
+The same pair on ASR transcripts. Milestone 1 argued an LLM extractor would be the more robust of the two under ASR noise, so this is the comparison that tests that motivation; read it with the leakage caveat below, which makes any degradation a lower bound.
+
+| | rule-rules-window-asr | llm-claude-sonnet-5-window-asr | Difference, first minus second (95% CI) |
+|---|---|---|---|
+| Lenient recall | 87% (80% to 93%) | 91% (85% to 96%) | -4 pts (-10 pts to +1 pts) over 98 positives |
+| RUNWAY false alarms / h | 4.5 (2.0 to 7.3) | 6.0 (3.0 to 9.3) | -1.5 (-3.0 to -0.4) over 309 negatives |
+
+Case by case, positives caught: both 83, rule-rules-window-asr only 2, llm-claude-sonnet-5-window-asr only 6, neither 7. Negatives with a RUNWAY false alarm: both 11, rule-rules-window-asr only 0, llm-claude-sonnet-5-window-asr only 3, neither 295.
 
 ## All arms, human and ASR transcripts
 
